@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from dotenv import load_dotenv
 
+# 引入 application_tracking 模块
+from application_tracking import ApplicationTracking
+
 # Load environment variables
 load_dotenv()
 
@@ -18,8 +21,10 @@ app = Flask(__name__, template_folder='templates')
 PORT = 3000
 HOST = '0.0.0.0'
 
+# 实例化申请跟踪器
+app_tracker = ApplicationTracking()
+
 # Lazy initialize Google GenAI Client
-# We try to import google-genai. If not available yet, we fallback to rule-based mock responses.
 try:
     from google import genai
     from google.genai import types
@@ -34,7 +39,6 @@ def get_ai_client():
     if not api_key:
         return None
     try:
-        # Create client using modern official SDK structure
         return genai.Client(api_key=api_key)
     except Exception as e:
         print(f"Error initializing GenAI Client: {e}")
@@ -187,10 +191,51 @@ def get_jobs():
     return jsonify(JOBS_DATABASE)
 
 # ----------------------------------------------------
-# API ENDPOINTS
+# APPLICATION TRACKING API ENDPOINTS
 # ----------------------------------------------------
 
-# 1. Health check
+@app.route("/api/applications", methods=["GET"])
+def get_applications():
+    """获取当前用户的所有申请（demo 中返回全部）"""
+    return jsonify(app_tracker.get_applications())
+
+@app.route("/api/applications", methods=["POST"])
+def add_application():
+    """新增申请（工作申请时调用）"""
+    data = request.get_json()
+    job_id = data.get("jobId")          # 新增 jobId 字段
+    job_title = data.get("job")
+    company = data.get("company")
+    date = data.get("date") or datetime.datetime.utcnow().strftime("%Y-%m-%d")
+    details = data.get("details", "")
+    if not job_id or not job_title or not company:
+        return jsonify({"error": "jobId, job title and company are required"}), 400
+    new_app = app_tracker.add_application(job_id, job_title, company, date, "Pending", details)
+    return jsonify({"success": True, "application": new_app}), 201
+
+@app.route("/api/applications/<app_id>", methods=["PUT"])
+def update_application_status(app_id):
+    """更新申请状态（仅 employer 可调用）"""
+    role = request.headers.get("X-Role", "candidate")
+    if role.lower() != "employer":
+        return jsonify({"error": "Only employer can update status"}), 403
+
+    data = request.get_json()
+    new_status = data.get("status")
+    new_details = data.get("details")
+    if not new_status:
+        return jsonify({"error": "Status is required"}), 400
+
+    success = app_tracker.update_status(app_id, new_status, new_details)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"error": "Application not found"}), 404
+
+# ----------------------------------------------------
+# OTHER EXISTING API ENDPOINTS (Resume, AI, etc.)
+# ----------------------------------------------------
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({
@@ -200,37 +245,31 @@ def health():
         "backend": "python/flask"
     })
 
-# 2. Auto-generate Resume from Profile (AI-powered)
 @app.route("/api/resume/auto-generate", methods=["POST"])
 def auto_generate():
     body = request.get_json() or {}
     profile = body.get("profile")
     target_role = body.get("targetRole")
-
     if not profile:
         return jsonify({"error": "Profile data is required."}), 400
 
     client = get_ai_client()
     if not client:
-        # Fallback to rule-based mock generation if AI client is not configured
         skills = profile.get("skills", [])
         title = profile.get("personalInfo", {}).get("title") or target_role or "Specialist"
         fallback_summary = f"Professional {title} with proven expertise in {', '.join(skills[:3]) if skills else 'development'}. Committed to driving results and delivering clean, efficient solutions."
-        
         fallback_experience = []
         for item in profile.get("experience", []):
             fallback_experience.append({
                 **item,
                 "description": item.get("description") or "• Led key initiatives and delivered business-critical requirements.\n• Collaborated with cross-functional teams to implement scalable updates."
             })
-            
         fallback_projects = []
         for item in profile.get("projects", []):
             fallback_projects.append({
                 **item,
                 "description": item.get("description") or "Developed robust application features using standard industry patterns."
             })
-
         return jsonify({
             "fallback": True,
             "data": {
@@ -280,14 +319,12 @@ def auto_generate():
         print("Gemini Auto-Generate Error:", e)
         return jsonify({"error": "Failed to generate resume with AI.", "details": str(e)}), 500
 
-# 3. Improve Section API (Polishes an experience bullet, summary, or project)
 @app.route("/api/resume/improve-section", methods=["POST"])
 def improve_section():
     body = request.get_json() or {}
     text = body.get("text")
     sec_type = body.get("type", "experience")
     target_role = body.get("targetRole")
-
     if not text:
         return jsonify({"error": "Text is required."}), 400
 
@@ -323,13 +360,11 @@ def improve_section():
         print("Improve Section Error:", e)
         return jsonify({"error": "Failed to improve section.", "details": str(e)}), 500
 
-# 4. Job Match Evaluation API (Checks resume alignment with a target job listing)
 @app.route("/api/jobs/match", methods=["POST"])
 def job_match():
     body = request.get_json() or {}
     resume_data = body.get("resumeData")
     job_listing = body.get("jobListing")
-
     if not resume_data or not job_listing:
         return jsonify({"error": "Resume data and job details are required."}), 400
 
