@@ -15,6 +15,9 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
+# ====== 新增：引入申请跟踪模块 ======
+from application_tracking import ApplicationTracking
+
 # Persistent File System Structure Configurations
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -62,6 +65,8 @@ DEFAULT_PROFILE = {
     "projects": "CloudFlow Dashboard - High-throughput system metrics visualization hub.\nSafeAuth Engine - Custom lightweight middleware wrapper for secure cryptographic routing.",
 }
 
+# ====== 新增：实例化申请跟踪器 ======
+app_tracker = ApplicationTracking()
 
 def create_app():
     app = Flask(__name__)
@@ -101,12 +106,9 @@ def create_app():
             flash("Validation Failed: Only standard PDF and DOCX documents are accepted.", "error")
             return redirect(url_for("index"))
 
-        # Automatically replace old files securely by cleaning data directory beforehand
         clear_uploaded_resume()
-        
         safe_name = secure_filename(file.filename)
         stored_name = f"resume_{uuid4().hex}{extension}"
-        
         file.save(UPLOAD_DIR / stored_name)
         save_json(
             DATA_DIR / "uploaded_resume.json",
@@ -162,12 +164,9 @@ def create_app():
         if missing:
             flash(f"Generation Aborted: The following fields are mandatory: {', '.join(missing)}.", "error")
             return redirect(url_for("profile"))
-            
         prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
         template_id = prefs.get("selected_template", "modern")
         resume = resume_from_profile(profile)
-        
-        # Passes the data to builder.html to allow editing and real-time review before writing to disk
         return render_template(
             "builder.html",
             mode="auto",
@@ -212,6 +211,48 @@ def create_app():
     @app.route("/uploads/<filename>")
     def uploaded_file(filename):
         return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
+
+    # =============================================================
+    # ====== 新增：APPLICATION TRACKING API ROUTES ======
+    # =============================================================
+
+    @app.route("/api/applications", methods=["GET"])
+    def get_applications():
+        """获取当前用户的所有申请（demo 中返回全部）"""
+        return json.dumps(app_tracker.get_applications()), 200, {'Content-Type': 'application/json'}
+
+    @app.route("/api/applications", methods=["POST"])
+    def add_application():
+        """新增申请（工作申请时调用）"""
+        data = request.get_json()
+        job_id = data.get("jobId")
+        job_title = data.get("job")
+        company = data.get("company")
+        date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
+        details = data.get("details", "")
+        if not job_id or not job_title or not company:
+            return json.dumps({"error": "jobId, job title and company are required"}), 400, {'Content-Type': 'application/json'}
+        new_app = app_tracker.add_application(job_id, job_title, company, date, "Pending", details)
+        return json.dumps({"success": True, "application": new_app}), 201, {'Content-Type': 'application/json'}
+
+    @app.route("/api/applications/<app_id>", methods=["PUT"])
+    def update_application_status(app_id):
+        """更新申请状态（仅 employer 可调用）"""
+        role = request.headers.get("X-Role", "candidate")
+        if role.lower() != "employer":
+            return json.dumps({"error": "Only employer can update status"}), 403, {'Content-Type': 'application/json'}
+
+        data = request.get_json()
+        new_status = data.get("status")
+        new_details = data.get("details")
+        if not new_status:
+            return json.dumps({"error": "Status is required"}), 400, {'Content-Type': 'application/json'}
+
+        success = app_tracker.update_status(app_id, new_status, new_details)
+        if success:
+            return json.dumps({"success": True}), 200, {'Content-Type': 'application/json'}
+        else:
+            return json.dumps({"error": "Application not found"}), 404, {'Content-Type': 'application/json'}
 
     return app
 
@@ -271,7 +312,7 @@ def list_generated_resumes():
     resumes = []
     for path in sorted(GENERATED_DIR.glob("*.html"), reverse=True):
         resumes.append({
-            "filename": path.name, 
+            "filename": path.name,
             "created_at": datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
         })
     return resumes
@@ -322,7 +363,7 @@ def save_resume_html(template_id, resume, source):
 def render_resume_document(template, resume):
     accent = template["accent"]
     pattern = template.get("pattern", "modern")
-    
+
     name = escape_html(resume.get('name', ''))
     title = escape_html(resume.get('title', ''))
     contact = escape_html(resume.get('contact', ''))
@@ -336,7 +377,7 @@ def render_resume_document(template, resume):
         if not content: return ""
         lines = [line.strip() for line in content.splitlines() if line.strip()]
         if not lines: return ""
-        
+
         html = f'<div class="section-block"><h2>{title}</h2>'
         if format_as_badges:
             html += '<div class="badge-container">'
@@ -385,14 +426,12 @@ def render_resume_document(template, resume):
         .badge-container {{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }}
         .custom-badge {{ background: #f1f5f9; color: var(--text-dark); font-size: 11px; padding: 4px 10px; border-radius: 6px; font-weight: 500; border: 1px solid #e2e8f0; }}
         
-        /* Theme 1: Modern Layout style rules */
         .theme-modern {{ border-top: 8px solid var(--accent); padding: 40px; }}
         .theme-modern h1 {{ margin: 0; font-size: 32px; color: var(--accent); font-weight: 800; }}
         .theme-modern .subtitle {{ font-size: 16px; color: var(--text-muted); margin-top: 4px; }}
         .theme-modern .contact-bar {{ display: flex; flex-wrap: wrap; gap: 15px; margin-top: 12px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; color: var(--text-muted); }}
         .theme-modern h2 {{ color: var(--accent); border-bottom: 2px solid #f1f5f9; }}
 
-        /* Theme 2: Executive Banner Layout style rules */
         .theme-executive .header-banner {{ background: var(--dark-bg); color: white; padding: 40px; text-align: center; }}
         .theme-executive .header-banner h1 {{ margin: 0; font-size: 34px; color: white; }}
         .theme-executive .header-banner .subtitle {{ color: var(--accent); font-size: 16px; text-transform: uppercase; margin-top: 6px; }}
@@ -400,7 +439,6 @@ def render_resume_document(template, resume):
         .theme-executive .content-body {{ padding: 40px; }}
         .theme-executive h2 {{ color: var(--dark-bg); border-bottom: 1px solid var(--dark-bg); }}
 
-        /* Theme 3: Technical Asymmetric Sidebar Panel style rules */
         .theme-technical {{ display: grid; grid-template-columns: 260px 1fr; min-height: 1050px; }}
         .theme-technical .sidebar {{ background: #0f172a; color: #f8fafc; padding: 40px 25px; }}
         .theme-technical .sidebar h1 {{ font-size: 24px; color: white; margin: 0; }}
@@ -487,4 +525,5 @@ def escape_html(value):
 
 
 if __name__ == "__main__":
-    create_app().run(debug=True, port=5000)
+    app = create_app()
+    app.run(debug=True, port=5000)
