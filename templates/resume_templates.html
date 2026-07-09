@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Resume Templates</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .template-preview-card {
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .template-preview-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+        .template-preview-card.selected-preference {
+            border-color: #0d6efd;
+            background-color: #f4f8ff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">💼 JobPortal AI</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/resume/dashboard">Back to Workspace</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <h2 class="fw-bold mb-1">Resume Template Manager</h2>
+                <p class="text-muted">Select and apply industry-optimized layouts designed to clear ATS filters automatically.</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm template-preview-card selected-preference position-relative">
+                    <span class="position-absolute top-0 end-0 badge bg-primary m-3"><i class="fas fa-check me-1"></i> Active Selection</span>
+                    <div class="p-3 bg-secondary-subtle text-center">
+                        <i class="fas fa-file-alt text-muted display-1 my-4"></i>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="fw-bold card-title">The Corporate ATS-Classic</h5>
+                        <p class="card-text text-muted small flex-grow-1">Minimalist black and white design focused highly on machine readability score standards. Recommended for banking and operations roles.</p>
+                        <div class="mt-3 gap-2 d-flex">
+                            <button class="btn btn-outline-dark btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#templateModal_1"><i class="far fa-eye me-1"></i> Preview Layout</button>
+                            <button class="btn btn-primary btn-sm disabled"><i class="fas fa-check-double"></i> Applied</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm template-preview-card">
+                    <div class="p-3 bg-primary-subtle text-center">
+                        <i class="fas fa-id-card text-primary display-1 my-4"></i>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="fw-bold card-title">Creative Tech Minimalist</h5>
+                        <p class="card-text text-muted small flex-grow-1">Modern asymmetric sidebar layout layout structure designed to present tech skills grids and side-project descriptions prominently.</p>
+                        <div class="mt-3 gap-2 d-flex">
+                            <button class="btn btn-outline-dark btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#templateModal_2"><i class="far fa-eye me-1"></i> Preview Layout</button>
+                            <button class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i> Apply Template</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm template-preview-card">
+                    <div class="p-3 bg-success-subtle text-center">
+                        <i class="fas fa-briefcase text-success display-1 my-4"></i>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="fw-bold card-title">Executive Leadership Bold</h5>
+                        <p class="card-text text-muted small flex-grow-1">Premium typography template layout showcasing career trajectory milestones, revenue metrics, and global management credentials explicitly.</p>
+                        <div class="mt-3 gap-2 d-flex">
+                            <button class="btn btn-outline-dark btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#templateModal_3"><i class="far fa-eye me-1"></i> Preview Layout</button>
+                            <button class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i> Apply Template</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="templateModal_1" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center pt-0 px-4">
+                    <h4 class="fw-bold mb-2">Corporate ATS-Classic Layout</h4>
+                    <p class="text-muted small mb-4">Standard single column layout structure optimized directly for clean keyword processing.</p>
+                    <div class="border rounded p-4 bg-white text-start shadow-xs mx-auto mb-3" style="font-family: serif; font-size: 11px; max-width: 400px;">
+                        <div class="text-center border-bottom pb-1 mb-2">
+                            <h6 class="fw-bold mb-0">FIRSTNAME LASTNAME</h6>
+                            <p class="text-muted mb-0" style="font-size: 9px;">City, State | Phone | Email | LinkedIn</p>
+                        </div>
+                        <p class="fw-bold mb-1" style="font-size: 10px;">PROFESSIONAL SUMMARY</p>
+                        <div style="height: 6px; width: 100%; background: #e9ecef; class='mb-2'"></div>
+                        <div style="height: 6px; width: 85%; background: #e9ecef; class='mb-3'"></div>
+                        <p class="fw-bold mb-1 mt-2" style="font-size: 10px;">EXPERIENCE RECORD</p>
+                        <div style="height: 6px; width: 95%; background: #e9ecef; class='mb-1'"></div>
+                        <div style="height: 6px; width: 90%; background: #e9ecef; class='mb-1'"></div>
+                    </div>
+                    <button class="btn btn-primary w-100 btn-sm mb-2" data-bs-dismiss="modal">Keep Active Preference</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobPath Pro - Resume Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        /* Left Navigation Sidebar Panel */
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            padding-top: 24px;
+            z-index: 100;
+        }
+        .sidebar-brand {
+            padding: 0 24px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .sidebar-link:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .sidebar-link.active {
+            background: #f1f5f9;
+            color: #2563eb;
+            font-weight: 600;
+            border-left-color: #2563eb;
+        }
+        .sidebar-link i {
+            width: 20px;
+            margin-right: 8px;
+        }
+
+        /* Workspace Viewport Container */
+        .main-workspace {
+            margin-left: 250px;
+            padding: 40px;
+        }
+
+        /* Dashboard Grid UI Components */
+        .dashboard-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .card-header-custom {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        /* Template Style Structural Choice Cards */
+        .template-variant-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .template-variant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.04);
+            border-color: #cbd5e1;
+        }
+        .template-variant-card.active-theme {
+            border: 2px solid #2563eb;
+            background-color: #f8fafc;
+        }
+        .badge-active-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <span class="bg-primary text-white p-2 rounded-3 d-inline-flex justify-content-center align-items-center" style="width: 32px; height: 32px;">
+                <i class="fas fa-briefcase text-xs"></i>
+            </span>
+            <span>JobPath Pro</span>
+        </div>
+        <nav class="d-flex flex-column">
+            <a href="{{ url_for('index') }}" class="sidebar-link active">
+                <i class="fas fa-layer-group"></i> Resume Hub
+            </a>
+            <a href="{{ url_for('profile') }}" class="sidebar-link">
+                <i class="fas fa-user-cog"></i> Profile Registry
+            </a>
+            <a href="{{ url_for('auto_generate') }}" class="sidebar-link text-primary fw-bold">
+                <i class="fas fa-bolt"></i> Auto-Build Engine
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-workspace">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert alert-{% if category == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                <i class="fas {% if category == 'error' %}fa-minus-circle{% else %}fa-check-circle{% endif %} me-2"></i>{{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h1 class="fw-bold text-dark tracking-tight mb-1" style="font-size: 26px;">Resume Workspace Hub</h1>
+                <p class="text-muted mb-0">Switch document patterns, upload your source layout assets, and view compiled records.</p>
+            </div>
+            <a href="{{ url_for('auto_generate') }}" class="btn btn-primary fw-semibold px-4 py-2 shadow-sm">
+                <i class="fas fa-magic me-2"></i> Auto-Generate Resume
+            </a>
+        </div>
+
+        <h5 class="fw-bold text-dark mb-3" style="font-size: 16px;"><i class="fas fa-palette text-muted me-2"></i> Structural Theme Presets</h5>
+        <div class="row g-4 mb-5">
+            {% for id, meta in templates.items() %}
+                <div class="col-md-4">
+                    <div class="template-variant-card {% if id == selected_template %}active-theme{% endif %}">
+                        <div class="p-4 flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="fw-bold text-dark mb-0" style="font-size: 15px;">{{ meta.name }}</h6>
+                                {% if id == selected_template %}
+                                    <span class="badge-active-status"><i class="fas fa-check-circle me-1"></i> Active</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-muted small mb-3" style="line-height: 1.5; font-size: 12.5px;">{{ meta.summary }}</p>
+                            <div class="text-muted font-monospace" style="font-size: 11px;">
+                                <i class="fas fa-crosshairs me-1"></i> Fits: {{ meta.industry }}
+                            </div>
+                        </div>
+                        <div class="p-3 bg-light border-top d-flex gap-2">
+                            <form action="{{ url_for('save_template_preference', template_id=id) }}" method="POST" class="flex-grow-1">
+                                <button type="submit" class="btn btn-sm {% if id == selected_template %}btn-secondary{% else %}btn-outline-primary{% endif %} w-100 fw-semibold">
+                                    Use Structure
+                                </button>
+                            </form>
+                            <a href="{{ url_for('template_builder', template_id=id) }}" class="btn btn-sm btn-light border text-dark fw-semibold">
+                                <i class="fas fa-keyboard"></i> Manual Build
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="row">
+            
+            <div class="col-lg-7">
+                <div class="dashboard-card">
+                    <div class="card-header-custom">
+                        <h6 class="card-header-title"><i class="far fa-copy text-muted me-2"></i> Compiled Output Files Pipeline</h6>
+                        <span class="badge bg-light text-dark border">{{ generated|length }} Entries</span>
+                    </div>
+                    <div class="p-0">
+                        {% if generated %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                                    <thead class="table-light text-uppercase font-monospace text-muted" style="font-size: 11px;">
+                                        <tr>
+                                            <th class="ps-4">File Signature</th>
+                                            <th>Compiled At</th>
+                                            <th class="text-end pe-4">Options</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in generated %}
+                                            <tr>
+                                                <td class="ps-4 text-primary fw-medium font-monospace">
+                                                    <i class="far fa-file-code me-2 text-muted"></i>{{ item.filename }}
+                                                </td>
+                                                <td class="text-muted">{{ item.created_at }}</td>
+                                                <td class="text-end pe-4">
+                                                    <a href="{{ url_for('preview_resume', filename=item.filename) }}" target="_blank" class="btn btn-sm btn-outline-dark px-3 fw-semibold" style="font-size: 12px;">
+                                                        <i class="fas fa-external-link-alt me-1"></i> Preview Sheet
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-5 px-4 small">
+                                <i class="fas fa-hourglass-start d-block mb-3 fs-4 text-black-50"></i>
+                                No historic documents found. Pick a template pattern above to assemble your first draft layout output.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="dashboard-card">
+                    <div class="card-header-custom">
+                        <h6 class="card-header-title"><i class="fas fa-cloud-upload-alt text-muted me-2"></i> Uploaded Static Document</h6>
+                    </div>
+                    <div class="p-4">
+                        {% if uploaded %}
+                            <div class="p-3 border rounded-3 bg-light mb-4 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-white p-2 rounded border text-primary shadow-sm"><i class="far fa-file-pdf fa-lg"></i></div>
+                                    <div style="min-width: 0;">
+                                        <div class="fw-bold text-dark text-truncate small" style="max-width: 160px;">{{ uploaded.original_name }}</div>
+                                        <div class="text-muted" style="font-size: 11px;">Uploaded: {{ uploaded.uploaded_at }}</div>
+                                    </div>
+                                </div>
+                                <form action="{{ url_for('delete_uploaded_resume') }}" method="POST" onsubmit="return confirm('Purge this file reference?');">
+                                    <button type="submit" class="btn btn-sm text-danger p-0 border-0 fw-semibold" style="font-size: 12px;"><i class="far fa-trash-alt me-1"></i> Delete</button>
+                                </form>
+                            </div>
+                        {% endif %}
+
+                        <form action="{{ url_for('upload_resume') }}" method="POST" enctype="multipart/form-data">
+                            <label class="form-label font-monospace text-uppercase text-muted fw-bold mb-2" style="font-size: 10px;">Replace or Add Reference Document (.pdf/.docx)</label>
+                            <div class="input-group">
+                                <input type="file" name="resume" class="form-control" style="font-size: 13px;" required>
+                                <button type="submit" class="btn btn-dark fw-semibold px-3" style="font-size: 13px;">Upload</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
