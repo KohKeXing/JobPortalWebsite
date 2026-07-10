@@ -8,23 +8,29 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from dotenv import load_dotenv
 
-# 引入 application_tracking 模块
+# 导入 application_tracking 模块
 from application_tracking import ApplicationTracking
+
+# 导入 JobRecommendation（用于推荐算法，如果存在）
+try:
+    from job_recommendation import JobRecommendation
+    HAS_RECOMMENDATION = True
+except ImportError:
+    HAS_RECOMMENDATION = False
 
 # Load environment variables
 load_dotenv()
 
-# Initialize Flask app pointing template folder to 'templates'
+# Initialize Flask app
 app = Flask(__name__, template_folder='templates')
 
-# Configure Port and Host
 PORT = 3000
 HOST = '0.0.0.0'
 
 # 实例化申请跟踪器
 app_tracker = ApplicationTracking()
 
-# Lazy initialize Google GenAI Client
+# ---- Google GenAI 客户端（AI 功能） ----
 try:
     from google import genai
     from google.genai import types
@@ -44,9 +50,7 @@ def get_ai_client():
         print(f"Error initializing GenAI Client: {e}")
         return None
 
-# ----------------------------------------------------
-# PYDANTIC RESPONSE SCHEMAS FOR GEMINI STRUCTURAL OUTPUT
-# ----------------------------------------------------
+# ---- Pydantic Schemas (Gemini) ----
 class PersonalInfoSchema(BaseModel):
     name: str
     email: str
@@ -54,7 +58,7 @@ class PersonalInfoSchema(BaseModel):
     location: str
     title: str
     website: Optional[str] = None
-    summary: str = Field(description="Compelling 3-4 sentence professional summary highlighting core values and strengths.")
+    summary: str = Field(description="Compelling 3-4 sentence professional summary.")
 
 class ExperienceItemSchema(BaseModel):
     id: str
@@ -62,7 +66,7 @@ class ExperienceItemSchema(BaseModel):
     role: str
     startDate: str
     endDate: str
-    description: str = Field(description="Polished, multi-line bullet-pointed description with each bullet starting on a new line with the '• ' character.")
+    description: str
 
 class EducationItemSchema(BaseModel):
     id: str
@@ -75,7 +79,7 @@ class EducationItemSchema(BaseModel):
 class ProjectItemSchema(BaseModel):
     id: str
     name: str
-    description: str = Field(description="Compelling project outcome, complexity, and technical details.")
+    description: str
     technologies: List[str]
     link: Optional[str] = None
 
@@ -87,12 +91,10 @@ class ResumeResponseSchema(BaseModel):
     projects: List[ProjectItemSchema]
 
 class MatchResponseSchema(BaseModel):
-    matchScore: int = Field(description="Match compatibility score between 0 and 100")
-    analysis: str = Field(description="Markdown string with structural headings: ### Alignment Strengths, ### Critical Skill Gaps, and ### Tailoring Recommendations.")
+    matchScore: int
+    analysis: str
 
-# ----------------------------------------------------
-# JOBS DATABASE & ENDPOINTS
-# ----------------------------------------------------
+# ---- JOBS DATABASE ----
 JOBS_DATABASE = [
     {
         "id": "job-1",
@@ -101,7 +103,7 @@ JOBS_DATABASE = [
         "location": "Kuala Lumpur, Malaysia (Remote)",
         "salary": "RM 8,000 - RM 13,000 / month",
         "type": "Remote",
-        "tags": ["Software & Tech", "React", "TypeScript", "Vite", "Tailwind CSS"],
+        "tags": ["React", "TypeScript", "Vite", "Tailwind CSS", "REST APIs"],
         "logo_color": "bg-blue-600 text-white",
         "icon": "SS",
         "featured": True,
@@ -116,7 +118,7 @@ JOBS_DATABASE = [
         "location": "Penang, Malaysia (Hybrid)",
         "salary": "RM 7,500 - RM 11,500 / month",
         "type": "Hybrid",
-        "tags": ["Design & Creative", "UI/UX", "Figma", "Design Systems"],
+        "tags": ["UI/UX", "Figma", "Design Systems", "Prototyping", "User Research"],
         "logo_color": "bg-pink-600 text-white",
         "icon": "PS",
         "featured": True,
@@ -131,7 +133,7 @@ JOBS_DATABASE = [
         "location": "Kuala Lumpur, Malaysia",
         "salary": "RM 5,500 - RM 8,500 / month",
         "type": "Full-time",
-        "tags": ["Marketing & Sales", "SEO", "Analytics", "Campaigns"],
+        "tags": ["SEO", "Analytics", "Campaigns", "Content Marketing", "A/B Testing"],
         "logo_color": "bg-orange-600 text-white",
         "icon": "SG",
         "featured": False,
@@ -146,7 +148,7 @@ JOBS_DATABASE = [
         "location": "Petaling Jaya, Selangor, Malaysia",
         "salary": "RM 4,500 - RM 7,000 / month",
         "type": "Contract",
-        "tags": ["Software & Tech", "Data Analysis", "SQL", "Python", "Tableau"],
+        "tags": ["Data Analysis", "SQL", "Python", "Tableau", "Statistics"],
         "logo_color": "bg-teal-600 text-white",
         "icon": "HH",
         "featured": False,
@@ -161,7 +163,7 @@ JOBS_DATABASE = [
         "location": "Kuala Lumpur, Malaysia",
         "salary": "RM 6,000 - RM 9,500 / month",
         "type": "Full-time",
-        "tags": ["Finance & Legal", "Modeling", "Forecasting", "Excel"],
+        "tags": ["Financial Modeling", "Forecasting", "Excel", "VBA", "Risk Analysis"],
         "logo_color": "bg-cyan-600 text-white",
         "icon": "CI",
         "featured": True,
@@ -176,7 +178,7 @@ JOBS_DATABASE = [
         "location": "Kuala Lumpur, Malaysia (Remote)",
         "salary": "RM 3,500 - RM 5,500 / month",
         "type": "Remote",
-        "tags": ["Customer Support", "Zendesk", "Communication", "Management"],
+        "tags": ["Customer Support", "Zendesk", "Communication", "Team Management", "Ticketing"],
         "logo_color": "bg-red-600 text-white",
         "icon": "NC",
         "featured": False,
@@ -186,24 +188,108 @@ JOBS_DATABASE = [
     }
 ]
 
+# ---- Helper functions (Profile, storage) ----
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+PROFILE_PATH = DATA_DIR / "profile.json"
+
+def ensure_storage():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not PROFILE_PATH.exists():
+        default_profile = {
+            "name": "Alex Rivera",
+            "title": "Full-Stack Software Engineer",
+            "email": "alex.rivera@example.com",
+            "phone": "+1 (555) 342-9011",
+            "location": "Kuala Lumpur, Malaysia",
+            "summary": "Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps.",
+            "skills": "React, TypeScript, Tailwind CSS, Vite, Node.js, REST APIs, SQL, Python, Git"
+        }
+        PROFILE_PATH.write_text(json.dumps(default_profile, indent=2), encoding='utf-8')
+
+def load_profile():
+    if not PROFILE_PATH.exists():
+        ensure_storage()
+    try:
+        return json.loads(PROFILE_PATH.read_text(encoding='utf-8'))
+    except:
+        return {}
+
+def load_json(path, fallback):
+    if not path.exists():
+        return fallback
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return fallback
+
+def save_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+ensure_storage()
+
+# ---- API: Jobs & Recommendations ----
 @app.route("/api/jobs", methods=["GET"])
 def get_jobs():
     return jsonify(JOBS_DATABASE)
 
-# ----------------------------------------------------
-# APPLICATION TRACKING API ENDPOINTS
-# ----------------------------------------------------
+@app.route("/api/jobs/recommendations", methods=["GET"])
+def get_job_recommendations():
+    """返回带匹配分数的职位列表，按匹配度降序排列"""
+    profile = load_profile()
+    skills_text = profile.get("skills", "")
+    # 将技能字符串拆分为列表（支持逗号、顿号或空格分隔）
+    if "," in skills_text:
+        user_skills = [s.strip() for s in skills_text.split(",") if s.strip()]
+    elif "，" in skills_text:
+        user_skills = [s.strip() for s in skills_text.split("，") if s.strip()]
+    else:
+        user_skills = [s.strip() for s in skills_text.split() if s.strip()]
+    
+    # 如果没有技能，返回所有职位，匹配度为0
+    if not user_skills:
+        jobs_with_score = []
+        for job in JOBS_DATABASE:
+            job_copy = job.copy()
+            job_copy["matchScore"] = 0
+            jobs_with_score.append(job_copy)
+        # 按匹配度降序（全是0，保持原顺序）
+        return jsonify(jobs_with_score)
+    
+    # 使用 JobRecommendation 如果存在，否则手动计算
+    if HAS_RECOMMENDATION:
+        recommender = JobRecommendation()
+        # 注意：JobRecommendation 的 jobs 结构不同，我们直接使用其 calculate_match 方法
+        # 但为了确保兼容，我们仍然手动计算（更可控）
+        pass
+    
+    jobs_with_score = []
+    for job in JOBS_DATABASE:
+        # 提取职位所需技能（从 tags 中获取）
+        job_skills = [tag.lower() for tag in job.get("tags", [])]
+        # 计算匹配度：匹配的技能数 / 总技能数
+        matched = sum(1 for skill in user_skills if skill.lower() in job_skills)
+        total = len(job_skills) if job_skills else 1
+        score = round((matched / total) * 100, 0) if total else 0
+        score = min(score, 100)  # 限制最大100
+        job_copy = job.copy()
+        job_copy["matchScore"] = score
+        jobs_with_score.append(job_copy)
+    
+    # 按匹配度降序排序
+    jobs_with_score.sort(key=lambda x: x["matchScore"], reverse=True)
+    return jsonify(jobs_with_score)
 
+# ---- APPLICATION TRACKING API ----
 @app.route("/api/applications", methods=["GET"])
 def get_applications():
-    """获取当前用户的所有申请（demo 中返回全部）"""
     return jsonify(app_tracker.get_applications())
 
 @app.route("/api/applications", methods=["POST"])
 def add_application():
-    """新增申请（工作申请时调用）"""
     data = request.get_json()
-    job_id = data.get("jobId")          # 新增 jobId 字段
+    job_id = data.get("jobId")
     job_title = data.get("job")
     company = data.get("company")
     date = data.get("date") or datetime.datetime.utcnow().strftime("%Y-%m-%d")
@@ -215,27 +301,21 @@ def add_application():
 
 @app.route("/api/applications/<app_id>", methods=["PUT"])
 def update_application_status(app_id):
-    """更新申请状态（仅 employer 可调用）"""
     role = request.headers.get("X-Role", "candidate")
     if role.lower() != "employer":
         return jsonify({"error": "Only employer can update status"}), 403
-
     data = request.get_json()
     new_status = data.get("status")
     new_details = data.get("details")
     if not new_status:
         return jsonify({"error": "Status is required"}), 400
-
     success = app_tracker.update_status(app_id, new_status, new_details)
     if success:
         return jsonify({"success": True})
     else:
         return jsonify({"error": "Application not found"}), 404
 
-# ----------------------------------------------------
-# OTHER EXISTING API ENDPOINTS (Resume, AI, etc.)
-# ----------------------------------------------------
-
+# ---- AI & RESUME APIs (Gemini) ----
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({
@@ -255,6 +335,7 @@ def auto_generate():
 
     client = get_ai_client()
     if not client:
+        # Fallback logic
         skills = profile.get("skills", [])
         title = profile.get("personalInfo", {}).get("title") or target_role or "Specialist"
         fallback_summary = f"Professional {title} with proven expertise in {', '.join(skills[:3]) if skills else 'development'}. Committed to driving results and delivering clean, efficient solutions."
@@ -414,10 +495,7 @@ def job_match():
         print("Match API Error:", e)
         return jsonify({"error": "Failed to evaluate job match.", "details": str(e)}), 500
 
-# ----------------------------------------------------
-# TEMPLATE ROUTING (SERVES MODERN FLASK + JINJA FRONTEND)
-# ----------------------------------------------------
-
+# ---- Frontend ----
 @app.route('/')
 def index():
     return render_template('index.html')
