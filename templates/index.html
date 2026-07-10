@@ -212,75 +212,82 @@
             </div>
 
             <!-- Two column layout below banner -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                <!-- Refine Search filter pane -->
-                <div class="lg:col-span-3 bg-white border border-slate-100 rounded-2xl p-6 shadow-2xs flex flex-col gap-6">
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Refine Search</h4>
-                    </div>
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+    
+    <!-- Refine Search filter pane -->
+    <div class="lg:w-72 w-full flex-shrink-0 bg-white border border-slate-100 rounded-2xl p-6 shadow-2xs flex flex-col gap-6">
+        <div>
+            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Refine Search</h4>
+        </div>
 
-                    <!-- Job type filter -->
-                    <div class="flex flex-col gap-3">
-                        <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Job Type</span>
-                        <div class="flex flex-col gap-2.5">
-                            <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
-                                <input type="radio" name="job-type" value="all" checked onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
-                                <span>All</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
-                                <input type="radio" name="job-type" value="Full-time" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
-                                <span>Full-time</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
-                                <input type="radio" name="job-type" value="Part-time" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
-                                <span>Part-time</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
-                                <input type="radio" name="job-type" value="Remote" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
-                                <span>Remote</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
-                                <input type="radio" name="job-type" value="Contract" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
-                                <span>Contract</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
-                                <input type="radio" name="job-type" value="Internship" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
-                                <span>Internship</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="h-[1px] bg-slate-100"></div>
-
-                    <!-- Min salary filter slider -->
-                    <div class="flex flex-col gap-3">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-extrabold text-slate-900 uppercase tracking-wide">Min Salary</span>
-                            <span id="label-min-salary" class="font-extrabold text-blue-600">RM 3,000+</span>
-                        </div>
-                        <input type="range" id="slider-min-salary" min="3" max="15" step="1" value="3" oninput="triggerFilters()" class="w-full accent-blue-600 cursor-pointer">
-                        <div class="flex justify-between text-[10px] text-slate-400 font-extrabold">
-                            <span>RM 3,000</span>
-                            <span>RM 15,000</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Job Listings grid pane -->
-                <div class="lg:col-span-9 flex flex-col gap-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs sm:text-sm font-semibold text-slate-500" id="matched-jobs-count">
-                            We found 6 positions matching your search.
-                        </span>
-                    </div>
-
-                    <!-- Jobs card grid container -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="listings-grid">
-                        <!-- Injected cards -->
-                    </div>
-                </div>
+        <!-- Job type filter -->
+        <div class="flex flex-col gap-3">
+            <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Job Type</span>
+            <div class="flex flex-col gap-2.5">
+                <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                    <input type="radio" name="job-type" value="all" checked onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
+                    <span>All</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                    <input type="radio" name="job-type" value="Full-time" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
+                    <span>Full-time</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                    <input type="radio" name="job-type" value="Part-time" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
+                    <span>Part-time</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                    <input type="radio" name="job-type" value="Remote" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
+                    <span>Remote</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                    <input type="radio" name="job-type" value="Contract" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
+                    <span>Contract</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                    <input type="radio" name="job-type" value="Internship" onchange="triggerFilters()" class="w-4 h-4 text-blue-600 border-slate-200 focus:ring-blue-500">
+                    <span>Internship</span>
+                </label>
             </div>
+        </div>
+
+        <div class="h-[1px] bg-slate-100"></div>
+
+        <!-- Min salary filter slider + Sort By -->
+        <div class="flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs">
+                <span class="font-extrabold text-slate-900 uppercase tracking-wide">Min Salary</span>
+                <span id="label-min-salary" class="font-extrabold text-blue-600">RM 3,000+</span>
+            </div>
+            <input type="range" id="slider-min-salary" min="3" max="15" step="1" value="3" oninput="triggerFilters()" class="w-full accent-blue-600 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-400 font-extrabold">
+                <span>RM 3,000</span>
+                <span>RM 15,000</span>
+            </div>
+            <div class="h-[1px] bg-slate-100 my-2"></div>
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Sort By</span>
+                <select id="sort-select" onchange="applySortAndFilter()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition bg-white">
+                    <option value="match">Match Score</option>
+                    <option value="salary">Salary (High to Low)</option>
+                    <option value="date">Newest First</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Listings grid pane -->
+    <div class="flex-1 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+            <span class="text-xs sm:text-sm font-semibold text-slate-500" id="matched-jobs-count">
+                We found 6 positions matching your search.
+            </span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="listings-grid">
+            <!-- Injected cards -->
+        </div>
+    </div>
+</div>
         </section>
 
         <!-- ==================== VIEW 2: MY DASHBOARD ==================== -->
@@ -831,18 +838,24 @@
 
         <!-- 元数据卡片（彩色） -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="bg-blue-50 rounded-xl p-3 border border-blue-100 shadow-sm flex items-center gap-2.5">
-                <svg class="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span class="text-xs font-medium text-slate-700" id="drawer-job-location">📍 Kuala Lumpur, Malaysia</span>
-            </div>
-            <div class="bg-emerald-50 rounded-xl p-3 border border-emerald-100 shadow-sm flex items-center gap-2.5">
-                <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span class="text-xs font-bold text-emerald-700" id="drawer-job-salary">💰 RM 8,000 - RM 13,000</span>
-            </div>
-            <div class="bg-purple-50 rounded-xl p-3 border border-purple-100 shadow-sm flex items-center gap-2.5">
-                <span id="drawer-job-type" class="text-[10px] font-extrabold uppercase bg-purple-200 text-purple-800 px-3 py-1 rounded-full">Remote</span>
-            </div>
-        </div>
+    <!-- 统一使用 slate 灰色调背景 -->
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-sm flex items-center gap-2.5">
+        <svg class="w-5 h-5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="text-xs font-medium text-slate-700" id="drawer-job-location">📍 Kuala Lumpur, Malaysia</span>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-sm flex items-center gap-2.5">
+        <svg class="w-5 h-5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-xs font-bold text-slate-700" id="drawer-job-salary">💰 RM 8,000 - RM 13,000</span>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-sm flex items-center gap-2.5 justify-center">
+        <span id="drawer-job-type" class="text-[10px] font-extrabold uppercase bg-slate-200 text-slate-700 px-3 py-1 rounded-full">Remote</span>
+    </div>
+</div>
 
         <!-- 职位描述 -->
         <div class="bg-slate-50 rounded-2xl border border-slate-200 p-5 shadow-sm">
@@ -858,7 +871,7 @@
                 <div class="flex items-center gap-3">
                     <div class="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl border border-white/30 shadow-inner flex-shrink-0">✨</div>
                     <div>
-                        <h4 class="font-extrabold text-base text-white drop-shadow-md">Gemini AI Career Co-Pilot</h4>
+                        <h4 class="font-extrabold text-base text-white drop-shadow-md">Career Matching Co-Pilot</h4>
                         <p class="text-xs text-white/80 font-medium drop-shadow">Automated screening optimizations &amp; ATS gap metrics.</p>
                     </div>
                 </div>
@@ -1035,75 +1048,75 @@
         </div>
     </div>
 
-    <!-- ======== APPLICATION DETAIL MODAL (美化版) ======== -->
+    <!-- ======== APPLICATION DETAIL MODAL (缩小版) ======== -->
 <div id="app-detail-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeAppDetail()"></div>
-<div id="app-detail-panel" class="fixed inset-x-4 top-[8%] bottom-[8%] max-w-2xl mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-200/80 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden overflow-hidden">
+<div id="app-detail-panel" class="fixed inset-x-4 top-[15%] bottom-[15%] max-w-md mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-200/80 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden overflow-hidden">
     
     <!-- 头部：带渐变色和图标 -->
-    <div class="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-6 py-5 text-white flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-4">
-            <div class="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl border border-white/30 shadow-lg">
+    <div class="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-4 py-4 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl border border-white/30 shadow-lg">
                 💼
             </div>
             <div>
-                <h3 class="text-lg font-extrabold tracking-tight" id="app-detail-title">Python Developer</h3>
-                <p class="text-sm font-medium text-blue-100" id="app-detail-company">ABC Technology</p>
+                <h3 class="text-base font-extrabold tracking-tight" id="app-detail-title">Python Developer</h3>
+                <p class="text-xs font-medium text-blue-100" id="app-detail-company">ABC Technology</p>
             </div>
         </div>
-        <button onclick="closeAppDetail()" class="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition backdrop-blur-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button onclick="closeAppDetail()" class="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition backdrop-blur-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
     </div>
 
     <!-- 内容主体（可滚动） -->
-    <div class="flex-1 overflow-y-auto p-6 bg-slate-50/30 flex flex-col gap-5" id="app-detail-content">
+    <div class="flex-1 overflow-y-auto p-5 bg-slate-50/30 flex flex-col gap-4" id="app-detail-content">
         
         <!-- 信息卡片网格 -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <!-- 申请日期 -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
-                <div class="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-2.5">
+                <div class="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Applied Date</p>
-                    <p class="text-sm font-semibold text-slate-800" id="app-detail-date">2026-07-01</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Applied Date</p>
+                    <p class="text-xs font-semibold text-slate-800" id="app-detail-date">2026-07-01</p>
                 </div>
             </div>
 
-            <!-- 状态（带颜色徽章） -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
-                <div class="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <!-- 状态 -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-2.5">
+                <div class="h-8 w-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-                    <span id="app-detail-status-badge" class="inline-block text-xs font-extrabold px-3 py-1 rounded-full border status-pending">Interview</span>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
+                    <span id="app-detail-status-badge" class="inline-block text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border status-pending">Interview</span>
                 </div>
             </div>
         </div>
 
         <!-- 详情描述 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div class="flex items-center gap-2 mb-2">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Additional Details</h4>
+        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <div class="flex items-center gap-1.5 mb-1.5">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <h4 class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Additional Details</h4>
             </div>
-            <p class="text-sm text-slate-600 leading-relaxed" id="app-detail-details">Technical interview scheduled</p>
+            <p class="text-xs text-slate-600 leading-relaxed" id="app-detail-details">Technical interview scheduled</p>
         </div>
 
-        <!-- 分隔线，仅在 Employer 角色显示编辑区域时出现（由 JS 动态控制） -->
+        <!-- 编辑区域（仅 Employer 可见） -->
         <div id="app-detail-edit-section" class="hidden">
             <hr class="border-slate-200/60 my-2">
-            <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <h4 class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     Update Application (Employer)
                 </h4>
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-2">
                     <div>
-                        <label class="text-xs font-bold text-slate-600 block mb-1">Status</label>
-                        <select id="app-status-select" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition bg-white">
+                        <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Status</label>
+                        <select id="app-status-select" class="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition bg-white">
                             <option value="Pending">Pending</option>
                             <option value="Interview">Interview</option>
                             <option value="Rejected">Rejected</option>
@@ -1111,17 +1124,23 @@
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-slate-600 block mb-1">Details</label>
-                        <textarea id="app-details-input" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition resize-none bg-white"></textarea>
+                        <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Details</label>
+                        <textarea id="app-details-input" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition resize-none bg-white"></textarea>
                     </div>
-                    <button onclick="updateApplicationStatus(currentAppId)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-md shadow-blue-200 text-sm flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <button onclick="updateApplicationStatus(currentAppId)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl transition shadow-md shadow-blue-200 text-xs flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         Update Status
                     </button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- 底部关闭按钮 -->
+    <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm flex justify-end shrink-0">
+        <button onclick="closeAppDetail()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition text-xs">Close</button>
+    </div>
+</div>
 
     <!-- 底部关闭按钮（固定在底部） -->
     <div class="p-5 border-t border-slate-200 bg-white/90 backdrop-blur-sm flex justify-end shrink-0">
@@ -1324,119 +1343,139 @@
             }
         }
 
+        const FALLBACK_JOBS = [
+    {
+        id: "job-1",
+        title: "Senior React Engineer",
+        company: "Synthetix Solutions",
+        location: "Kuala Lumpur, Malaysia (Remote)",
+        salary: "RM 8,000 - RM 13,000 / month",
+        type: "Remote",
+        tags: ["Software & Tech", "React", "TypeScript", "Vite", "Tailwind CSS"],
+        logo_color: "bg-blue-600 text-white",
+        icon: "SS",
+        featured: true,
+        category: "Software & Tech",
+        posted: "2026-07-07",
+        description: "Synthetix Solutions is seeking an exceptional Senior React Engineer to design and build our next-generation web platforms.\n\nKey Responsibilities:\n• Build high-performance, accessible components using React and TypeScript.\n• Optimize client-side state managers and integrate RESTful backend services.\n• Maintain high visual quality using Tailwind CSS and modern web standards.\n\nQualifications:\n• 3+ years experience with React/TypeScript in production environments.\n• High attention to typography, margins, and user experience patterns.",
+        matchScore: 0 // 后备数据默认匹配度为0
+    },
+    {
+        id: "job-2",
+        title: "Lead Product Designer",
+        company: "PixelCraft Studio",
+        location: "Penang, Malaysia (Hybrid)",
+        salary: "RM 7,500 - RM 11,500 / month",
+        type: "Hybrid",
+        tags: ["Design & Creative", "UI/UX", "Figma", "Design Systems"],
+        logo_color: "bg-pink-600 text-white",
+        icon: "PS",
+        featured: true,
+        category: "Design & Creative",
+        posted: "2026-07-08",
+        description: "PixelCraft Studio is looking for a Lead Product Designer to champion our collaborative systems and canvas features.\n\nKey Responsibilities:\n• Define and scale our cross-platform layout visual patterns in Figma.\n• Lead UX research and design interactive high-fidelity user flows.\n• Collaborate closely with engineering to build flawless responsive UI.\n\nQualifications:\n• 4+ years product design experience with an outstanding design portfolio.\n• Passion for detail-oriented styling, typography, and motion design.",
+        matchScore: 0
+    },
+    {
+        id: "job-3",
+        title: "Growth Marketing Manager",
+        company: "SaaSify Group",
+        location: "Kuala Lumpur, Malaysia",
+        salary: "RM 5,500 - RM 8,500 / month",
+        type: "Full-time",
+        tags: ["Marketing & Sales", "SEO", "Analytics", "Campaigns"],
+        logo_color: "bg-orange-600 text-white",
+        icon: "SG",
+        featured: false,
+        category: "Marketing & Sales",
+        posted: "2026-07-05",
+        description: "SaaSify Group is looking for a Growth Marketing Manager to design, coordinate, and execute marketing strategies.\n\nKey Responsibilities:\n• Devise SEO, content, and paid advertising strategies to scale user acquisition.\n• Monitor campaign conversions, perform A/B testing, and audit marketing attribution metrics.\n• Formulate digital branding campaigns and design promotional channels.\n\nQualifications:\n• 2+ years leading campaigns in SaaS or high-growth tech firms.\n• Analytical mindset with deep experience in search console and marketing tools.",
+        matchScore: 0
+    },
+    {
+        id: "job-4",
+        title: "Healthcare Data Analyst",
+        company: "Helix Health",
+        location: "Petaling Jaya, Selangor, Malaysia",
+        salary: "RM 4,500 - RM 7,000 / month",
+        type: "Contract",
+        tags: ["Software & Tech", "Data Analysis", "SQL", "Python", "Tableau"],
+        logo_color: "bg-teal-600 text-white",
+        icon: "HH",
+        featured: false,
+        category: "Software & Tech",
+        posted: "2026-07-06",
+        description: "Helix Health is seeking a Healthcare Data Analyst to build and maintain our telemetry and clinical operations pipelines.\n\nKey Responsibilities:\n• Query database servers using optimized SQL commands to audit performance metrics.\n• Construct interactive dashboards for tracking operational workflows and key performance outcomes.\n• Translate clinical research criteria into structured quantitative models.\n\nQualifications:\n• 2+ years querying databases, compiling metrics, and visualizing complex telemetry datasets.",
+        matchScore: 0
+    },
+    {
+        id: "job-5",
+        title: "Senior Financial Analyst",
+        company: "CapitalTrust Inc.",
+        location: "Kuala Lumpur, Malaysia",
+        salary: "RM 6,000 - RM 9,500 / month",
+        type: "Full-time",
+        tags: ["Finance & Legal", "Modeling", "Forecasting", "Excel"],
+        logo_color: "bg-cyan-600 text-white",
+        icon: "CI",
+        featured: true,
+        category: "Finance & Legal",
+        posted: "2026-07-04",
+        description: "CapitalTrust Inc. is seeking an analyst to handle modeling, budgeting, and performance analytics.\n\nKey Responsibilities:\n• Build sophisticated financial models to support strategic decisions and forecasting.\n• Analyze market trends, perform competitor analysis, and audit operating costs.\n• Deliver executive-level dashboards outlining budget variances and investment risks.\n\nQualifications:\n• 3+ years experience in investment modeling, consulting, or corporate finance.",
+        matchScore: 0
+    },
+    {
+        id: "job-6",
+        title: "Customer Support Lead",
+        company: "Nimbus Cloud Technologies",
+        location: "Kuala Lumpur, Malaysia (Remote)",
+        salary: "RM 3,500 - RM 5,500 / month",
+        type: "Remote",
+        tags: ["Customer Support", "Zendesk", "Communication", "Management"],
+        logo_color: "bg-red-600 text-white",
+        icon: "NC",
+        featured: false,
+        category: "Customer Support",
+        posted: "2026-07-09",
+        description: "Nimbus Cloud Technologies is seeking a Customer Support Lead to coordinate our helpdesk systems.\n\nKey Responsibilities:\n• Manage Zendesk ticketing flows and mentor support specialists.\n• Analyze customer satisfaction ratings, response times, and Escalation protocols.\n• Drive continuous improvement of customer-facing resources and help articles.\n\nQualifications:\n• 2+ years managing customer support teams or scaling ticketing workflows.",
+        matchScore: 0
+    }
+];
+
         async function fetchJobs() {
-            const grid = document.getElementById('listings-grid');
-            grid.innerHTML = `
-                <div class="col-span-full flex items-center justify-center py-16">
-                    <div class="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            `;
-            try {
-                const res = await fetch('/api/jobs');
-                if (res.ok) {
-                    jobListings = await res.json();
-                } else {
-                    throw new Error("API error");
-                }
-            } catch (e) {
-                console.warn("Failed fetching from server.py, loading offline emergency fallback", e);
-                // Hardcode beautiful backup data matching the requirements 
-                jobListings = [
-                    {
-                        "id": "job-1",
-                        "title": "Senior React Engineer",
-                        "company": "Synthetix Solutions",
-                        "location": "Kuala Lumpur, Malaysia (Remote)",
-                        "salary": "RM 8,000 - RM 13,000 / month",
-                        "type": "Remote",
-                        "tags": ["Software & Tech", "React", "TypeScript", "Vite", "Tailwind CSS"],
-                        "logo_color": "bg-blue-600 text-white",
-                        "icon": "SS",
-                        "featured": true,
-                        "category": "Software & Tech",
-                        "posted": "2026-07-07",
-                        "description": "Synthetix Solutions is seeking an exceptional Senior React Engineer to design and build our next-generation web platforms.\n\nKey Responsibilities:\n• Build high-performance, accessible components using React and TypeScript.\n• Optimize client-side state managers and integrate RESTful backend services.\n• Maintain high visual quality using Tailwind CSS and modern web standards.\n\nQualifications:\n• 3+ years experience with React/TypeScript in production environments.\n• High attention to typography, margins, and user experience patterns."
-                    },
-                    {
-                        "id": "job-2",
-                        "title": "Lead Product Designer",
-                        "company": "PixelCraft Studio",
-                        "location": "Penang, Malaysia (Hybrid)",
-                        "salary": "RM 7,500 - RM 11,500 / month",
-                        "type": "Hybrid",
-                        "tags": ["Design & Creative", "UI/UX", "Figma", "Design Systems"],
-                        "logo_color": "bg-pink-600 text-white",
-                        "icon": "PS",
-                        "featured": true,
-                        "category": "Design & Creative",
-                        "posted": "2026-07-08",
-                        "description": "PixelCraft Studio is looking for a Lead Product Designer to champion our collaborative systems and canvas features.\n\nKey Responsibilities:\n• Define and scale our cross-platform layout visual patterns in Figma.\n• Lead UX research and design interactive high-fidelity user flows.\n• Collaborate closely with engineering to build flawless responsive UI.\n\nQualifications:\n• 4+ years product design experience with an outstanding design portfolio.\n• Passion for detail-oriented styling, typography, and motion design."
-                    },
-                    {
-                        "id": "job-3",
-                        "title": "Growth Marketing Manager",
-                        "company": "SaaSify Group",
-                        "location": "Kuala Lumpur, Malaysia",
-                        "salary": "RM 5,500 - RM 8,500 / month",
-                        "type": "Full-time",
-                        "tags": ["Marketing & Sales", "SEO", "Analytics", "Campaigns"],
-                        "logo_color": "bg-orange-600 text-white",
-                        "icon": "SG",
-                        "featured": false,
-                        "category": "Marketing & Sales",
-                        "posted": "2026-07-05",
-                        "description": "SaaSify Group is looking for a Growth Marketing Manager to design, coordinate, and execute marketing strategies.\n\nKey Responsibilities:\n• Devise SEO, content, and paid advertising strategies to scale user acquisition.\n• Monitor campaign conversions, perform A/B testing, and audit marketing attribution metrics.\n• Formulate digital branding campaigns and design promotional channels.\n\nQualifications:\n• 2+ years leading campaigns in SaaS or high-growth tech firms.\n• Analytical mindset with deep experience in search console and marketing tools."
-                    },
-                    {
-                        "id": "job-4",
-                        "title": "Healthcare Data Analyst",
-                        "company": "Helix Health",
-                        "location": "Petaling Jaya, Selangor, Malaysia",
-                        "salary": "RM 4,500 - RM 7,000 / month",
-                        "type": "Contract",
-                        "tags": ["Software & Tech", "Data Analysis", "SQL", "Python", "Tableau"],
-                        "logo_color": "bg-teal-600 text-white",
-                        "icon": "HH",
-                        "featured": false,
-                        "category": "Software & Tech",
-                        "posted": "2026-07-06",
-                        "description": "Helix Health is seeking a Healthcare Data Analyst to build and maintain our telemetry and clinical operations pipelines.\n\nKey Responsibilities:\n• Query database servers using optimized SQL commands to audit performance metrics.\n• Construct interactive dashboards for tracking operational workflows and key performance outcomes.\n• Translate clinical research criteria into structured quantitative models.\n\nQualifications:\n• 2+ years querying databases, compiling metrics, and visualizing complex telemetry datasets."
-                    },
-                    {
-                        "id": "job-5",
-                        "title": "Senior Financial Analyst",
-                        "company": "CapitalTrust Inc.",
-                        "location": "Kuala Lumpur, Malaysia",
-                        "salary": "RM 6,000 - RM 9,500 / month",
-                        "type": "Full-time",
-                        "tags": ["Finance & Legal", "Modeling", "Forecasting", "Excel"],
-                        "logo_color": "bg-cyan-600 text-white",
-                        "icon": "CI",
-                        "featured": true,
-                        "category": "Finance & Legal",
-                        "posted": "2026-07-04",
-                        "description": "CapitalTrust Inc. is seeking an analyst to handle modeling, budgeting, and performance analytics.\n\nKey Responsibilities:\n• Build sophisticated financial models to support strategic decisions and forecasting.\n• Analyze market trends, perform competitor analysis, and audit operating costs.\n• Deliver executive-level dashboards outlining budget variances and investment risks.\n\nQualifications:\n• 3+ years experience in investment modeling, consulting, or corporate finance."
-                    },
-                    {
-                        "id": "job-6",
-                        "title": "Customer Support Lead",
-                        "company": "Nimbus Cloud Technologies",
-                        "location": "Kuala Lumpur, Malaysia (Remote)",
-                        "salary": "RM 3,500 - RM 5,500 / month",
-                        "type": "Remote",
-                        "tags": ["Customer Support", "Zendesk", "Communication", "Management"],
-                        "logo_color": "bg-red-600 text-white",
-                        "icon": "NC",
-                        "featured": false,
-                        "category": "Customer Support",
-                        "posted": "2026-07-09",
-                        "description": "Nimbus Cloud Technologies is seeking a Customer Support Lead to coordinate our helpdesk systems.\n\nKey Responsibilities:\n• Manage Zendesk ticketing flows and mentor support specialists.\n• Analyze customer satisfaction ratings, response times, and Escalation protocols.\n• Drive continuous improvement of customer-facing resources and help articles.\n\nQualifications:\n• 2+ years managing customer support teams or scaling ticketing workflows."
-                    }
-                ];
-            }
-            renderJobsGrid();
-            syncDashboardUI();
+    const grid = document.getElementById('listings-grid');
+    grid.innerHTML = `<div class="col-span-full flex items-center justify-center py-16"><div class="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>`;
+    
+    try {
+        // 尝试获取推荐职位（带匹配分数）
+        const res = await fetch('/api/jobs/recommendations');
+        if (res.ok) {
+            jobListings = await res.json();
+        } else {
+            throw new Error('Recommendations API failed');
         }
+    } catch (e) {
+        console.warn('Failed to fetch recommendations, falling back to /api/jobs', e);
+        try {
+            // 降级：请求普通职位列表
+            const fallbackRes = await fetch('/api/jobs');
+            if (fallbackRes.ok) {
+                jobListings = await fallbackRes.json();
+                // 为每个职位添加 matchScore: 0（以便排序功能不报错）
+                jobListings = jobListings.map(job => ({ ...job, matchScore: 0 }));
+            } else {
+                throw new Error('Fallback API also failed');
+            }
+        } catch (fallbackError) {
+            console.warn('All APIs failed, using hardcoded fallback data', fallbackError);
+            // 最后一道防线：使用我们提供的硬编码职位
+            jobListings = FALLBACK_JOBS.map(job => ({ ...job, matchScore: 0 }));
+        }
+    }
+    
+    renderJobsGrid();
+    syncDashboardUI();
+}
 
         // 5. JOBS FILTERING & RENDER ENGINE
         function triggerFilters() {
@@ -2244,96 +2283,96 @@
         }
 
         function renderResumesHubList() {
-            const grid = document.getElementById('resumes-list-grid');
-            const countLabel = document.getElementById('saved-resumes-count');
-            const emptyState = document.getElementById('resumes-empty-state');
+    const grid = document.getElementById('resumes-list-grid');
+    const countLabel = document.getElementById('saved-resumes-count');
+    const emptyState = document.getElementById('resumes-empty-state');
 
-            if (!grid) return;
+    if (!grid) return; // 防止元素缺失
 
-            countLabel.innerText = resumesList.length;
+    countLabel.innerText = resumesList.length;
 
-            if (resumesList.length === 0) {
-                grid.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
+    if (resumesList.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
 
-            emptyState.classList.add('hidden');
+    emptyState.classList.add('hidden');
 
-            grid.innerHTML = resumesList.map(resume => {
-                let iconBgClass = "bg-blue-50";
-                let iconTextClass = "text-blue-600";
-                let iconSvg = "";
-                let labelType = "";
+    grid.innerHTML = resumesList.map(resume => {
+        let iconBgClass = "bg-blue-50";
+        let iconTextClass = "text-blue-600";
+        let iconSvg = "";
+        let labelType = "";
 
-                if (resume.type === 'upload') {
-                    iconBgClass = "bg-rose-50";
-                    iconTextClass = "text-rose-600";
-                    labelType = "Uploaded CV";
-                    iconSvg = `
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                    `;
-                } else if (resume.type === 'auto') {
-                    iconBgClass = "bg-amber-50";
-                    iconTextClass = "text-amber-600";
-                    labelType = "Auto-Gen CV";
-                    iconSvg = `
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-                        </svg>
-                    `;
-                } else {
-                    iconBgClass = "bg-purple-50";
-                    iconTextClass = "text-purple-600";
-                    labelType = "Template CV";
-                    iconSvg = `
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                    `;
-                }
+        if (resume.type === 'upload') {
+            iconBgClass = "bg-rose-50";
+            iconTextClass = "text-rose-600";
+            labelType = "Uploaded CV";
+            iconSvg = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            `;
+        } else if (resume.type === 'auto') {
+            iconBgClass = "bg-amber-50";
+            iconTextClass = "text-amber-600";
+            labelType = "Auto-Gen CV";
+            iconSvg = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                </svg>
+            `;
+        } else {
+            iconBgClass = "bg-purple-50";
+            iconTextClass = "text-purple-600";
+            labelType = "Template CV";
+            iconSvg = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            `;
+        }
 
-                return `
-                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-slate-200 transition group">
-                        <div class="flex items-center gap-3.5">
-                            <div class="h-10 w-10 rounded-xl flex items-center justify-center text-xs font-extrabold shadow-2xs ${iconBgClass} ${iconTextClass}">
-                                ${iconSvg}
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">${resume.name}</h3>
-                                <div class="flex items-center gap-2 text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">
-                                    <span>${labelType}</span>
-                                    <span>•</span>
-                                    <span>Layout: ${resume.layout}</span>
-                                    <span>•</span>
-                                    <span>Saved: ${resume.date}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-2 self-end sm:self-auto">
-                            ${resume.type !== 'upload' ? `
-                                <button onclick="openTemplateBuilder('${resume.id}')" class="text-xs font-bold text-slate-600 hover:text-slate-900 transition py-1.5 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 shrink-0 flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                    Edit
-                                </button>
-                            ` : ''}
-                            
-                            <button onclick="downloadResume('${resume.id}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition py-1.5 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/50 shrink-0 flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                Download
-                            </button>
-
-                            <button onclick="deleteResume('${resume.id}')" class="text-xs font-semibold text-rose-500 hover:text-rose-700 transition p-1.5 rounded-lg hover:bg-rose-50/50 shrink-0" title="Delete Resume">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+        return `
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-slate-200 transition group">
+                <div class="flex items-center gap-3.5">
+                    <div class="h-10 w-10 rounded-xl flex items-center justify-center text-xs font-extrabold shadow-2xs ${iconBgClass} ${iconTextClass}">
+                        ${iconSvg}
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">${resume.name}</h3>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">
+                            <span>${labelType}</span>
+                            <span>•</span>
+                            <span>Layout: ${resume.layout}</span>
+                            <span>•</span>
+                            <span>Saved: ${resume.date}</span>
                         </div>
                     </div>
-                `;
-            }).join('');
-        }
+                </div>
+                
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                    ${resume.type !== 'upload' ? `
+                        <button onclick="openTemplateBuilder('${resume.id}')" class="text-xs font-bold text-slate-600 hover:text-slate-900 transition py-1.5 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 shrink-0 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Edit
+                        </button>
+                    ` : ''}
+                    
+                    <button onclick="downloadResume('${resume.id}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition py-1.5 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/50 shrink-0 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download
+                    </button>
+
+                    <button onclick="deleteResume('${resume.id}')" class="text-xs font-semibold text-rose-500 hover:text-rose-700 transition p-1.5 rounded-lg hover:bg-rose-50/50 shrink-0" title="Delete Resume">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
         function triggerSimulatedFileUpload() {
             document.getElementById('resume-file-input').click();
