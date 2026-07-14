@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -7,6 +8,7 @@ from uuid import uuid4
 from flask import (
     Flask,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -15,16 +17,17 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-# ====== 新增：引入申请跟踪模块 ======
+# ====== 引入申请跟踪模块 ======
 from application_tracking import ApplicationTracking
 
-# Persistent File System Structure Configurations
+# ====== 文件系统配置 ======
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 GENERATED_DIR = DATA_DIR / "generated"
 PROFILE_PATH = DATA_DIR / "profile.json"
 PREFS_PATH = DATA_DIR / "preferences.json"
+JOBS_FILE = DATA_DIR / "jobs.json"   # 新增职位存储文件
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 
@@ -65,201 +68,28 @@ DEFAULT_PROFILE = {
     "projects": "CloudFlow Dashboard - High-throughput system metrics visualization hub.\nSafeAuth Engine - Custom lightweight middleware wrapper for secure cryptographic routing.",
 }
 
-# ====== 新增：实例化申请跟踪器 ======
+# ====== 全局变量 ======
 app_tracker = ApplicationTracking()
 
-def create_app():
-    app = Flask(__name__)
-    app.secret_key = "resume-management-production-secure-token"
-    ensure_storage()
+# ====== 职位数据持久化函数 ======
+def load_jobs():
+    """从 jobs.json 加载职位数据"""
+    if JOBS_FILE.exists():
+        try:
+            with open(JOBS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return []
+    # 如果文件不存在，返回空列表
+    return []
 
-    @app.context_processor
-    def inject_profile():
-        return {"current_profile": load_profile()}
+def save_jobs(jobs):
+    """保存职位数据到 jobs.json"""
+    JOBS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(JOBS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(jobs, f, indent=2, ensure_ascii=False)
 
-    @app.route("/")
-    def index():
-        uploaded = get_uploaded_resume()
-        generated = list_generated_resumes()
-        prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
-        return render_template(
-            "employer.html",
-            templates=RESUME_TEMPLATES,
-            uploaded=uploaded,
-            generated=generated,
-            selected_template=prefs.get("selected_template", "modern"),
-            profile=load_profile(),
-        )
-
-    # ---------------------------------------------------------
-    # METHOD 1: UPLOAD EXISTING RESUME ACTIONS
-    # ---------------------------------------------------------
-    @app.route("/upload", methods=["POST"])
-    def upload_resume():
-        file = request.files.get("resume")
-        if not file or not file.filename:
-            flash("Please provide a valid PDF or DOCX file to upload.", "error")
-            return redirect(url_for("index"))
-
-        extension = Path(file.filename).suffix.lower()
-        if extension not in ALLOWED_EXTENSIONS:
-            flash("Validation Failed: Only standard PDF and DOCX documents are accepted.", "error")
-            return redirect(url_for("index"))
-
-        clear_uploaded_resume()
-        safe_name = secure_filename(file.filename)
-        stored_name = f"resume_{uuid4().hex}{extension}"
-        file.save(UPLOAD_DIR / stored_name)
-        save_json(
-            DATA_DIR / "uploaded_resume.json",
-            {
-                "original_name": safe_name,
-                "stored_name": stored_name,
-                "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            },
-        )
-        flash("Document storage updated. Your file has been securely cataloged.", "success")
-        return redirect(url_for("index"))
-
-    @app.route("/upload/delete", methods=["POST"])
-    def delete_uploaded_resume():
-        clear_uploaded_resume()
-        flash("Stored document file successfully removed from registry.", "success")
-        return redirect(url_for("index"))
-
-    # ---------------------------------------------------------
-    # METHOD 2: BUILD VIA RESUME LAYOUT TEMPLATES
-    # ---------------------------------------------------------
-    @app.route("/template/<template_id>")
-    def template_builder(template_id):
-        if template_id not in RESUME_TEMPLATES:
-            flash("Requested structural style template configuration not found.", "error")
-            return redirect(url_for("index"))
-        return render_template(
-            "builder.html",
-            mode="template",
-            template_id=template_id,
-            template=RESUME_TEMPLATES[template_id],
-            resume=empty_resume(),
-        )
-
-    @app.route("/template/<template_id>/save", methods=["POST"])
-    def save_template_resume(template_id):
-        if template_id not in RESUME_TEMPLATES:
-            flash("Invalid template context assignment.", "error")
-            return redirect(url_for("index"))
-        resume = collect_resume_form(request.form)
-        filename = save_resume_html(template_id, resume, "template")
-        save_json(PREFS_PATH, {"selected_template": template_id})
-        flash("Template configuration compiled and registered to storage pipelines.", "success")
-        return redirect(url_for("preview_resume", filename=filename))
-
-    # ---------------------------------------------------------
-    # METHOD 3: AUTO-GENERATE FROM PROFILE REGISTRY
-    # ---------------------------------------------------------
-    @app.route("/auto-generate")
-    def auto_generate():
-        profile = load_profile()
-        missing = required_profile_fields_missing(profile)
-        if missing:
-            flash(f"Generation Aborted: The following fields are mandatory: {', '.join(missing)}.", "error")
-            return redirect(url_for("profile"))
-        prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
-        template_id = prefs.get("selected_template", "modern")
-        resume = resume_from_profile(profile)
-        return render_template(
-            "builder.html",
-            mode="auto",
-            template_id=template_id,
-            template=RESUME_TEMPLATES[template_id],
-            resume=resume,
-        )
-
-    @app.route("/auto-generate/save", methods=["POST"])
-    def save_auto_resume():
-        template_id = request.form.get("template_id", "modern")
-        if template_id not in RESUME_TEMPLATES:
-            template_id = "modern"
-        resume = collect_resume_form(request.form)
-        filename = save_resume_html(template_id, resume, "auto")
-        flash("Automated profile compilation successful. Live preview loaded below.", "success")
-        return redirect(url_for("preview_resume", filename=filename))
-
-    # ---------------------------------------------------------
-    # WORKSPACE CORE CHANNELS & PREFERENCE API ROUTERS
-    # ---------------------------------------------------------
-    @app.route("/templates/<template_id>/preference", methods=["POST"])
-    def save_template_preference(template_id):
-        if template_id in RESUME_TEMPLATES:
-            save_json(PREFS_PATH, {"selected_template": template_id})
-            flash("Workspace global template structure updated.", "success")
-        return redirect(url_for("index"))
-
-    @app.route("/profile", methods=["GET", "POST"])
-    def profile():
-        if request.method == "POST":
-            profile_data = {key: request.form.get(key, "").strip() for key in DEFAULT_PROFILE}
-            save_json(PROFILE_PATH, profile_data)
-            flash("Central registry system variables updated.", "success")
-            return redirect(url_for("profile"))
-        return render_template("profile.html", profile=load_profile())
-
-    @app.route("/resumes/<filename>")
-    def preview_resume(filename):
-        return send_from_directory(GENERATED_DIR, filename)
-
-    @app.route("/uploads/<filename>")
-    def uploaded_file(filename):
-        return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
-
-    # =============================================================
-    # ====== 新增：APPLICATION TRACKING API ROUTES ======
-    # =============================================================
-
-    @app.route("/api/applications", methods=["GET"])
-    def get_applications():
-        """获取当前用户的所有申请（demo 中返回全部）"""
-        return json.dumps(app_tracker.get_applications()), 200, {'Content-Type': 'application/json'}
-
-    @app.route("/api/applications", methods=["POST"])
-    def add_application():
-        """新增申请（工作申请时调用）"""
-        data = request.get_json()
-        job_id = data.get("jobId")
-        job_title = data.get("job")
-        company = data.get("company")
-        date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
-        details = data.get("details", "")
-        if not job_id or not job_title or not company:
-            return json.dumps({"error": "jobId, job title and company are required"}), 400, {'Content-Type': 'application/json'}
-        new_app = app_tracker.add_application(job_id, job_title, company, date, "Pending", details)
-        return json.dumps({"success": True, "application": new_app}), 201, {'Content-Type': 'application/json'}
-
-    @app.route("/api/applications/<app_id>", methods=["PUT"])
-    def update_application_status(app_id):
-        """更新申请状态（仅 employer 可调用）"""
-        role = request.headers.get("X-Role", "candidate")
-        if role.lower() != "employer":
-            return json.dumps({"error": "Only employer can update status"}), 403, {'Content-Type': 'application/json'}
-
-        data = request.get_json()
-        new_status = data.get("status")
-        new_details = data.get("details")
-        if not new_status:
-            return json.dumps({"error": "Status is required"}), 400, {'Content-Type': 'application/json'}
-
-        success = app_tracker.update_status(app_id, new_status, new_details)
-        if success:
-            return json.dumps({"success": True}), 200, {'Content-Type': 'application/json'}
-        else:
-            return json.dumps({"error": "Application not found"}), 404, {'Content-Type': 'application/json'}
-
-    return app
-
-
-# ---------------------------------------------------------
-# PERSISTENT SYSTEM UTILITIES & UTILITY COMPILERS
-# ---------------------------------------------------------
+# ====== 通用辅助函数 ======
 def ensure_storage():
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
@@ -267,7 +97,6 @@ def ensure_storage():
         save_json(PROFILE_PATH, DEFAULT_PROFILE)
     if not PREFS_PATH.exists():
         save_json(PREFS_PATH, {"selected_template": "modern"})
-
 
 def load_json(path, fallback):
     if not path.exists():
@@ -277,15 +106,12 @@ def load_json(path, fallback):
     except json.JSONDecodeError:
         return fallback
 
-
 def save_json(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-
 def load_profile():
     return load_json(PROFILE_PATH, DEFAULT_PROFILE)
-
 
 def get_uploaded_resume():
     metadata = load_json(DATA_DIR / "uploaded_resume.json", None)
@@ -295,7 +121,6 @@ def get_uploaded_resume():
     if not stored_name or not (UPLOAD_DIR / stored_name).exists():
         return None
     return metadata
-
 
 def clear_uploaded_resume():
     metadata = load_json(DATA_DIR / "uploaded_resume.json", None)
@@ -307,7 +132,6 @@ def clear_uploaded_resume():
     if metadata_path.exists():
         metadata_path.unlink()
 
-
 def list_generated_resumes():
     resumes = []
     for path in sorted(GENERATED_DIR.glob("*.html"), reverse=True):
@@ -317,13 +141,11 @@ def list_generated_resumes():
         })
     return resumes
 
-
 def empty_resume():
     return {
         "name": "", "title": "", "contact": "", "summary": "",
         "skills": "", "experience": "", "education": "", "projects": ""
     }
-
 
 def resume_from_profile(profile):
     return {
@@ -339,11 +161,9 @@ def resume_from_profile(profile):
         "projects": profile.get("projects", ""),
     }
 
-
 def required_profile_fields_missing(profile):
     required = ["name", "title", "email", "summary", "skills", "experience", "education"]
     return [field for field in required if not profile.get(field, "").strip()]
-
 
 def collect_resume_form(form):
     resume = empty_resume()
@@ -351,14 +171,12 @@ def collect_resume_form(form):
         resume[key] = form.get(key, "").strip()
     return resume
 
-
 def save_resume_html(template_id, resume, source):
     filename = f"{source}_resume_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     template = RESUME_TEMPLATES[template_id]
     html = render_resume_document(template, resume)
     (GENERATED_DIR / filename).write_text(html, encoding="utf-8")
     return filename
-
 
 def render_resume_document(template, resume):
     accent = template["accent"]
@@ -513,7 +331,6 @@ def render_resume_document(template, resume):
 </body>
 </html>"""
 
-
 def escape_html(value):
     return (
         value.replace("&", "&amp;")
@@ -523,7 +340,272 @@ def escape_html(value):
         .replace("'", "&#x27;")
     )
 
+# =============================================================
+# ====== FLASK 应用工厂 ======
+# =============================================================
+def create_app():
+    app = Flask(__name__)
+    app.secret_key = "resume-management-production-secure-token"
+    ensure_storage()
 
+    @app.context_processor
+    def inject_profile():
+        return {"current_profile": load_profile()}
+
+    # ---------- 主页面 ----------
+    @app.route("/")
+    def index():
+        uploaded = get_uploaded_resume()
+        generated = list_generated_resumes()
+        prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
+        return render_template(
+            "employer.html",
+            templates=RESUME_TEMPLATES,
+            uploaded=uploaded,
+            generated=generated,
+            selected_template=prefs.get("selected_template", "modern"),
+            profile=load_profile(),
+        )
+
+    # ---------- 简历上传相关 ----------
+    @app.route("/upload", methods=["POST"])
+    def upload_resume():
+        file = request.files.get("resume")
+        if not file or not file.filename:
+            flash("Please provide a valid PDF or DOCX file to upload.", "error")
+            return redirect(url_for("index"))
+
+        extension = Path(file.filename).suffix.lower()
+        if extension not in ALLOWED_EXTENSIONS:
+            flash("Validation Failed: Only standard PDF and DOCX documents are accepted.", "error")
+            return redirect(url_for("index"))
+
+        clear_uploaded_resume()
+        safe_name = secure_filename(file.filename)
+        stored_name = f"resume_{uuid4().hex}{extension}"
+        file.save(UPLOAD_DIR / stored_name)
+        save_json(
+            DATA_DIR / "uploaded_resume.json",
+            {
+                "original_name": safe_name,
+                "stored_name": stored_name,
+                "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            },
+        )
+        flash("Document storage updated. Your file has been securely cataloged.", "success")
+        return redirect(url_for("index"))
+
+    @app.route("/upload/delete", methods=["POST"])
+    def delete_uploaded_resume():
+        clear_uploaded_resume()
+        flash("Stored document file successfully removed from registry.", "success")
+        return redirect(url_for("index"))
+
+    # ---------- 简历模板构建 ----------
+    @app.route("/template/<template_id>")
+    def template_builder(template_id):
+        if template_id not in RESUME_TEMPLATES:
+            flash("Requested structural style template configuration not found.", "error")
+            return redirect(url_for("index"))
+        return render_template(
+            "builder.html",
+            mode="template",
+            template_id=template_id,
+            template=RESUME_TEMPLATES[template_id],
+            resume=empty_resume(),
+        )
+
+    @app.route("/template/<template_id>/save", methods=["POST"])
+    def save_template_resume(template_id):
+        if template_id not in RESUME_TEMPLATES:
+            flash("Invalid template context assignment.", "error")
+            return redirect(url_for("index"))
+        resume = collect_resume_form(request.form)
+        filename = save_resume_html(template_id, resume, "template")
+        save_json(PREFS_PATH, {"selected_template": template_id})
+        flash("Template configuration compiled and registered to storage pipelines.", "success")
+        return redirect(url_for("preview_resume", filename=filename))
+
+    # ---------- 自动生成简历 ----------
+    @app.route("/auto-generate")
+    def auto_generate():
+        profile = load_profile()
+        missing = required_profile_fields_missing(profile)
+        if missing:
+            flash(f"Generation Aborted: The following fields are mandatory: {', '.join(missing)}.", "error")
+            return redirect(url_for("profile"))
+        prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
+        template_id = prefs.get("selected_template", "modern")
+        resume = resume_from_profile(profile)
+        return render_template(
+            "builder.html",
+            mode="auto",
+            template_id=template_id,
+            template=RESUME_TEMPLATES[template_id],
+            resume=resume,
+        )
+
+    @app.route("/auto-generate/save", methods=["POST"])
+    def save_auto_resume():
+        template_id = request.form.get("template_id", "modern")
+        if template_id not in RESUME_TEMPLATES:
+            template_id = "modern"
+        resume = collect_resume_form(request.form)
+        filename = save_resume_html(template_id, resume, "auto")
+        flash("Automated profile compilation successful. Live preview loaded below.", "success")
+        return redirect(url_for("preview_resume", filename=filename))
+
+    # ---------- 偏好设置 ----------
+    @app.route("/templates/<template_id>/preference", methods=["POST"])
+    def save_template_preference(template_id):
+        if template_id in RESUME_TEMPLATES:
+            save_json(PREFS_PATH, {"selected_template": template_id})
+            flash("Workspace global template structure updated.", "success")
+        return redirect(url_for("index"))
+
+    # ---------- 用户资料 ----------
+    @app.route("/profile", methods=["GET", "POST"])
+    def profile():
+        if request.method == "POST":
+            profile_data = {key: request.form.get(key, "").strip() for key in DEFAULT_PROFILE}
+            save_json(PROFILE_PATH, profile_data)
+            flash("Central registry system variables updated.", "success")
+            return redirect(url_for("profile"))
+        return render_template("profile.html", profile=load_profile())
+
+    # ---------- 预览和下载 ----------
+    @app.route("/resumes/<filename>")
+    def preview_resume(filename):
+        return send_from_directory(GENERATED_DIR, filename)
+
+    @app.route("/uploads/<filename>")
+    def uploaded_file(filename):
+        return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
+
+    # =============================================================
+    # ====== 职位管理 API (CRUD) ======
+    # =============================================================
+
+    @app.route("/api/jobs", methods=["GET"])
+    def get_jobs():
+        jobs = load_jobs()
+        return jsonify(jobs)
+
+    @app.route("/api/jobs/<job_id>", methods=["GET"])
+    def get_job(job_id):
+        jobs = load_jobs()
+        for job in jobs:
+            if job["id"] == job_id:
+                 return jsonify(job)
+        return jsonify({"error": "Job not found"}), 404
+
+    @app.route("/api/jobs", methods=["POST"])
+    def create_job():
+        data = request.get_json()
+        required = ['title', 'company', 'location', 'salary', 'type', 'description']
+        for field in required:
+            if not data.get(field):
+                return jsonify({"error": f"Missing field: {field}"}), 400
+
+        jobs = load_jobs()
+        new_id = str(uuid.uuid4())
+        new_job = {
+            "id": new_id,
+            "title": data["title"],
+            "company": data["company"],
+            "location": data["location"],
+            "salary": data["salary"],
+            "type": data["type"],
+            "description": data["description"],
+            "tags": data.get("tags", []),
+            "featured": data.get("featured", False),
+            "category": data.get("category", ""),
+            "posted": datetime.now().strftime("%Y-%m-%d"),
+            "logo_color": "bg-blue-600 text-white",
+            "icon": data["company"][:2].upper() if data["company"] else "JP"
+        }
+        jobs.append(new_job)
+        save_jobs(jobs)
+        return jsonify(new_job), 201
+
+    @app.route("/api/jobs/<job_id>", methods=["PUT"])
+    def update_job(job_id):
+        data = request.get_json()
+        jobs = load_jobs()
+        for job in jobs:
+            if job["id"] == job_id:
+                job.update({
+                    "title": data.get("title", job["title"]),
+                    "company": data.get("company", job["company"]),
+                    "location": data.get("location", job["location"]),
+                    "salary": data.get("salary", job["salary"]),
+                    "type": data.get("type", job["type"]),
+                    "description": data.get("description", job["description"]),
+                    "tags": data.get("tags", job.get("tags", [])),
+                    "featured": data.get("featured", job.get("featured", False)),
+                    "category": data.get("category", job.get("category", ""))
+                })
+                save_jobs(jobs)
+                return jsonify(job)
+        return jsonify({"error": "Job not found"}), 404
+
+    @app.route("/api/jobs/<job_id>", methods=["DELETE"])
+    def delete_job(job_id):
+        jobs = load_jobs()
+        for i, job in enumerate(jobs):
+            if job["id"] == job_id:
+                del jobs[i]
+                save_jobs(jobs)
+                return jsonify({"success": True})
+        return jsonify({"error": "Job not found"}), 404
+
+    # =============================================================
+    # ====== 申请跟踪 API ======
+    # =============================================================
+
+    @app.route("/api/applications", methods=["GET"])
+    def get_applications():
+        """获取当前用户的所有申请（demo 中返回全部）"""
+        return json.dumps(app_tracker.get_applications()), 200, {'Content-Type': 'application/json'}
+
+    @app.route("/api/applications", methods=["POST"])
+    def add_application():
+        """新增申请（工作申请时调用）"""
+        data = request.get_json()
+        job_id = data.get("jobId")
+        job_title = data.get("job")
+        company = data.get("company")
+        date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
+        details = data.get("details", "")
+        if not job_id or not job_title or not company:
+            return json.dumps({"error": "jobId, job title and company are required"}), 400, {'Content-Type': 'application/json'}
+        new_app = app_tracker.add_application(job_id, job_title, company, date, "Pending", details)
+        return json.dumps({"success": True, "application": new_app}), 201, {'Content-Type': 'application/json'}
+
+    @app.route("/api/applications/<app_id>", methods=["PUT"])
+    def update_application_status(app_id):
+        """更新申请状态（仅 employer 可调用）"""
+        role = request.headers.get("X-Role", "candidate")
+        if role.lower() != "employer":
+            return json.dumps({"error": "Only employer can update status"}), 403, {'Content-Type': 'application/json'}
+
+        data = request.get_json()
+        new_status = data.get("status")
+        new_details = data.get("details")
+        if not new_status:
+            return json.dumps({"error": "Status is required"}), 400, {'Content-Type': 'application/json'}
+
+        success = app_tracker.update_status(app_id, new_status, new_details)
+        if success:
+            return json.dumps({"success": True}), 200, {'Content-Type': 'application/json'}
+        else:
+            return json.dumps({"error": "Application not found"}), 404, {'Content-Type': 'application/json'}
+
+    return app
+
+# =============================================================
+# ====== 入口 ======
+# =============================================================
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=3001, port=5000)
+    app.run(debug=True, port=5000)
