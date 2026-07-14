@@ -83,7 +83,7 @@ def create_app():
         generated = list_generated_resumes()
         prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
         return render_template(
-            "index.html",
+            "employer.html",
             templates=RESUME_TEMPLATES,
             uploaded=uploaded,
             generated=generated,
@@ -526,4 +526,4 @@ def escape_html(value):
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, port=5000)
+    app.run(debug=3001, port=5000)
