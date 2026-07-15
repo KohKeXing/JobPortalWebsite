@@ -58,6 +58,17 @@
                     </span>
                 </div>
 
+                <!-- Header mid console controls -->
+                <div class="flex items-center gap-3">
+                    <button onclick="switchView('explore')" class="px-4 py-2 text-xs font-semibold rounded-full bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100/50 transition">
+                        Find a Job
+                    </button>
+                    <button onclick="toggleRole()" class="px-4 py-2 text-xs font-semibold rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+                        Employer Console
+                    </button>
+                    
+                    <div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+
                 <!-- User profile block -->
                 <div class="flex items-center gap-3">
                     <div class="text-right hidden sm:block">
@@ -96,8 +107,21 @@
         </div>
     </div>
 
-    <!-- Navigation tabs spacer -->
-    <div class="h-2"></div>
+    <!-- Alert / Persona Switcher Banner -->
+    <div class="bg-blue-50 border-b border-blue-100 py-3 px-4 shadow-2xs">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2 text-blue-800" id="persona-banner-text">
+                <!-- Info circle SVG -->
+                <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Logged in as Job Seeker: <strong id="persona-strong-name">Alex Rivera</strong>. Feel free to search jobs or apply!</span>
+            </div>
+            <button onclick="toggleRole()" class="text-blue-600 hover:text-blue-800 font-bold hover:underline transition shrink-0" id="persona-toggle-link">
+                Switch to Employer Role
+            </button>
+        </div>
+    </div>
 
     <!-- 3. MAIN PORTAL WINDOW -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
@@ -228,19 +252,28 @@
 
                     <div class="h-[1px] bg-slate-100"></div>
 
-                    <!-- Min salary filter slider -->
-                    <div class="flex flex-col gap-3">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-extrabold text-slate-900 uppercase tracking-wide">Min Salary</span>
-                            <span id="label-min-salary" class="font-extrabold text-blue-600">RM 3,000+</span>
-                        </div>
-                        <input type="range" id="slider-min-salary" min="3" max="15" step="1" value="3" oninput="triggerFilters()" class="w-full accent-blue-600 cursor-pointer">
-                        <div class="flex justify-between text-[10px] text-slate-400 font-extrabold">
-                            <span>RM 3,000</span>
-                            <span>RM 15,000</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- Min salary filter slider + Sort By -->
+        <div class="flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs">
+                <span class="font-extrabold text-slate-900 uppercase tracking-wide">Min Salary</span>
+                <span id="label-min-salary" class="font-extrabold text-blue-600">RM 3,000+</span>
+            </div>
+            <input type="range" id="slider-min-salary" min="3" max="15" step="1" value="3" oninput="triggerFilters()" class="w-full accent-blue-600 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-400 font-extrabold">
+                <span>RM 3,000</span>
+                <span>RM 15,000</span>
+            </div>
+            <div class="h-[1px] bg-slate-100 my-2"></div>
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Sort By</span>
+                <select id="sort-select" onchange="applySortAndFilter()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition bg-white">
+                    <option value="match">Match Score</option>
+                    <option value="salary">Salary (High to Low)</option>
+                    <option value="date">Newest First</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
                 <!-- Job Listings grid pane -->
                 <div class="lg:col-span-9 flex flex-col gap-4">
@@ -934,7 +967,7 @@
         let minSalaryFilter = 3; // K (thousands)
 
         let selectedJob = null;
-        let isEmployerPersona = false;
+        const isEmployer = false;
 
         // Seeker profile state (synced with LocalStorage)
         let profileState = {
@@ -1008,11 +1041,12 @@
         // Static tailor state backup in case Gemini returns fallback or errors
         let customTailorProposal = null;
 
-        // 2. BOOTSTRAP INITIALIZATION
-        window.addEventListener('DOMContentLoaded', () => {
-            loadLocalStorageData();
-            checkBackendHealth();
-            fetchJobs();
+        // 2. BOOTSTRAP INITIALIZATION - 改为异步加载
+        window.addEventListener('DOMContentLoaded', async () => {
+            loadLocalStorageData(); // 加载 profile, bookmarks, resumes
+            await loadApplicationsFromServer(); // 从后端加载申请列表
+            await checkBackendHealth();
+            await fetchJobs(); // 加载职位列表
             syncProfileUI();
             renderResumesHubList();
         });
@@ -1258,143 +1292,158 @@
         }
 
         function renderJobsGrid() {
-            const grid = document.getElementById('listings-grid');
-            
-            // Get filter values
-            const queryTitle = document.getElementById('input-search-title').value.toLowerCase().trim();
-            const queryLocation = document.getElementById('input-search-location').value.toLowerCase().trim();
-            
-            let selectedType = 'all';
-            const typeRadios = document.getElementsByName('job-type');
-            typeRadios.forEach(r => { if (r.checked) selectedType = r.value; });
+    const grid = document.getElementById('listings-grid');
+    
+    // Get filter values
+    const queryTitle = document.getElementById('input-search-title').value.toLowerCase().trim();
+    const queryLocation = document.getElementById('input-search-location').value.toLowerCase().trim();
+    
+    let selectedType = 'all';
+    const typeRadios = document.getElementsByName('job-type');
+    typeRadios.forEach(r => { if (r.checked) selectedType = r.value; });
 
-            const minSalary = parseInt(document.getElementById('slider-min-salary').value, 10);
-            document.getElementById('label-min-salary').innerText = `RM ${(minSalary * 1000).toLocaleString()}+`;
+    const minSalary = parseInt(document.getElementById('slider-min-salary').value, 10);
+    document.getElementById('label-min-salary').innerText = `RM ${(minSalary * 1000).toLocaleString()}+`;
 
-            // Filter logic
-            const filtered = jobListings.filter(job => {
-                // Category Filter
-                if (categoryFilter !== 'all' && job.category !== categoryFilter) return false;
+    // Filter logic
+    let filtered = jobListings.filter(job => {
+        // Category Filter
+        if (categoryFilter !== 'all' && job.category !== categoryFilter) return false;
 
-                // Title/Company/Tags Filter
-                if (queryTitle) {
-                    const matchTitle = job.title.toLowerCase().includes(queryTitle);
-                    const matchCompany = job.company.toLowerCase().includes(queryTitle);
-                    const matchTags = job.tags.some(t => t.toLowerCase().includes(queryTitle));
-                    if (!matchTitle && !matchCompany && !matchTags) return false;
-                }
-
-                // Location Filter
-                if (queryLocation && !job.location.toLowerCase().includes(queryLocation)) return false;
-
-                // Job Workplace Type Filter
-                if (selectedType !== 'all') {
-                    if (selectedType === 'Remote' && !job.location.toLowerCase().includes('remote') && job.type !== 'Remote') return false;
-                    if (selectedType !== 'Remote' && job.type !== selectedType) return false;
-                }
-
-                // Salary Range Filter (parse lower bound salary, e.g. "$120,000" -> 120)
-                const cleanedSalary = job.salary.replace(/[^0-9\-]/g, ''); // "120000-155000"
-                const parts = cleanedSalary.split('-');
-                if (parts[0]) {
-                    const valK = parseInt(parts[0], 10) / 1000;
-                    if (valK < minSalary) return false;
-                }
-
-                return true;
-            });
-
-            // Update matched count text
-            document.getElementById('matched-jobs-count').innerText = `We found ${filtered.length} positions matching your search.`;
-
-            // Generate HTML
-            if (filtered.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400">
-                        <span class="text-3xl block mb-2">🔍</span>
-                        <h4 class="font-bold text-slate-700 text-sm">No positions found</h4>
-                        <p class="text-xs mt-1">Try relaxing your keywords, locations, or salary filters.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(job => {
-                const isBookmarked = bookmarkedJobs.includes(job.id);
-                const hasApplied = appliedJobs.some(a => a.jobId === job.id);
-                
-                // Set logo background colors
-                let initialColor = "bg-blue-600";
-                if (job.icon === 'PS') initialColor = "bg-pink-600";
-                else if (job.icon === 'SG') initialColor = "bg-orange-600";
-                else if (job.icon === 'HH') initialColor = "bg-teal-600";
-                else if (job.icon === 'CI') initialColor = "bg-cyan-600";
-                else if (job.icon === 'NC') initialColor = "bg-red-600";
-
-                return `
-                    <div class="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:border-slate-200/60 transition duration-300 flex flex-col justify-between gap-4 relative group">
-                        
-                        <div class="flex justify-between items-start">
-                            <div class="flex gap-3.5">
-                                <div class="h-11 w-11 rounded-xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold shadow-2xs">
-                                    ${job.icon || 'JP'}
-                                </div>
-                                <div class="flex flex-col">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${job.company}</span>
-                                    <h4 class="text-sm font-bold text-slate-900 mt-0.5 group-hover:text-blue-600 transition-colors">${job.title}</h4>
-                                </div>
-                            </div>
-
-                            <!-- Bookmark Toggle Button -->
-                            <button onclick="toggleCardBookmark(event, '${job.id}')" class="h-8 w-8 rounded-lg hover:bg-slate-50 border border-slate-100 flex items-center justify-center transition-all ${isBookmarked ? 'bg-amber-50 text-amber-500 border-amber-200' : 'text-slate-400 hover:text-slate-600'}">
-                                <svg class="w-4 h-4" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Tags/Pills Row -->
-                        <div class="flex flex-wrap gap-1.5">
-                            ${job.tags.slice(0, 3).map(tag => {
-                                let bg = "bg-slate-100 text-slate-600";
-                                if (tag === "Remote") bg = "bg-blue-50 text-blue-700";
-                                else if (tag === "Full-time") bg = "bg-emerald-50 text-emerald-700";
-                                else if (tag === "Featured" || job.featured && tag === "Software & Tech") bg = "bg-amber-50 text-amber-700";
-                                return `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg border border-slate-100/30 ${bg}">${tag}</span>`;
-                            }).join('')}
-                            ${job.featured ? `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-100">Featured</span>` : ''}
-                        </div>
-
-                        <!-- Location & Salary Metadata Row -->
-                        <div class="flex flex-col gap-1.5 text-xs text-slate-500 font-semibold pt-1 border-t border-slate-50 mt-1">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                                <span>${job.location}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="text-blue-600 font-bold">${job.salary} / yr</span>
-                            </div>
-                        </div>
-
-                        <!-- Card Footer actions -->
-                        <div class="flex justify-between items-center text-[10px] font-bold pt-3 border-t border-slate-50 text-slate-400">
-                            <span class="flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                Posted ${job.posted || '2026-07-09'}
-                            </span>
-                            
-                            <div class="flex items-center gap-2">
-                                ${hasApplied ? `<span class="bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-100 px-1.5 py-0.5 rounded-lg mr-1">Applied</span>` : ''}
-                                <button onclick="openJobDetails('${job.id}')" class="text-blue-600 hover:text-blue-800 transition flex items-center gap-0.5">
-                                    View details &rsaquo;
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        // Title/Company/Tags Filter
+        if (queryTitle) {
+            const matchTitle = job.title.toLowerCase().includes(queryTitle);
+            const matchCompany = job.company.toLowerCase().includes(queryTitle);
+            const matchTags = job.tags.some(t => t.toLowerCase().includes(queryTitle));
+            if (!matchTitle && !matchCompany && !matchTags) return false;
         }
+
+        // Location Filter
+        if (queryLocation && !job.location.toLowerCase().includes(queryLocation)) return false;
+
+        // Job Workplace Type Filter
+        if (selectedType !== 'all') {
+            if (selectedType === 'Remote' && !job.location.toLowerCase().includes('remote') && job.type !== 'Remote') return false;
+            if (selectedType !== 'Remote' && job.type !== selectedType) return false;
+        }
+
+        // Salary Range Filter
+        const cleanedSalary = job.salary.replace(/[^0-9\-]/g, '');
+        const parts = cleanedSalary.split('-');
+        if (parts[0]) {
+            const valK = parseInt(parts[0], 10) / 1000;
+            if (valK < minSalary) return false;
+        }
+
+        return true;
+    });
+
+    // ========== 排序逻辑（新增） ==========
+    const sortBy = document.getElementById('sort-select').value;
+    if (sortBy === 'match') {
+        filtered.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    } else if (sortBy === 'salary') {
+        const getSalary = (job) => {
+            const cleaned = job.salary.replace(/[^0-9\-]/g, '');
+            const parts = cleaned.split('-');
+            return parseInt(parts[0], 10) || 0;
+        };
+        filtered.sort((a, b) => getSalary(b) - getSalary(a));
+    } else if (sortBy === 'date') {
+        filtered.sort((a, b) => new Date(b.posted) - new Date(a.posted));
+    }
+    // ========== 排序结束 ==========
+
+    // Update matched count text
+    document.getElementById('matched-jobs-count').innerText = `We found ${filtered.length} positions matching your search.`;
+
+    // Generate HTML
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400">
+                <span class="text-3xl block mb-2">🔍</span>
+                <h4 class="font-bold text-slate-700 text-sm">No positions found</h4>
+                <p class="text-xs mt-1">Try relaxing your keywords, locations, or salary filters.</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(job => {
+        const isBookmarked = bookmarkedJobs.includes(job.id);
+        const hasApplied = appliedJobs.some(a => a.jobId === job.id);
+        
+        let initialColor = "bg-blue-600";
+        if (job.icon === 'PS') initialColor = "bg-pink-600";
+        else if (job.icon === 'SG') initialColor = "bg-orange-600";
+        else if (job.icon === 'HH') initialColor = "bg-teal-600";
+        else if (job.icon === 'CI') initialColor = "bg-cyan-600";
+        else if (job.icon === 'NC') initialColor = "bg-red-600";
+
+        return `
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:border-slate-200/60 transition duration-300 flex flex-col justify-between gap-4 relative group">
+                
+                <div class="flex justify-between items-start">
+                    <div class="flex gap-3.5">
+                        <div class="h-11 w-11 rounded-xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold shadow-2xs">
+                            ${job.icon || 'JP'}
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${job.company}</span>
+                            <h4 class="text-sm font-bold text-slate-900 mt-0.5 group-hover:text-blue-600 transition-colors">${job.title}</h4>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleCardBookmark(event, '${job.id}')" class="h-8 w-8 rounded-lg hover:bg-slate-50 border border-slate-100 flex items-center justify-center transition-all ${isBookmarked ? 'bg-amber-50 text-amber-500 border-amber-200' : 'text-slate-400 hover:text-slate-600'}">
+                        <svg class="w-4 h-4" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap gap-1.5">
+                    ${job.tags.slice(0, 3).map(tag => {
+                        let bg = "bg-slate-100 text-slate-600";
+                        if (tag === "Remote") bg = "bg-blue-50 text-blue-700";
+                        else if (tag === "Full-time") bg = "bg-emerald-50 text-emerald-700";
+                        else if (tag === "Featured" || job.featured && tag === "Software & Tech") bg = "bg-amber-50 text-amber-700";
+                        return `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg border border-slate-100/30 ${bg}">${tag}</span>`;
+                    }).join('')}
+                    ${job.featured ? `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-100">Featured</span>` : ''}
+                </div>
+
+                <div class="flex flex-col gap-1.5 text-xs text-slate-500 font-semibold pt-1 border-t border-slate-50 mt-1">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                        <span>${job.location}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-blue-600 font-bold">${job.salary}</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center text-[10px] font-bold pt-3 border-t border-slate-50 text-slate-400">
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        Posted ${job.posted || '2026-07-09'}
+                    </span>
+                    
+                    <div class="flex items-center gap-2">
+                        ${hasApplied ? `<span class="bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-100 px-1.5 py-0.5 rounded-lg mr-1">Applied</span>` : ''}
+                        <button onclick="openJobDetails('${job.id}')" class="text-blue-600 hover:text-blue-800 transition flex items-center gap-0.5">
+                            View details &rsaquo;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function applySortAndFilter() {
+    renderJobsGrid();
+}
 
         // 6. DETAILED DRAWER ENGINE
         function openJobDetails(jobId) {
@@ -2630,6 +2679,102 @@
             openDeleteConfirmModal(resumeId);
         }
 
+        // ==================== APPLICATION DETAIL MODAL (新增) ====================
+        let currentAppId = null;
+
+        function openApplicationDetail(appId) {
+    currentAppId = appId;
+    const app = appliedJobs.find(a => a.id === appId);
+    if (!app) {
+        showFloatingNotice("Application not found.");
+        return;
+    }
+
+    // 填充基本信息
+    document.getElementById('app-detail-title').innerText = app.job || 'Unknown Job';
+    document.getElementById('app-detail-company').innerText = app.company || 'Unknown Company';
+    document.getElementById('app-detail-date').innerText = app.date || 'N/A';
+    document.getElementById('app-detail-details').innerText = app.details || 'No additional details.';
+
+    // 更新状态徽章
+    const statusBadge = document.getElementById('app-detail-status-badge');
+    const status = app.status || 'Pending';
+    statusBadge.innerText = status;
+    // 移除所有状态类
+    statusBadge.className = 'inline-block text-xs font-extrabold px-3 py-1 rounded-full border';
+    if (status === 'Pending') statusBadge.classList.add('status-pending');
+    else if (status === 'Interview') statusBadge.classList.add('status-interview');
+    else if (status === 'Rejected') statusBadge.classList.add('status-rejected');
+    else if (status === 'Offer') statusBadge.classList.add('status-offer');
+    else statusBadge.classList.add('status-pending'); // fallback
+
+    // 显示 / 隐藏编辑区域（仅 Employer 可见）
+    const editSection = document.getElementById('app-detail-edit-section');
+    if (isEmployerPersona) {
+        editSection.classList.remove('hidden');
+        // 填充当前状态和详情到表单
+        document.getElementById('app-status-select').value = status;
+        document.getElementById('app-details-input').value = app.details || '';
+    } else {
+        editSection.classList.add('hidden');
+    }
+
+    // 显示模态框
+    const backdrop = document.getElementById('app-detail-backdrop');
+    const panel = document.getElementById('app-detail-panel');
+    backdrop.classList.remove('hidden');
+    panel.classList.remove('hidden');
+    setTimeout(() => {
+        backdrop.classList.add('opacity-100');
+        panel.classList.add('scale-100', 'opacity-100');
+    }, 50);
+}
+
+        function closeAppDetail() {
+            const backdrop = document.getElementById('app-detail-backdrop');
+            const panel = document.getElementById('app-detail-panel');
+            backdrop.classList.remove('opacity-100');
+            panel.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+                currentAppId = null;
+            }, 300);
+        }
+
+        async function updateApplicationStatus(appId) {
+            const status = document.getElementById('app-status-select').value;
+            const details = document.getElementById('app-details-input').value;
+
+            try {
+                const res = await fetch(`/api/applications/${appId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Role': 'employer'   // 模拟角色
+                    },
+                    body: JSON.stringify({ status, details })
+                });
+                if (res.ok) {
+                    // 更新本地 appliedJobs
+                    const app = appliedJobs.find(a => a.id === appId);
+                    if (app) {
+                        app.status = status;
+                        app.details = details;
+                    }
+                    syncDashboardUI();   // 刷新列表
+                    showFloatingNotice("Status updated successfully!");
+                    closeAppDetail();
+                } else {
+                    const err = await res.json();
+                    showFloatingNotice(err.error || "Update failed.");
+                }
+            } catch (e) {
+                showFloatingNotice("Network error.");
+            }
+        }
+
+        // ==================== BUILDER FUNCTIONS ====================
         function addSkillFromBuilderInput() {
             const input = document.getElementById('builder-skill-input');
             const skill = input.value.trim();
@@ -3333,47 +3478,35 @@
         }
 
         // 11. PERSONA ENGINE (EMPLOYER VS CANDIDATE)
-         function toggleRole() {
+        function toggleRole() {
             isEmployerPersona = !isEmployerPersona;
             const badge = document.getElementById('user-display-role');
             const banner = document.getElementById('persona-banner-text');
             const toggleLink = document.getElementById('persona-toggle-link');
 
             if (isEmployerPersona) {
-                if (badge) {
-                    badge.innerText = "Employer";
-                    badge.className = "text-[10px] text-amber-500 font-extrabold uppercase tracking-wider";
-                }
+                badge.innerText = "Employer";
+                badge.className = "text-[10px] text-amber-500 font-extrabold uppercase tracking-wider";
                 
-                if (banner) {
-                    banner.innerHTML = `
-                        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                        </svg>
-                        <span>Logged in as Employer: <strong id="persona-strong-name">Alex Rivera</strong>. Managing job posts and screening candidate submissions.</span>
-                    `;
-                }
-                if (toggleLink) {
-                    toggleLink.innerText = "Switch to Candidate Role";
-                }
+                banner.innerHTML = `
+                    <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <span>Logged in as Employer: <strong id="persona-strong-name">Alex Rivera</strong>. Managing job posts and screening candidate submissions.</span>
+                `;
+                toggleLink.innerText = "Switch to Candidate Role";
                 showFloatingNotice("Switched view mode to Employer console perspective!");
             } else {
-                if (badge) {
-                    badge.innerText = "Candidate";
-                    badge.className = "text-[10px] text-slate-400 font-extrabold uppercase tracking-wider";
-                }
+                badge.innerText = "Candidate";
+                badge.className = "text-[10px] text-slate-400 font-extrabold uppercase tracking-wider";
                 
-                if (banner) {
-                    banner.innerHTML = `
-                        <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span>Logged in as Job Seeker: <strong id="persona-strong-name">Alex Rivera</strong>. Feel free to search jobs or apply!</span>
-                    `;
-                }
-                if (toggleLink) {
-                    toggleLink.innerText = "Switch to Employer Role";
-                }
+                banner.innerHTML = `
+                    <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Logged in as Job Seeker: <strong id="persona-strong-name">Alex Rivera</strong>. Feel free to search jobs or apply!</span>
+                `;
+                toggleLink.innerText = "Switch to Employer Role";
                 showFloatingNotice("Switched view mode to Candidate job seeker perspective!");
             }
         }

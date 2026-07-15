@@ -311,7 +311,7 @@ def create_app():
         generated = list_generated_resumes()
         prefs = load_json(PREFS_PATH, {"selected_template": "modern"})
         return render_template(
-            "index.html",
+            "seeker.html",
             templates=RESUME_TEMPLATES,
             uploaded=uploaded,
             generated=generated,
