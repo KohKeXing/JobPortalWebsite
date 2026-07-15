@@ -37,6 +37,12 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        #nav-resumes {
+         display: none !important;
+        }
+        #api-status-indicator {
+         display: none !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50/50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
@@ -57,20 +63,13 @@
                         Job<span class="text-blue-600">Portal</span>
                     </span>
                 </div>
-
-                <!-- Header mid console controls -->
-                <div class="flex items-center gap-3">
-                    <button onclick="switchView('explore')" class="px-4 py-2 text-xs font-semibold rounded-full bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100/50 transition">
-                        Find a Job
-                    </button>
-                    
-                    <div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+               
 
                     <!-- User profile block -->
                     <div class="flex items-center gap-3">
                         <div class="text-right hidden sm:block">
-                            <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
-                            <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
+                            <div class="text-xs font-bold text-slate-900" id="user-display-name">Job PortalInc</div>
+                            <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Employer</div>
                         </div>
                         <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase" id="user-avatar-initials">
                             AL
@@ -93,9 +92,10 @@
                     <button onclick="switchView('dashboard')" id="nav-dashboard" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all">
                         My Dashboard
                     </button>
-                    <button onclick="switchView('resumes')" id="nav-resumes" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all flex items-center gap-1.5">
-                        My Resumes <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                    </button>
+                   <!-- Change this line -->
+<button onclick="switchView('resumes')" id="nav-resumes" class="hidden py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all flex items-center gap-1.5">
+    My Resumes <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+</button>
                 </nav>
                 <!-- API Engine Badge -->
                 <div id="api-status-indicator" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -105,17 +105,7 @@
         </div>
     </div>
 
-    <!-- Alert / Persona Switcher Banner -->
-   <div class="bg-amber-50 border-b border-amber-100 py-3 px-4 shadow-2xs">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-        <div class="flex items-center gap-2 text-amber-800" id="persona-banner-text">
-            <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-            <span>Logged in as Employer: <strong id="persona-strong-name">Alex Rivera</strong>. Managing job posts and screening candidate submissions.</span>
-        </div>
-    </div>
-</div>
+   
 
     <!-- 3. MAIN PORTAL WINDOW -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
@@ -1721,148 +1711,75 @@ const applicantsData = [
 
         function renderJobsGrid() {
     const grid = document.getElementById('listings-grid');
-    
-    // Get filter values
-    const queryTitle = document.getElementById('input-search-title').value.toLowerCase().trim();
-    const queryLocation = document.getElementById('input-search-location').value.toLowerCase().trim();
-    
-    let selectedType = 'all';
-    const typeRadios = document.getElementsByName('job-type');
-    typeRadios.forEach(r => { if (r.checked) selectedType = r.value; });
+    if (!grid) return;
 
-    const minSalary = parseInt(document.getElementById('slider-min-salary').value, 10);
-    document.getElementById('label-min-salary').innerText = `RM ${(minSalary * 1000).toLocaleString()}+`;
+    // --- Safety Checks: Ensure these variables are always arrays ---
+    const jobs = Array.isArray(jobListings) ? jobListings : [];
+    const bookmarks = Array.isArray(bookmarkedJobs) ? bookmarkedJobs : [];
+    const applications = Array.isArray(appliedJobs) ? appliedJobs : [];
 
-    // Filter logic
-    let filtered = jobListings.filter(job => {
-        // Category Filter
+    const queryTitle = (document.getElementById('input-search-title')?.value || "").toLowerCase().trim();
+    const queryLocation = (document.getElementById('input-search-location')?.value || "").toLowerCase().trim();
+    
+    // Filter the jobs
+    let filtered = jobs.filter(job => {
+        if (!job) return false;
         if (categoryFilter !== 'all' && job.category !== categoryFilter) return false;
-
-        // Title/Company/Tags Filter
-        if (queryTitle) {
-            const matchTitle = job.title.toLowerCase().includes(queryTitle);
-            const matchCompany = job.company.toLowerCase().includes(queryTitle);
-            const matchTags = job.tags.some(t => t.toLowerCase().includes(queryTitle));
-            if (!matchTitle && !matchCompany && !matchTags) return false;
-        }
-
-        // Location Filter
-        if (queryLocation && !job.location.toLowerCase().includes(queryLocation)) return false;
-
-        // Job Workplace Type Filter
-        if (selectedType !== 'all') {
-            if (selectedType === 'Remote' && !job.location.toLowerCase().includes('remote') && job.type !== 'Remote') return false;
-            if (selectedType !== 'Remote' && job.type !== selectedType) return false;
-        }
-
-        // Salary Range Filter
-        const cleanedSalary = job.salary.replace(/[^0-9\-]/g, '');
-        const parts = cleanedSalary.split('-');
-        if (parts[0]) {
-            const valK = parseInt(parts[0], 10) / 1000;
-            if (valK < minSalary) return false;
-        }
-
+        if (queryTitle && !((job.title || "") + (job.company || "")).toLowerCase().includes(queryTitle)) return false;
+        if (queryLocation && !(job.location || "").toLowerCase().includes(queryLocation)) return false;
         return true;
     });
 
-    // ========== 排序逻辑（新增） ==========
-    const sortBy = document.getElementById('sort-select').value;
-    if (sortBy === 'match') {
-        filtered.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-    } else if (sortBy === 'salary') {
-        const getSalary = (job) => {
-            const cleaned = job.salary.replace(/[^0-9\-]/g, '');
-            const parts = cleaned.split('-');
-            return parseInt(parts[0], 10) || 0;
-        };
-        filtered.sort((a, b) => getSalary(b) - getSalary(a));
-    } else if (sortBy === 'date') {
-        filtered.sort((a, b) => new Date(b.posted) - new Date(a.posted));
-    }
-    // ========== 排序结束 ==========
+    // Update the counter text
+    const counter = document.getElementById('matched-jobs-count');
+    if (counter) counter.innerText = `We found ${filtered.length} positions matching your search.`;
 
-    // Update matched count text
-    document.getElementById('matched-jobs-count').innerText = `We found ${filtered.length} positions matching your search.`;
-
-    // Generate HTML
     if (filtered.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400">
-                <span class="text-3xl block mb-2">🔍</span>
-                <h4 class="font-bold text-slate-700 text-sm">No positions found</h4>
-                <p class="text-xs mt-1">Try relaxing your keywords, locations, or salary filters.</p>
-            </div>
-        `;
+        grid.innerHTML = `<div class="col-span-full py-20 text-center text-slate-400 font-medium">No positions found. Try resetting filters.</div>`;
         return;
     }
 
+    // Build the HTML
     grid.innerHTML = filtered.map(job => {
-        const isBookmarked = bookmarkedJobs.includes(job.id);
-        const hasApplied = appliedJobs.some(a => a.jobId === job.id);
+        const isBookmarked = bookmarks.includes(job.id);
+        const hasApplied = applications.some(a => a && a.jobId === job.id);
         
-        let initialColor = "bg-blue-600";
-        if (job.icon === 'PS') initialColor = "bg-pink-600";
-        else if (job.icon === 'SG') initialColor = "bg-orange-600";
-        else if (job.icon === 'HH') initialColor = "bg-teal-600";
-        else if (job.icon === 'CI') initialColor = "bg-cyan-600";
-        else if (job.icon === 'NC') initialColor = "bg-red-600";
+        // Safety checks for properties
+        const tags = Array.isArray(job.tags) ? job.tags : [];
+        const jobIcon = job.icon || "JP";
+        const jobSalary = job.salary || "Competitive";
+        const jobTitle = job.title || "Untitled Position";
+        const jobCompany = job.company || "Company";
 
         return `
-            <div class="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md hover:border-slate-200/60 transition duration-300 flex flex-col justify-between gap-4 relative group">
-                
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-4">
                 <div class="flex justify-between items-start">
                     <div class="flex gap-3.5">
-                        <div class="h-11 w-11 rounded-xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold shadow-2xs">
-                            ${job.icon || 'JP'}
+                        <div class="h-11 w-11 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-extrabold shadow-sm">
+                            ${jobIcon}
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${job.company}</span>
-                            <h4 class="text-sm font-bold text-slate-900 mt-0.5 group-hover:text-blue-600 transition-colors">${job.title}</h4>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${jobCompany}</span>
+                            <h4 class="text-sm font-bold text-slate-900 mt-0.5">${jobTitle}</h4>
                         </div>
                     </div>
-
-                    <button onclick="toggleCardBookmark(event, '${job.id}')" class="h-8 w-8 rounded-lg hover:bg-slate-50 border border-slate-100 flex items-center justify-center transition-all ${isBookmarked ? 'bg-amber-50 text-amber-500 border-amber-200' : 'text-slate-400 hover:text-slate-600'}">
-                        <svg class="w-4 h-4" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
-                        </svg>
+                    <button onclick="toggleCardBookmark(event, '${job.id}')" class="h-8 w-8 rounded-lg border border-slate-100 flex items-center justify-center ${isBookmarked ? 'bg-amber-50 text-amber-500 border-amber-200' : 'text-slate-300'}">
+                        <svg class="w-4 h-4" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
                     </button>
                 </div>
 
                 <div class="flex flex-wrap gap-1.5">
-                    ${job.tags.slice(0, 3).map(tag => {
-                        let bg = "bg-slate-100 text-slate-600";
-                        if (tag === "Remote") bg = "bg-blue-50 text-blue-700";
-                        else if (tag === "Full-time") bg = "bg-emerald-50 text-emerald-700";
-                        else if (tag === "Featured" || job.featured && tag === "Software & Tech") bg = "bg-amber-50 text-amber-700";
-                        return `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg border border-slate-100/30 ${bg}">${tag}</span>`;
-                    }).join('')}
-                    ${job.featured ? `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-orange-50 text-orange-700 border border-orange-100">Featured</span>` : ''}
+                    ${tags.slice(0, 3).map(tag => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-50 text-slate-500 border border-slate-100">${tag}</span>`).join('')}
                 </div>
 
-                <div class="flex flex-col gap-1.5 text-xs text-slate-500 font-semibold pt-1 border-t border-slate-50 mt-1">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                        <span>${job.location}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span class="text-blue-600 font-bold">${job.salary}</span>
-                    </div>
+                <div class="flex flex-col gap-1.5 text-xs text-slate-500 font-semibold pt-2 border-t border-slate-50">
+                    <div class="flex items-center gap-2">📍 ${job.location || "N/A"}</div>
+                    <div class="flex items-center gap-2 text-blue-600 font-bold">${jobSalary}</div>
                 </div>
 
-                <div class="flex justify-between items-center text-[10px] font-bold pt-3 border-t border-slate-50 text-slate-400">
-                    <span class="flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                        Posted ${job.posted || '2026-07-09'}
-                    </span>
-                    
-                    <div class="flex items-center gap-2">
-                        ${hasApplied ? `<span class="bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-100 px-1.5 py-0.5 rounded-lg mr-1">Applied</span>` : ''}
-                        <button onclick="openJobDetails('${job.id}')" class="text-blue-600 hover:text-blue-800 transition flex items-center gap-0.5">
-                            View details &rsaquo;
-                        </button>
-                    </div>
+                <div class="flex justify-between items-center pt-3 border-t border-slate-50">
+                    <span class="text-[10px] font-bold text-emerald-600">${hasApplied ? '✓ Applied' : ''}</span>
+                    <button onclick="openJobDetails('${job.id}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">View Details &rsaquo;</button>
                 </div>
             </div>
         `;
