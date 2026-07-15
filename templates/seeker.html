@@ -37,6 +37,9 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        #api-status-indicator {
+         display: none !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50/50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
@@ -57,13 +60,6 @@
                         Job<span class="text-blue-600">Portal</span>
                     </span>
                 </div>
-
-                <!-- Header mid console controls -->
-                <div class="flex items-center gap-3">
-                    <button onclick="switchView('explore')" class="px-4 py-2 text-xs font-semibold rounded-full bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100/50 transition">
-                        Find a Job
-                    </button>
-                    <div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
 
                     <!-- User profile block -->
                     <div class="flex items-center gap-3">
@@ -98,24 +94,12 @@
                 </nav>
                 <!-- API Engine Badge -->
                 <div id="api-status-indicator" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Gemini 3.5: Connected
+                    
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Alert / Persona Switcher Banner -->
-    <div class="bg-blue-50 border-b border-blue-100 py-3 px-4 shadow-2xs">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-            <div class="flex items-center gap-2 text-blue-800" id="persona-banner-text">
-                <!-- Info circle SVG -->
-                <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>Logged in as Job Seeker: <strong id="persona-strong-name">Alex Rivera</strong>. Feel free to search jobs or apply!</span>
-            </div>
-        </div>
-    </div>
 
     <!-- 3. MAIN PORTAL WINDOW -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
