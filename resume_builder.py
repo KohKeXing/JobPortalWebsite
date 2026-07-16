@@ -20,8 +20,12 @@ Usage:
 import os
 import json
 import sys
+import uuid
 import datetime
+from pathlib import Path
 from typing import Dict, Any, List
+
+from werkzeug.utils import secure_filename
 
 # Try to import the modern official Google GenAI SDK
 try:
@@ -90,6 +94,181 @@ DEFAULT_RESUME = {
     ]
 }
 
+
+# ======================================================================
+# WEB APP BACKEND STORAGE
+# ======================================================================
+# The class below (ResumeStorage) is imported by seeker_main.py to power
+# the live Flask web app's "My Resumes" feature. It is NOT the interactive
+# CLI tool — that's the ResumePortalPython class further down this file.
+#
+# ResumeStorage handles real persistence for job-seeker resumes:
+#   - "upload" resumes: the actual PDF/DOCX file is saved to disk under
+#     UPLOAD_DIR, and its metadata is saved in RESUMES_FILE.
+#   - "builder" resumes: the full structured resume data (personal info,
+#     experience, education, skills, projects) is saved directly inside
+#     the resume record in RESUMES_FILE.
+#
+# Everything here is plain Python file I/O + JSON — no browser storage
+# involved, so resumes survive server restarts.
+# ======================================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+UPLOAD_DIR = DATA_DIR / "resume_uploads"
+RESUMES_FILE = DATA_DIR / "resumes.json"
+
+ALLOWED_RESUME_EXTENSIONS = {".pdf", ".docx"}
+
+
+class ResumeStorage:
+    """Handles all persistence for job-seeker resumes on the web app."""
+
+    def __init__(self):
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        if not RESUMES_FILE.exists():
+            self._write([])
+
+    # -----------------------------------------------------
+    # Low-level JSON file helpers
+    # -----------------------------------------------------
+    def _read(self):
+        try:
+            return json.loads(RESUMES_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, FileNotFoundError):
+            return []
+
+    def _write(self, resumes):
+        RESUMES_FILE.write_text(json.dumps(resumes, indent=2), encoding="utf-8")
+
+    # -----------------------------------------------------
+    # Read operations
+    # -----------------------------------------------------
+    def get_resumes(self):
+        return self._read()
+
+    def get_resume(self, resume_id):
+        for resume in self._read():
+            if resume["id"] == resume_id:
+                return resume
+        return None
+
+    # -----------------------------------------------------
+    # Create operations
+    # -----------------------------------------------------
+    def add_uploaded_resume(self, file_storage):
+        """Saves an uploaded PDF/DOCX to disk and records its metadata."""
+        original_name = file_storage.filename or "resume"
+        extension = Path(original_name).suffix.lower()
+        if extension not in ALLOWED_RESUME_EXTENSIONS:
+            raise ValueError("Only PDF and DOCX files are supported.")
+
+        safe_name = secure_filename(original_name)
+        stored_name = f"{uuid.uuid4().hex}{extension}"
+        file_storage.save(UPLOAD_DIR / stored_name)
+
+        record = {
+            "id": "res-" + uuid.uuid4().hex[:12],
+            "name": Path(safe_name).stem,
+            "type": "upload",
+            "fileName": safe_name,
+            "storedFileName": stored_name,
+            "fileFormat": extension.lstrip("."),
+            "lastModified": datetime.datetime.utcnow().isoformat() + "Z",
+        }
+
+        resumes = self._read()
+        resumes.append(record)
+        self._write(resumes)
+        return record
+
+    def add_builder_resume(self, name, layout, data):
+        """Creates a resume record from structured template-builder data."""
+        record = {
+            "id": "res-" + uuid.uuid4().hex[:12],
+            "name": name or "Untitled Resume",
+            "type": "builder",
+            "layout": layout or "modern",
+            "data": data or {},
+            "lastModified": datetime.datetime.utcnow().isoformat() + "Z",
+        }
+
+        resumes = self._read()
+        resumes.append(record)
+        self._write(resumes)
+        return record
+
+    # -----------------------------------------------------
+    # Update operation
+    # -----------------------------------------------------
+    def update_resume(self, resume_id, updates):
+        resumes = self._read()
+        for resume in resumes:
+            if resume["id"] == resume_id:
+                resume.update(updates)
+                resume["lastModified"] = datetime.datetime.utcnow().isoformat() + "Z"
+                self._write(resumes)
+                return resume
+        return None
+
+    # -----------------------------------------------------
+    # Delete operation
+    # -----------------------------------------------------
+    def delete_resume(self, resume_id):
+        resumes = self._read()
+        target = next((r for r in resumes if r["id"] == resume_id), None)
+        if target is None:
+            return False
+
+        # Clean up the real file on disk for uploaded resumes
+        if target.get("type") == "upload" and target.get("storedFileName"):
+            file_path = UPLOAD_DIR / target["storedFileName"]
+            if file_path.exists():
+                file_path.unlink()
+
+        resumes = [r for r in resumes if r["id"] != resume_id]
+        self._write(resumes)
+        return True
+
+
+# ---------------------------------------------------------
+# Cover letter file storage — a lighter sibling to ResumeStorage.
+# Cover letters don't need full CRUD (no editing/listing), just
+# "save an uploaded file, give it back a permanent URL to open later"
+# so an employer can actually open what a candidate submitted.
+# ---------------------------------------------------------
+COVER_LETTER_UPLOAD_DIR = DATA_DIR / "cover_letter_uploads"
+ALLOWED_COVER_LETTER_EXTENSIONS = {".pdf", ".docx"}
+
+
+def save_cover_letter_file(file_storage):
+    """Saves an uploaded cover letter PDF/DOCX to disk and returns its metadata."""
+    COVER_LETTER_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    original_name = file_storage.filename or "cover_letter"
+    extension = Path(original_name).suffix.lower()
+    if extension not in ALLOWED_COVER_LETTER_EXTENSIONS:
+        raise ValueError("Only PDF and DOCX files are supported.")
+
+    safe_name = secure_filename(original_name)
+    stored_name = f"{uuid.uuid4().hex}{extension}"
+    file_storage.save(COVER_LETTER_UPLOAD_DIR / stored_name)
+
+    return {
+        "originalName": safe_name,
+        "storedFileName": stored_name,
+    }
+
+
+# ======================================================================
+# INTERACTIVE CLI COMPANION TOOL
+# ======================================================================
+# Everything below this point is the standalone terminal tool described
+# in the module docstring at the top of this file. It only runs when you
+# execute `python resume_builder.py` directly (see the __main__ guard at
+# the bottom) — importing ResumeStorage above does not trigger any of it.
+# ======================================================================
 
 class ResumePortalPython:
     def __init__(self):
