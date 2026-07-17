@@ -7,6 +7,11 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 APPLICATIONS_FILE = DATA_DIR / "applications.json"
 
+# The only statuses an application is allowed to have. Used to validate
+# incoming status updates so the API can't be pushed into an invalid state
+# that the frontend's color-coding / UI logic doesn't know how to display.
+VALID_STATUSES = ["Pending", "Interview", "Offer", "Rejected"]
+
 # Seed data shown the first time the app runs, so the dashboard/employer
 # console aren't empty before any real applications exist.
 DEFAULT_APPLICATIONS = [

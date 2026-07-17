@@ -6,7 +6,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 # Import the shared application tracking module (same one seeker_main.py uses)
-from application_tracking import ApplicationTracking
+from application_tracking import ApplicationTracking, VALID_STATUSES
 
 # Import the shared resume/cover-letter storage (same JSON file + upload folders
 # that seeker_main.py writes to, since both apps live in the same project folder).
@@ -87,6 +87,8 @@ def create_app():
         new_details = data.get("details")
         if not new_status:
             return jsonify({"error": "Status is required"}), 400
+        if new_status not in VALID_STATUSES:
+            return jsonify({"error": f"Status must be one of: {', '.join(VALID_STATUSES)}"}), 400
 
         success = app_tracker.update_status(app_id, new_status, new_details)
         if success:

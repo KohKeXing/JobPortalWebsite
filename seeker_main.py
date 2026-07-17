@@ -195,6 +195,15 @@ def create_app():
         cover_letter_original_name = data.get("coverLetterOriginalName")
         if not job_id or not job_title or not company:
             return jsonify({"error": "jobId, job title and company are required"}), 400
+        if not resume_id:
+            return jsonify({"error": "A resume must be selected to apply."}), 400
+        if not cover_letter_text and not cover_letter_file:
+            return jsonify({"error": "A cover letter (written or uploaded) is required to apply."}), 400
+
+        existing = app_tracker.get_applications()
+        if any(a["jobId"] == job_id for a in existing):
+            return jsonify({"error": "You have already applied to this job."}), 409
+
         new_app = app_tracker.add_application(
             job_id, job_title, company, date, "Pending", details,
             resume_id=resume_id,
