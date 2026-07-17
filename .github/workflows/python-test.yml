@@ -1,0 +1,38 @@
+name: Automated Testing
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Runs every day at 00:00 UTC — satisfies the assignment's "nightly
+    # automated builds" requirement, in addition to running on every
+    # push/PR so issues are caught immediately too.
+    - cron: "0 0 * * *"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Pytest
+        run: |
+          pytest tests/ -v
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: report.html
