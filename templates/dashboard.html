@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobPortal - Candidate Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50/50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- 1. JOBPORTAL TOP HEADER -->
+    <header class="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand logo left -->
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-100">
+                        <!-- Briefcase Icon -->
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-extrabold tracking-tight text-slate-900 font-display">
+                        Job<span class="text-blue-600">Portal</span>
+                    </span>
+                </div>
+
+                <!-- User profile block -->
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
+                        <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
+                    </div>
+                    <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden" id="user-avatar-initials">
+                        AL
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. NAVIGATION BAR & ROLE BANNER -->
+    <div class="bg-white border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <!-- Navigation tabs -->
+                <nav class="flex gap-8">
+                    <button onclick="switchView('explore')" id="nav-explore" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all">
+                        Explore Positions
+                    </button>
+                    <button onclick="switchView('resumes')" id="nav-resumes" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all flex items-center gap-1.5">
+                        My Resumes <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    </button>
+                    <button onclick="switchView('dashboard')" id="nav-dashboard" class="py-4 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all">
+                        My Dashboard
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation tabs spacer -->
+    <div class="h-2"></div>
+
+    <!-- 3. MAIN PORTAL WINDOW -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+
+        <!-- ==================== VIEW 2: MY DASHBOARD ==================== -->
+        <section id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left profile column -->
+            <div class="lg:col-span-4 bg-white border border-slate-100 rounded-2xl p-6 shadow-2xs flex flex-col gap-6 relative">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-900">Job Seeker Profile</h3>
+                    <button onclick="openProfileModal()" class="text-xs font-bold text-blue-600 hover:text-blue-800 border border-blue-100 hover:border-blue-200 px-3 py-1.5 rounded-lg transition-all bg-blue-50/20">
+                        Edit Profile
+                    </button>
+                </div>
+
+                <!-- Seeker visual avatar -->
+                <div class="flex flex-col items-center gap-3 pt-4 pb-2 border-b border-slate-100">
+                    <div class="h-20 w-20 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-2xl border-2 border-blue-200 overflow-hidden uppercase" id="profile-avatar-initials">
+                        AL
+                    </div>
+                    <div class="text-center">
+                        <h4 class="text-lg font-extrabold text-slate-900" id="profile-name">Alex Rivera</h4>
+                        <p class="text-xs text-slate-500 font-medium px-4 mt-1" id="profile-headline">
+                            Full-Stack Software Engineer specializing in React & Node.js
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Contact details -->
+                <div class="flex flex-col gap-2.5 text-xs text-slate-600 border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="profile-email">alex.rivera@example.com</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                        <span id="profile-phone">+60 12-342 9011</span>
+                    </div>
+                </div>
+
+                <!-- Professional BIO -->
+                <div class="flex flex-col gap-2 border-b border-slate-100 pb-4">
+                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Bio</span>
+                    <p class="text-xs text-slate-600 leading-relaxed" id="profile-bio">
+                        Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.
+                    </p>
+                </div>
+
+                <!-- Core Skills -->
+                <div class="flex flex-col gap-2 border-b border-slate-100 pb-4">
+                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Core Skills</span>
+                    <div class="flex flex-wrap gap-1.5" id="profile-skills-box">
+                        <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">React</span>
+                        <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">TypeScript</span>
+                        <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">Tailwind CSS</span>
+                        <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">Vite</span>
+                        <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">Node.js</span>
+                        <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">REST APIs</span>
+                    </div>
+                </div>
+
+                <!-- Mini dashboard summary numbers -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <div class="border border-slate-100 rounded-xl p-3 text-center bg-slate-50/50">
+                        <div class="text-2xl font-extrabold text-blue-600" id="stat-applications">0</div>
+                        <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">Applications</div>
+                    </div>
+                    <div class="border border-slate-100 rounded-xl p-3 text-center bg-slate-50/50">
+                        <div class="text-2xl font-extrabold text-orange-500">0</div>
+                        <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">Interviews</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Applications / Bookmarks tabs column -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <!-- Sub nav header -->
+                <div class="bg-white border border-slate-100 rounded-2xl p-1.5 shadow-2xs flex gap-1">
+                    <button onclick="setDashboardTab('apps')" id="dash-tab-apps" class="flex-1 py-3 text-xs font-bold rounded-xl transition bg-slate-900 text-white shadow-xs">
+                        My Applications (0)
+                    </button>
+                    <button onclick="setDashboardTab('bookmarks')" id="dash-tab-bookmarks" class="flex-1 py-3 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-900 hover:bg-slate-50">
+                        Bookmarked Jobs (0)
+                    </button>
+                </div>
+
+                <!-- Sub nav active contents -->
+                <div class="flex flex-col gap-4">
+                    <!-- Tab Pane 1: Applications -->
+                    <div id="dash-pane-apps" class="flex flex-col gap-4">
+                        <!-- List container -->
+                        <div id="dash-applied-list" class="flex flex-col gap-3">
+                            <!-- Injected applied cards -->
+                        </div>
+                        <!-- Fallback empty card -->
+                        <div id="dash-applied-empty" class="bg-white border border-slate-100 border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
+                            <div class="h-16 w-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center text-2xl">
+                                💼
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm">You haven't applied to any jobs yet.</h4>
+                            <p class="text-xs text-slate-400 max-w-sm">
+                                Explore the main listings board and tap "Apply Now" to start!
+                            </p>
+                            <button onclick="switchView('explore')" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md shadow-blue-100">
+                                Browse Open Jobs
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab Pane 2: Bookmarks -->
+                    <div id="dash-pane-bookmarks" class="hidden flex flex-col gap-4">
+                        <!-- List container -->
+                        <div id="dash-bookmarked-list" class="flex flex-col gap-3">
+                            <!-- Injected bookmarked cards -->
+                        </div>
+                        <!-- Fallback empty card -->
+                        <div id="dash-bookmarks-empty" class="bg-white border border-slate-100 border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
+                            <div class="h-16 w-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center text-2xl">
+                                🔖
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm">You haven't bookmarked any jobs yet.</h4>
+                            <p class="text-xs text-slate-400 max-w-sm">
+                                Explore the listings and save positions you're interested in!
+                            </p>
+                            <button onclick="switchView('explore')" class="mt-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs px-4 py-2 rounded-xl transition-all">
+                                Discover Open Jobs
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== DRAWER: JOB DETAILS SLIDE-OVER ==================== -->
+    <div id="drawer-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden transition-opacity duration-300 opacity-0" onclick="closeJobDetails()"></div>
+    <div id="drawer-panel" class="fixed right-0 top-0 bottom-0 w-full sm:max-w-2xl bg-white z-50 shadow-2xl border-l border-slate-100 flex flex-col translate-x-full transition-transform duration-300 ease-out">
+        
+        <!-- Header area -->
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div id="drawer-company-logo" class="h-12 w-12 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs">
+                    SS
+                </div>
+                <div>
+                    <h2 class="text-base font-extrabold text-slate-900 tracking-tight" id="drawer-job-title">Senior React Engineer</h2>
+                    <p class="text-xs font-semibold text-blue-600 mt-0.5" id="drawer-company-name">Synthetix Solutions</p>
+                </div>
+            </div>
+            <button onclick="closeJobDetails()" class="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Scrollable details content -->
+        <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <!-- Badges and metadata quick list -->
+            <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500 font-semibold border-b border-slate-100 pb-4">
+                <span class="flex items-center gap-1"><span id="drawer-job-location">📍 Kuala Lumpur, Malaysia</span></span>
+                <span>•</span>
+                <span class="flex items-center gap-1 text-blue-600"><span id="drawer-job-salary">💰 RM 8,000 - RM 13,000</span></span>
+                <span>•</span>
+                <span id="drawer-job-type" class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md text-[10px] font-bold">Remote</span>
+            </div>
+
+            <!-- Description Body -->
+            <div class="flex flex-col gap-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Job Specifications</h4>
+                <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" id="drawer-job-desc">
+                    <!-- description text goes here -->
+                </div>
+            </div>
+
+            <div class="h-[1px] bg-slate-100"></div>
+
+            <!-- Interactive AI Suite (ATS score & tailor buttons) -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <div class="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shrink-0">✨</div>
+                    <div>
+                        <h4 class="font-bold text-xs">Gemini AI Career Co-Pilot</h4>
+                        <p class="text-[10px] text-blue-100 mt-0.5">Automated screening optimizations &amp; ATS gap metrics.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="runATSScanner()" class="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-slate-900 font-bold px-4 py-2 rounded-lg text-[11px] transition shadow-sm flex items-center justify-center">
+                        ATS Scan
+                    </button>
+                    <button onclick="tailorResume()" class="flex-1 sm:flex-none bg-blue-950/40 hover:bg-blue-950/60 border border-white/10 text-white font-bold px-4 py-2 rounded-lg text-[11px] transition flex items-center justify-center">
+                        Tailor Resume
+                    </button>
+                </div>
+            </div>
+
+            <!-- ATS Scan Result display widget -->
+            <div id="drawer-ats-widget" class="hidden flex flex-col gap-4">
+                <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex flex-col gap-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-extrabold text-blue-950 uppercase tracking-wider">ATS Alignment Score</span>
+                        <span id="drawer-ats-score-badge" class="font-extrabold text-xs text-blue-700 bg-white border border-blue-100 px-2.5 py-0.5 rounded-full">--</span>
+                    </div>
+                    <!-- progress bar -->
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div id="drawer-ats-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="border border-slate-100 rounded-2xl p-4 flex flex-col gap-2">
+                    <h5 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">ATS Gap Analysis</h5>
+                    <div id="drawer-ats-gap-text" class="text-xs text-slate-600 leading-relaxed prose-sm prose-slate max-h-[250px] overflow-y-auto pr-1">
+                        <!-- Markdown assessment loaded -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Apply actions bar -->
+        <div class="p-6 border-t border-slate-100 bg-slate-50/50 flex gap-3">
+            <button id="drawer-bookmark-btn" onclick="toggleDrawerBookmark()" class="h-11 px-4 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 text-slate-500 rounded-xl transition flex items-center justify-center shrink-0">
+                <!-- Bookmark outline SVG -->
+                <svg id="drawer-bookmark-svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                </svg>
+            </button>
+            <button id="drawer-apply-btn" onclick="applyFromDrawer()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-xl transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-1.5">
+                Apply for Role
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== PROFILE EDITOR MODAL ==================== -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeProfileModal()"></div>
+    <div id="modal-panel" class="fixed inset-x-4 top-[10%] bottom-[10%] max-w-lg mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-100 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-base font-extrabold text-slate-900">Edit Seeker Profile</h3>
+            <button onclick="closeProfileModal()" class="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <!-- Fields -->
+        <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4 text-xs">
+            <!-- Profile photo -->
+            <div class="flex items-center gap-4 pb-4 border-b border-slate-100">
+                <div class="relative shrink-0">
+                    <div id="edit-avatar-preview" class="h-16 w-16 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-lg border-2 border-blue-200 overflow-hidden uppercase"></div>
+                    <button type="button" onclick="triggerAvatarUpload()" class="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md border-2 border-white transition">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    <input type="file" id="edit-avatar-input" class="hidden" accept="image/png,image/jpeg,image/webp" onchange="handleAvatarUpload(event)">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <span class="font-bold text-slate-700">Profile Photo</span>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="removeAvatarPhoto()" id="remove-avatar-btn" class="hidden text-rose-500 hover:text-rose-700 font-bold transition">Remove</button>
+                    </div>
+                    <span class="text-[10px] text-slate-400">Click the camera icon to upload a photo (PNG, JPG or WEBP).</span>
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1.5">Full Name</label>
+                <input type="text" id="edit-name" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1.5">Professional Headline</label>
+                <input type="text" id="edit-headline" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">Email Address</label>
+                    <input type="email" id="edit-email" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">Phone Number</label>
+                    <div class="flex gap-2">
+                        <select id="edit-phone-country" class="px-2 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-28 text-slate-700 font-medium shrink-0">
+                            <option value="+60">🇲🇾 +60</option>
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+65">🇸🇬 +65</option>
+                            <option value="+61">🇦🇺 +61</option>
+                            <option value="+91">🇮🇳 +91</option>
+                            <option value="+62">🇮🇩 +62</option>
+                            <option value="+81">🇯🇵 +81</option>
+                            <option value="+86">🇨🇳 +86</option>
+                        </select>
+                        <input type="text" id="edit-phone" class="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="12-345 6789" oninput="this.value = this.value.replace(/[^0-9\s\-()]/g, '')">
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1.5">Professional Bio</label>
+                <textarea id="edit-bio" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1.5">Core Skills (separated by commas)</label>
+                <input type="text" id="edit-skills" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <span class="text-[10px] text-slate-400">E.g., React, TypeScript, Tailwind CSS, Vite</span>
+            </div>
+        </div>
+        <!-- Footer actions -->
+        <div class="p-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+            <button onclick="closeProfileModal()" class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-100 font-semibold text-slate-600 transition">
+                Cancel
+            </button>
+            <button onclick="saveProfileData()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md shadow-blue-100">
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Notice Toast Container -->
+    <div id="toast-notice" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
+        <span class="text-blue-400" id="toast-icon">✓</span>
+        <span id="toast-message">Success!</span>
+    </div>
+
+    <!-- ==================== FRONTEND CONTROLLER LOGIC ==================== -->
+    <script>
+        // 1. STATE CONFIGURATION
+        let jobListings = [];
+        let appliedJobs = [];
+        let bookmarkedJobs = [];
+        
+        let activeView = 'dashboard';
+        let dashboardTab = 'apps';  // 'apps' or 'bookmarks'
+        
+        let selectedJob = null;
+        let isEmployerPersona = false;
+
+        // Seeker profile state (synced with LocalStorage)
+        let profileState = {
+            name: "Alex Rivera",
+            headline: "Full-Stack Software Engineer specializing in React & Node.js",
+            email: "alex.rivera@example.com",
+            phone: "+60 12-342 9011",
+            bio: "Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.",
+            skills: ["React", "TypeScript", "Tailwind CSS", "Vite", "Node.js", "REST APIs"],
+            avatar: null
+        };
+
+        // 2. BOOTSTRAP INITIALIZATION
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalStorageData();
+            fetchJobs().then(() => {
+                syncProfileUI();
+                syncDashboardUI();
+            });
+        });
+
+        // 3. PERSISTENCE ENGINE
+        function loadLocalStorageData() {
+            const savedProfile = localStorage.getItem('jobportal_profile');
+            if (savedProfile) {
+                try {
+                    profileState = JSON.parse(savedProfile);
+                } catch (e) {
+                    console.error("Failed to parse saved profile state", e);
+                }
+            }
+
+            const savedApplied = localStorage.getItem('jobportal_applied');
+            if (savedApplied) {
+                try {
+                    appliedJobs = JSON.parse(savedApplied);
+                } catch (e) {}
+            }
+
+            const savedBookmarks = localStorage.getItem('jobportal_bookmarks');
+            if (savedBookmarks) {
+                try {
+                    bookmarkedJobs = JSON.parse(savedBookmarks);
+                } catch (e) {}
+            }
+        }
+
+        function saveProfileState() {
+            localStorage.setItem('jobportal_profile', JSON.stringify(profileState));
+        }
+
+        function saveAppliedState() {
+            localStorage.setItem('jobportal_applied', JSON.stringify(appliedJobs));
+        }
+
+        function saveBookmarksState() {
+            localStorage.setItem('jobportal_bookmarks', JSON.stringify(bookmarkedJobs));
+        }
+
+        async function fetchJobs() {
+            try {
+                const res = await fetch('/api/jobs');
+                if (res.ok) {
+                    jobListings = await res.json();
+                    console.log("[*] Synced jobs listings database:", jobListings.length);
+                }
+            } catch (err) {
+                console.warn("[!] Fallback to static offline dataset. Direct mock jobs are active.");
+                jobListings = [
+                    {
+                        "id": "job-1",
+                        "title": "Senior React Engineer",
+                        "company": "Synthetix Solutions",
+                        "location": "Kuala Lumpur, Malaysia (Remote)",
+                        "salary": "RM 8,000 - RM 13,000 / month",
+                        "type": "Remote",
+                        "tags": ["Software & Tech", "React", "TypeScript", "Vite", "Tailwind CSS"],
+                        "logo_color": "bg-blue-600 text-white",
+                        "icon": "SS",
+                        "featured": true,
+                        "category": "Software & Tech",
+                        "posted": "2026-07-07",
+                        "description": "Synthetix Solutions is seeking an exceptional Senior React Engineer..."
+                    }
+                ];
+            }
+        }
+
+        // 5. REDIRECTING switchView
+        function switchView(viewId) {
+            if (viewId === 'explore') {
+                window.location.href = '/';
+            } else if (viewId === 'dashboard') {
+                window.location.href = '/dashboard';
+            } else if (viewId === 'resumes') {
+                window.location.href = '/resumes';
+            }
+        }
+
+        // 6. DASHBOARD CONTROLLER & TAB SWITCHING
+        function setDashboardTab(tabId) {
+            dashboardTab = tabId;
+            const tabApps = document.getElementById('dash-tab-apps');
+            const tabBookmarks = document.getElementById('dash-tab-bookmarks');
+            const paneApps = document.getElementById('dash-pane-apps');
+            const paneBookmarks = document.getElementById('dash-pane-bookmarks');
+
+            tabApps.className = "flex-1 py-3 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-900 hover:bg-slate-50";
+            tabBookmarks.className = "flex-1 py-3 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-900 hover:bg-slate-50";
+            
+            paneApps.classList.add('hidden');
+            paneBookmarks.classList.add('hidden');
+
+            if (tabId === 'apps') {
+                tabApps.className = "flex-1 py-3 text-xs font-bold rounded-xl transition bg-slate-900 text-white shadow-xs";
+                paneApps.classList.remove('hidden');
+            } else {
+                tabBookmarks.className = "flex-1 py-3 text-xs font-bold rounded-xl transition bg-slate-900 text-white shadow-xs";
+                paneBookmarks.classList.remove('hidden');
+            }
+        }
+
+        function syncDashboardUI() {
+            const listApps = document.getElementById('dash-applied-list');
+            const emptyApps = document.getElementById('dash-applied-empty');
+            const labelAppsTab = document.getElementById('dash-tab-apps');
+            const countAppsSummaryNum = document.getElementById('stat-applications');
+
+            // Set dynamic counters
+            labelAppsTab.textContent = `My Applications (${appliedJobs.length})`;
+            countAppsSummaryNum.textContent = appliedJobs.length;
+
+            if (appliedJobs.length === 0) {
+                emptyApps.classList.remove('hidden');
+                listApps.innerHTML = '';
+            } else {
+                emptyApps.classList.add('hidden');
+                listApps.innerHTML = appliedJobs.map(app => {
+                    const job = jobListings.find(j => j.id === app.jobId) || {
+                        title: "Position",
+                        company: "Company Ltd",
+                        location: "Kuala Lumpur, Malaysia",
+                        logo_color: "bg-blue-600 text-white",
+                        icon: "CO"
+                    };
+                    return `
+                        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="${job.logo_color} h-11 w-11 rounded-xl flex items-center justify-center text-white text-xs font-extrabold shrink-0">
+                                    ${job.icon || 'CO'}
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer" onclick="openJobDetails('${job.id}')">${job.title}</h4>
+                                    <p class="text-xs text-slate-500 font-medium mt-0.5">${job.company} • <span class="text-slate-400 font-medium">${job.location}</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 self-stretch sm:self-auto justify-between border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
+                                <div class="text-right">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                                        <span class="h-1 w-1 rounded-full bg-amber-500"></span> Under Review
+                                    </span>
+                                    <p class="text-[9px] text-slate-400 font-extrabold uppercase mt-1">Applied: ${new Date(app.date).toLocaleDateString()}</p>
+                                </div>
+                                <button onclick="openJobDetails('${job.id}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60 font-bold text-xs h-9 px-4 rounded-xl transition flex items-center justify-center gap-1">
+                                    Manage
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Sync bookmarks
+            const listBookmarked = document.getElementById('dash-bookmarked-list');
+            const emptyBookmarked = document.getElementById('dash-bookmarks-empty');
+            const labelBookmarksTab = document.getElementById('dash-tab-bookmarks');
+
+            labelBookmarksTab.textContent = `Bookmarked Jobs (${bookmarkedJobs.length})`;
+
+            if (bookmarkedJobs.length === 0) {
+                emptyBookmarked.classList.remove('hidden');
+                listBookmarked.innerHTML = '';
+            } else {
+                emptyBookmarked.classList.add('hidden');
+                listBookmarked.innerHTML = bookmarkedJobs.map(bm => {
+                    const job = jobListings.find(j => j.id === bm.jobId);
+                    if (!job) return '';
+                    return `
+                        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="${job.logo_color} h-11 w-11 rounded-xl flex items-center justify-center text-white text-xs font-extrabold shrink-0">
+                                    ${job.icon}
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer" onclick="openJobDetails('${job.id}')">${job.title}</h4>
+                                    <p class="text-xs text-slate-500 font-medium mt-0.5">${job.company} • <span class="text-slate-400 font-medium">${job.location}</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+                                <button onclick="toggleCardBookmark(event, '${job.id}')" class="h-9 w-9 border border-rose-100 hover:border-rose-200 text-rose-500 hover:bg-rose-50/50 rounded-xl flex items-center justify-center transition shrink-0">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="openJobDetails('${job.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl transition shadow-md shadow-blue-100 flex items-center justify-center">
+                                    View details
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 7. PROFILE EDITOR MODAL CONTROLLER
+        function syncProfileUI() {
+            // Header display
+            document.getElementById('user-display-name').textContent = profileState.name;
+            document.getElementById('profile-name').textContent = profileState.name;
+            document.getElementById('profile-headline').textContent = profileState.headline;
+            document.getElementById('profile-email').textContent = profileState.email;
+            document.getElementById('profile-phone').textContent = profileState.phone;
+            document.getElementById('profile-bio').textContent = profileState.bio;
+
+            // Generate initials
+            const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+            renderAvatar(document.getElementById('user-avatar-initials'), initials);
+            renderAvatar(document.getElementById('profile-avatar-initials'), initials);
+
+            // Render skills
+            const box = document.getElementById('profile-skills-box');
+            box.innerHTML = profileState.skills.map(s => `
+                <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">${s}</span>
+            `).join('');
+        }
+
+        // Renders either the uploaded profile photo or fallback initials into an avatar container
+        function renderAvatar(container, initials) {
+            if (!container) return;
+            if (profileState.avatar) {
+                container.innerHTML = `<img src="${profileState.avatar}" class="h-full w-full object-cover" alt="Profile photo">`;
+            } else {
+                container.innerHTML = '';
+                container.textContent = initials;
+            }
+        }
+
+        let pendingAvatarDataUrl = undefined; // undefined = no change staged this session
+
+        function openProfileModal() {
+            document.getElementById('edit-name').value = profileState.name;
+            document.getElementById('edit-headline').value = profileState.headline;
+            document.getElementById('edit-email').value = profileState.email;
+            
+            // Parse phone number to country code and local number
+            let phoneStr = profileState.phone || "";
+            let matchedCountry = "+60"; // Default to Malaysia
+            let numberPart = phoneStr;
+            const commonCodes = ["+60", "+1", "+44", "+65", "+61", "+91", "+62", "+81", "+86"];
+            for (const code of commonCodes) {
+                if (phoneStr.startsWith(code)) {
+                    matchedCountry = code;
+                    numberPart = phoneStr.substring(code.length).trim();
+                    break;
+                }
+            }
+            document.getElementById('edit-phone-country').value = matchedCountry;
+            document.getElementById('edit-phone').value = numberPart;
+
+            document.getElementById('edit-bio').value = profileState.bio;
+            document.getElementById('edit-skills').value = profileState.skills.join(', ');
+
+            // Reset avatar staging area and show the current photo (if any)
+            pendingAvatarDataUrl = undefined;
+            const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+            renderAvatar(document.getElementById('edit-avatar-preview'), initials);
+            document.getElementById('remove-avatar-btn').classList.toggle('hidden', !profileState.avatar);
+
+            const back = document.getElementById('modal-backdrop');
+            const panel = document.getElementById('modal-panel');
+
+            back.classList.remove('hidden');
+            panel.classList.remove('hidden');
+
+            setTimeout(() => {
+                back.style.opacity = '1';
+                panel.style.opacity = '1';
+                panel.style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function triggerAvatarUpload() {
+            document.getElementById('edit-avatar-input').click();
+        }
+
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                pendingAvatarDataUrl = reader.result;
+                const preview = document.getElementById('edit-avatar-preview');
+                preview.innerHTML = `<img src="${reader.result}" class="h-full w-full object-cover" alt="Profile photo">`;
+                document.getElementById('remove-avatar-btn').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeAvatarPhoto() {
+            pendingAvatarDataUrl = null;
+            document.getElementById('edit-avatar-input').value = '';
+            const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+            renderAvatar(document.getElementById('edit-avatar-preview'), initials);
+            document.getElementById('remove-avatar-btn').classList.add('hidden');
+        }
+
+        function closeProfileModal() {
+            const back = document.getElementById('modal-backdrop');
+            const panel = document.getElementById('modal-panel');
+
+            back.style.opacity = '0';
+            panel.style.opacity = '0';
+            panel.style.transform = 'scale(0.95)';
+
+            setTimeout(() => {
+                back.classList.add('hidden');
+                panel.classList.add('hidden');
+            }, 300);
+        }
+
+        function saveProfileData() {
+            profileState.name = document.getElementById('edit-name').value.trim() || profileState.name;
+            profileState.headline = document.getElementById('edit-headline').value.trim() || profileState.headline;
+            profileState.email = document.getElementById('edit-email').value.trim() || profileState.email;
+            
+            // Combine selected country code and phone number
+            const countryCode = document.getElementById('edit-phone-country').value;
+            const phoneNum = document.getElementById('edit-phone').value.trim();
+            profileState.phone = phoneNum ? `${countryCode} ${phoneNum}` : "";
+
+            profileState.bio = document.getElementById('edit-bio').value.trim() || profileState.bio;
+
+            const skillInput = document.getElementById('edit-skills').value;
+            profileState.skills = skillInput.split(',').map(s => s.trim()).filter(Boolean);
+
+            // Only touch the stored avatar if the user actually changed something this session
+            if (pendingAvatarDataUrl !== undefined) {
+                profileState.avatar = pendingAvatarDataUrl;
+            }
+
+            saveProfileState();
+            syncProfileUI();
+            closeProfileModal();
+            showFloatingNotice("Profile changes saved successfully!");
+        }
+
+        // 8. DRAWER CONTROLLER
+        function openJobDetails(jobId) {
+            selectedJob = jobListings.find(j => j.id === jobId);
+            if (!selectedJob) return;
+
+            document.getElementById('drawer-company-logo').className = `${selectedJob.logo_color} h-12 w-12 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs`;
+            document.getElementById('drawer-company-logo').textContent = selectedJob.icon;
+            document.getElementById('drawer-job-title').textContent = selectedJob.title;
+            document.getElementById('drawer-company-name').textContent = selectedJob.company;
+            document.getElementById('drawer-job-location').textContent = `📍 ${selectedJob.location}`;
+            document.getElementById('drawer-job-salary').textContent = `💰 ${selectedJob.salary}`;
+            document.getElementById('drawer-job-type').textContent = selectedJob.type;
+            document.getElementById('drawer-job-desc').textContent = selectedJob.description;
+
+            // Reset ATS scanner view
+            document.getElementById('drawer-ats-widget').classList.add('hidden');
+            document.getElementById('drawer-ats-score-badge').textContent = '--';
+            document.getElementById('drawer-ats-progress-bar').style.width = '0%';
+
+            // Setup buttons
+            const applyBtn = document.getElementById('drawer-apply-btn');
+            const isApplied = appliedJobs.some(app => app.jobId === jobId);
+            if (isApplied) {
+                applyBtn.textContent = 'Already Applied';
+                applyBtn.disabled = true;
+                applyBtn.className = "flex-1 bg-slate-100 text-slate-400 font-bold h-11 rounded-xl cursor-not-allowed flex items-center justify-center";
+            } else {
+                applyBtn.textContent = 'Apply for Role';
+                applyBtn.disabled = false;
+                applyBtn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-xl transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-1.5";
+            }
+
+            // Bookmark icon
+            const isBookmarked = bookmarkedJobs.some(bm => bm.jobId === jobId);
+            const bmSvg = document.getElementById('drawer-bookmark-svg');
+            if (isBookmarked) {
+                bmSvg.setAttribute('fill', 'currentColor');
+                bmSvg.classList.add('text-rose-500');
+            } else {
+                bmSvg.setAttribute('fill', 'none');
+                bmSvg.classList.remove('text-rose-500');
+            }
+
+            const back = document.getElementById('drawer-backdrop');
+            const panel = document.getElementById('drawer-panel');
+
+            back.classList.remove('hidden');
+            panel.classList.remove('hidden');
+
+            setTimeout(() => {
+                back.style.opacity = '1';
+                panel.style.transform = 'translateX(0)';
+            }, 10);
+        }
+
+        function closeJobDetails() {
+            const back = document.getElementById('drawer-backdrop');
+            const panel = document.getElementById('drawer-panel');
+
+            back.style.opacity = '0';
+            panel.style.transform = 'translateX(100%)';
+
+            setTimeout(() => {
+                back.classList.add('hidden');
+                panel.classList.add('hidden');
+            }, 300);
+        }
+
+        function toggleCardBookmark(event, jobId) {
+            event.stopPropagation();
+            const idx = bookmarkedJobs.findIndex(bm => bm.jobId === jobId);
+            if (idx > -1) {
+                bookmarkedJobs.splice(idx, 1);
+                showFloatingNotice("Job removed from bookmarks.");
+            } else {
+                bookmarkedJobs.push({ jobId, date: new Date().toISOString() });
+                showFloatingNotice("Job bookmarked successfully!");
+            }
+            saveBookmarksState();
+            syncDashboardUI();
+        }
+
+        function toggleDrawerBookmark() {
+            if (!selectedJob) return;
+            const jobId = selectedJob.id;
+            const idx = bookmarkedJobs.findIndex(bm => bm.jobId === jobId);
+            const bmSvg = document.getElementById('drawer-bookmark-svg');
+
+            if (idx > -1) {
+                bookmarkedJobs.splice(idx, 1);
+                bmSvg.setAttribute('fill', 'none');
+                bmSvg.classList.remove('text-rose-500');
+                showFloatingNotice("Job removed from bookmarks.");
+            } else {
+                bookmarkedJobs.push({ jobId, date: new Date().toISOString() });
+                bmSvg.setAttribute('fill', 'currentColor');
+                bmSvg.classList.add('text-rose-500');
+                showFloatingNotice("Job bookmarked successfully!");
+            }
+            saveBookmarksState();
+            syncDashboardUI();
+        }
+
+        function applyFromDrawer() {
+            if (!selectedJob) return;
+            const jobId = selectedJob.id;
+            if (appliedJobs.some(app => app.jobId === jobId)) return;
+
+            appliedJobs.push({ jobId, date: new Date().toISOString() });
+            saveAppliedState();
+            syncDashboardUI();
+            
+            // Disable button
+            const applyBtn = document.getElementById('drawer-apply-btn');
+            applyBtn.textContent = 'Already Applied';
+            applyBtn.disabled = true;
+            applyBtn.className = "flex-1 bg-slate-100 text-slate-400 font-bold h-11 rounded-xl cursor-not-allowed flex items-center justify-center";
+
+            showFloatingNotice(`Success! Your application to ${selectedJob.company} has been sent.`);
+        }
+
+        // AI Co-Pilot Integrations inside details drawer
+        async function runATSScanner() {
+            if (!selectedJob) return;
+            const widget = document.getElementById('drawer-ats-widget');
+            widget.classList.remove('hidden');
+
+            const scoreBadge = document.getElementById('drawer-ats-score-badge');
+            const progress = document.getElementById('drawer-ats-progress-bar');
+            const gapText = document.getElementById('drawer-ats-gap-text');
+
+            scoreBadge.textContent = 'Scanning...';
+            gapText.innerHTML = '<p class="text-xs text-slate-400 animate-pulse">Running semantic parsing against your candidate profile tags...</p>';
+
+            try {
+                const res = await fetch('/api/jobs/match', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resumeData: {
+                            personalInfo: { name: profileState.name, summary: profileState.bio },
+                            skills: profileState.skills,
+                            experience: [],
+                            education: [],
+                            projects: []
+                        },
+                        jobListing: selectedJob
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    renderATSUI(data.matchScore, data.analysis);
+                } else {
+                    throw new Error("API call failed");
+                }
+            } catch (err) {
+                // offline mock fallback
+                const randScore = Math.floor(Math.random() * 25) + 65;
+                const mockAnalysis = `### Alignment Strengths\n• Your expertise matches key requirements.\n• Excellent location alignment.\n\n### Critical Skill Gaps\n• We recommend explicitly listing any backend experience.\n\n### Recommendations\n• Customize resume keywords to directly reflect the JD terms.`;
+                renderATSUI(randScore, mockAnalysis);
+            }
+        }
+
+        function renderATSUI(score, markdownText) {
+            const scoreBadge = document.getElementById('drawer-ats-score-badge');
+            const progress = document.getElementById('drawer-ats-progress-bar');
+            const gapText = document.getElementById('drawer-ats-gap-text');
+
+            scoreBadge.textContent = `${score}%`;
+            progress.style.width = `${score}%`;
+            
+            // Simple markdown parser for headings & bullet points
+            let html = markdownText
+                .replace(/### (.*)/g, '<h6 class="font-extrabold text-xs text-slate-800 mt-3 mb-1.5">$1</h6>')
+                .replace(/• (.*)/g, '<li class="ml-3 list-disc text-slate-600 mb-1">$1</li>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            gapText.innerHTML = html;
+        }
+
+        // Seeker profile AI tailoring 
+        async function tailorResume() {
+            if (!selectedJob) return;
+            showFloatingNotice("Co-pilot is crafting specialized profile recommendations...");
+            
+            const btn = document.querySelector('button[onclick="tailorResume()"]');
+            btn.disabled = true;
+            btn.textContent = '🪄 Tuning...';
+
+            // Generate recommendations or pull fallback
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '🪄 Tailor Resume';
+                
+                // Load dummy suggestion
+                const suggestedHeadline = `${selectedJob.title} specialized in ${profileState.skills.slice(0, 3).join(' & ')}`;
+                const suggestedBio = `Highly analytical Professional targeting the ${selectedJob.title} position at ${selectedJob.company}. Leveraging deep experience in responsive layouts, advanced UI controls, and performance engineering. Committed to driving pixel-perfect layouts and scalable web standard pipelines.`;
+                const suggestedSkills = [...new Set([...profileState.skills, ...selectedJob.tags])];
+
+                customTailorProposal = {
+                    headline: suggestedHeadline,
+                    bio: suggestedBio,
+                    skills: suggestedSkills
+                };
+
+                // Open tailored suggestion modal
+                document.getElementById('tailor-orig-headline').textContent = profileState.headline;
+                document.getElementById('tailor-orig-bio').textContent = profileState.bio;
+                document.getElementById('tailor-ai-headline').textContent = suggestedHeadline;
+                document.getElementById('tailor-ai-bio').textContent = suggestedBio;
+                
+                document.getElementById('tailor-ai-skills').innerHTML = suggestedSkills.map(s => `
+                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-blue-200/50">${s}</span>
+                `).join('');
+
+                openTailorModal();
+            }, 800);
+        }
+
+        function openTailorModal() {
+            const back = document.getElementById('tailor-backdrop');
+            const panel = document.getElementById('tailor-panel');
+            back.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                back.style.opacity = '1';
+                panel.style.opacity = '1';
+                panel.style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function closeTailorModal() {
+            const back = document.getElementById('tailor-backdrop');
+            const panel = document.getElementById('tailor-panel');
+            back.style.opacity = '0';
+            panel.style.opacity = '0';
+            panel.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                back.classList.add('hidden');
+                panel.classList.add('hidden');
+            }, 300);
+        }
+
+        function acceptTailoredSuggestions() {
+            if (!customTailorProposal) return;
+            profileState.headline = customTailorProposal.headline;
+            profileState.bio = customTailorProposal.bio;
+            profileState.skills = customTailorProposal.skills;
+
+            saveProfileState();
+            syncProfileUI();
+            closeTailorModal();
+            closeJobDetails();
+            showFloatingNotice("✨ Swapped profile values with co-pilot recommendations!");
+        }
+
+        // ROLE SWITCHER (Employer vs Seeker)
+        function toggleRole() {
+            isEmployerPersona = !isEmployerPersona;
+            const strong = document.getElementById('persona-strong-name');
+            const role = document.getElementById('user-display-role');
+            const avatar = document.getElementById('user-avatar-initials');
+            const banner = document.getElementById('persona-banner-text');
+            const toggleLink = document.getElementById('persona-toggle-link');
+
+            if (isEmployerPersona) {
+                if (strong) strong.textContent = "Hiring Team (PixelCraft)";
+                if (role) role.textContent = "Employer";
+                if (avatar) {
+                    // Employer persona is a separate mock identity, so it always shows initials (not the seeker's photo)
+                    avatar.className = "h-9 w-9 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center text-xs border border-indigo-200 uppercase overflow-hidden";
+                    avatar.innerHTML = '';
+                    avatar.textContent = "PC";
+                }
+                if (banner) {
+                    banner.innerHTML = `
+                        <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Logged in as <strong>Employer Console</strong>. You can view candidates or list job openings!</span>
+                    `;
+                }
+                if (toggleLink) toggleLink.textContent = "Switch to Seeker Role";
+                const display = document.getElementById('user-display-name');
+                if (display) display.textContent = "Hiring Team";
+            } else {
+                if (strong) strong.textContent = profileState.name;
+                if (role) role.textContent = "Candidate";
+                if (avatar) {
+                    avatar.className = "h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden";
+                    const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0,2);
+                    renderAvatar(avatar, initials);
+                }
+                if (banner) {
+                    banner.innerHTML = `
+                        <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Logged in as Job Seeker: <strong id="persona-strong-name">${profileState.name}</strong>. Feel free to search jobs or apply!</span>
+                    `;
+                }
+                if (toggleLink) toggleLink.textContent = "Switch to Employer Role";
+                const display = document.getElementById('user-display-name');
+                if (display) display.textContent = profileState.name;
+            }
+        }
+
+        // Toast Floater Helper
+        let toastTimeout = null;
+        function showFloatingNotice(text) {
+            const toast = document.getElementById('toast-notice');
+            const message = document.getElementById('toast-message');
+
+            message.textContent = text;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

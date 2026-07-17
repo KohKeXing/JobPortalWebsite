@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobPortal - Employer Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .icon { stroke-width: 1.75; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <svg class="icon w-4.5 h-4.5 text-white" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-[15px] tracking-tight text-slate-900">JobPortal</span>
+                        <span class="text-slate-300">/</span>
+                        <span class="text-[13px] font-semibold text-slate-500">Employer Console</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-[13px] font-semibold text-slate-900 leading-tight">Hiring Team</div>
+                        <div class="text-[11px] text-slate-400 leading-tight">PixelCraft Studio</div>
+                    </div>
+                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] border border-slate-200">HT</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+
+        <!-- ==================== HERO ==================== -->
+        <div class="bg-gradient-to-br from-[#0b192f] via-[#0f2a4a] to-[#0a192f] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-xl shadow-blue-950/10">
+            <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl"></div>
+            <div class="absolute -left-16 -bottom-16 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
+            <div class="relative flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Job Postings</h1>
+                    <p class="text-sm text-slate-300 mt-2 max-w-lg">Manage your open positions and review applicants.</p>
+                </div>
+                <button onclick="openJobModal()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2 text-sm">
+                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                    Post New Job
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== STATS ==================== -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
+                <div class="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-slate-900 leading-tight" id="stat-total-jobs">0</div>
+                    <div class="text-[11px] text-slate-500 font-medium">Jobs Posted</div>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
+                <div class="h-9 w-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.539-1.118l1.519-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-slate-900 leading-tight" id="stat-featured-jobs">0</div>
+                    <div class="text-[11px] text-slate-500 font-medium">Featured Listings</div>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
+                <div class="h-9 w-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8zm6 3c0-1.657-3.134-3-7-3s-7 1.343-7 3"></path></svg>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-slate-900 leading-tight" id="stat-total-applicants">0</div>
+                    <div class="text-[11px] text-slate-500 font-medium">Total Applicants</div>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
+                <div class="h-9 w-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                    <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-slate-900 leading-tight" id="stat-pending-review">0</div>
+                    <div class="text-[11px] text-slate-500 font-medium">Pending Review</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== JOB POSTINGS TABLE ==================== -->
+        <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-[13px] font-bold text-slate-700 uppercase tracking-wide">Your Job Postings</h2>
+                <span class="text-[12px] text-slate-400 font-medium" id="jobs-count-label">0 postings</span>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50/60">
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide">Position</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Location</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Salary</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Type</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide text-center">Applicants</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobs-table-body" class="divide-y divide-slate-100">
+                            <!-- populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="jobs-empty-state" class="hidden p-12 text-center">
+                    <svg class="icon w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                    <p class="text-[13px] font-semibold text-slate-600">No jobs posted yet</p>
+                    <p class="text-[12px] text-slate-400 mt-0.5">Click "Post New Job" above to create your first listing.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== APPLICANTS TABLE ==================== -->
+        <div class="flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h2 class="text-[13px] font-bold text-slate-700 uppercase tracking-wide">Applicants</h2>
+                <select id="applicant-job-filter" onchange="renderApplicants()" class="text-[12px] font-medium border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+                    <option value="all">All Jobs</option>
+                </select>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50/60">
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide">Position</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Applied</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Notes</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide">Status</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Update</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applicants-table-body" class="divide-y divide-slate-100">
+                            <!-- populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="applicants-empty-state" class="hidden p-12 text-center">
+                    <svg class="icon w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8zm6 3c0-1.657-3.134-3-7-3s-7 1.343-7 3"></path></svg>
+                    <p class="text-[13px] font-semibold text-slate-600">No applicants yet</p>
+                    <p class="text-[12px] text-slate-400 mt-0.5">Applications will show up here once candidates apply.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== JOB EDITOR MODAL ==================== -->
+    <div id="job-modal-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeJobModal()"></div>
+    <div id="job-modal-panel" class="fixed inset-x-4 top-[6%] bottom-[6%] max-w-2xl mx-auto bg-white z-50 shadow-xl rounded-2xl border border-slate-200 flex flex-col scale-[0.98] opacity-0 transition-all duration-200 ease-out hidden overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0">
+            <h3 class="text-[15px] font-bold text-slate-900" id="job-modal-title">Post New Job</h3>
+            <button onclick="closeJobModal()" class="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition">
+                <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4 text-[13px]">
+            <input type="hidden" id="job-form-id">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Job Title *</label>
+                    <input type="text" id="job-form-title" placeholder="e.g. Senior React Engineer" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Company *</label>
+                    <input type="text" id="job-form-company" placeholder="e.g. Synthetix Solutions" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Location *</label>
+                    <input type="text" id="job-form-location" placeholder="e.g. Kuala Lumpur, Malaysia" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Salary Range *</label>
+                    <input type="text" id="job-form-salary" placeholder="e.g. RM 6,000 - RM 9,000 / month" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Employment Type *</label>
+                    <select id="job-form-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Remote">Remote</option>
+                        <option value="Hybrid">Hybrid</option>
+                        <option value="Internship">Internship</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Category</label>
+                    <input type="text" id="job-form-category" placeholder="e.g. Software & Tech" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1.5">Tags (comma-separated)</label>
+                <input type="text" id="job-form-tags" placeholder="e.g. React, TypeScript, Remote" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1.5">Job Description *</label>
+                <textarea id="job-form-description" rows="6" placeholder="Describe the role, key responsibilities, and qualifications..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer w-fit">
+                <input type="checkbox" id="job-form-featured" class="h-4 w-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                <span class="font-semibold text-slate-700">Feature this listing</span>
+            </label>
+        </div>
+
+        <div class="p-5 border-t border-slate-200 bg-slate-50/60 flex justify-end gap-2 shrink-0">
+            <button onclick="closeJobModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Cancel</button>
+            <button onclick="submitJobForm()" id="job-form-submit-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-[13px]">Post Job</button>
+        </div>
+    </div>
+
+    <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
+    <div id="delete-job-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeDeleteJobModal()"></div>
+    <div id="delete-job-panel" class="fixed inset-x-4 top-1/3 max-w-sm mx-auto bg-white z-50 shadow-xl rounded-2xl border border-slate-200 p-6 flex flex-col gap-4 scale-[0.98] opacity-0 transition-all duration-200 ease-out hidden">
+        <div class="h-10 w-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+        <div>
+            <h3 class="text-[14px] font-bold text-slate-900">Delete this job posting?</h3>
+            <p class="text-[12px] text-slate-500 mt-1">This can't be undone. The listing will be permanently removed.</p>
+        </div>
+        <div class="flex gap-2 justify-end mt-1">
+            <button onclick="closeDeleteJobModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Cancel</button>
+            <button onclick="confirmDeleteJob()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold transition text-[13px]">Delete</button>
+        </div>
+    </div>
+
+    <!-- ==================== DELETE APPLICANT MODAL ==================== -->
+    <div id="delete-applicant-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeDeleteApplicantModal()"></div>
+    <div id="delete-applicant-panel" class="fixed inset-x-4 top-1/3 max-w-sm mx-auto bg-white z-50 shadow-xl rounded-2xl border border-slate-200 p-6 flex flex-col gap-4 scale-[0.98] opacity-0 transition-all duration-200 ease-out hidden">
+        <div class="h-10 w-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+        <div>
+            <h3 class="text-[14px] font-bold text-slate-900">Remove this application record?</h3>
+            <p class="text-[12px] text-slate-500 mt-1">This can't be undone. Only rejected applications can be removed.</p>
+        </div>
+        <div class="flex gap-2 justify-end mt-1">
+            <button onclick="closeDeleteApplicantModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Cancel</button>
+            <button onclick="confirmDeleteApplicant()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold transition text-[13px]">Delete</button>
+        </div>
+    </div>
+
+    <!-- ==================== APPLICANT DETAIL MODAL ==================== -->
+    <div id="applicant-detail-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeApplicantDetailModal()"></div>
+    <div id="applicant-detail-panel" class="fixed inset-x-4 top-[10%] bottom-[10%] max-w-md mx-auto bg-white z-50 shadow-xl rounded-2xl border border-slate-200 flex flex-col scale-[0.98] opacity-0 transition-all duration-200 ease-out hidden overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between shrink-0">
+            <h3 class="text-[15px] font-bold text-slate-900">Application Details</h3>
+            <button onclick="closeApplicantDetailModal()" class="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition">
+                <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4 text-[13px]">
+            <div>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Position</p>
+                <p class="font-bold text-slate-900" id="applicant-detail-job">—</p>
+                <p class="text-[12px] text-slate-400" id="applicant-detail-company">—</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Applied</p>
+                    <p class="text-slate-700 font-medium" id="applicant-detail-date">—</p>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Status</p>
+                    <span class="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full border" id="applicant-detail-status-badge">—</span>
+                </div>
+            </div>
+
+            <!-- Resume -->
+            <div class="border-t border-slate-100 pt-4">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">Resume Submitted</p>
+                <div id="applicant-detail-resume-box" class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <p class="text-slate-400 text-[12px]">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Cover Letter -->
+            <div class="border-t border-slate-100 pt-4">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">Cover Letter</p>
+                <div id="applicant-detail-cover-box" class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <p class="text-slate-400 text-[12px]">No cover letter provided.</p>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-4">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Application Notes</p>
+                <p class="text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3" id="applicant-detail-notes">No additional details provided.</p>
+            </div>
+        </div>
+        <div class="p-5 border-t border-slate-200 bg-slate-50/60 flex justify-end shrink-0">
+            <button onclick="closeApplicantDetailModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Close</button>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST ==================== -->
+    <div id="toast-notice" class="fixed bottom-6 right-6 bg-slate-900 text-white text-[13px] font-semibold px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
+        <svg class="icon w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toast-message">Success!</span>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        let jobsList = [];
+        let applicationsList = [];
+        let editingJobId = null;
+        let jobIdPendingDelete = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await Promise.all([fetchJobs(), fetchApplications()]);
+            renderJobs();
+            renderApplicantFilterOptions();
+            renderApplicants();
+            renderStats();
+        });
+
+        // ==================== DATA FETCHING ====================
+        async function fetchJobs() {
+            try {
+                const res = await fetch('/api/jobs');
+                jobsList = res.ok ? await res.json() : [];
+            } catch (e) {
+                console.warn('Failed to load jobs', e);
+                jobsList = [];
+            }
+        }
+
+        async function fetchApplications() {
+            try {
+                const res = await fetch('/api/applications');
+                applicationsList = res.ok ? await res.json() : [];
+            } catch (e) {
+                console.warn('Failed to load applications', e);
+                applicationsList = [];
+            }
+        }
+
+        // ==================== STATS ====================
+        function renderStats() {
+            document.getElementById('stat-total-jobs').textContent = jobsList.length;
+            document.getElementById('stat-featured-jobs').textContent = jobsList.filter(j => j.featured).length;
+            document.getElementById('stat-total-applicants').textContent = applicationsList.length;
+            document.getElementById('stat-pending-review').textContent = applicationsList.filter(a => (a.status || 'Pending') === 'Pending').length;
+        }
+
+        // ==================== STATUS STYLE ====================
+        function getStatusStyle(status) {
+            switch (status) {
+                case 'Interview': return { badgeClass: 'bg-blue-50 text-blue-700 border-blue-100' };
+                case 'Offer': return { badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+                case 'Rejected': return { badgeClass: 'bg-rose-50 text-rose-700 border-rose-100' };
+                case 'Pending':
+                default: return { badgeClass: 'bg-amber-50 text-amber-700 border-amber-100' };
+            }
+        }
+
+        // ==================== JOBS RENDERING ====================
+        function applicantCountForJob(jobId) {
+            return applicationsList.filter(a => a.jobId === jobId).length;
+        }
+
+        function renderJobs() {
+            const tbody = document.getElementById('jobs-table-body');
+            const emptyState = document.getElementById('jobs-empty-state');
+            document.getElementById('jobs-count-label').textContent = `${jobsList.length} posting${jobsList.length === 1 ? '' : 's'}`;
+
+            if (!jobsList.length) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            tbody.innerHTML = jobsList.slice().reverse().map(job => {
+                const applicantCount = applicantCountForJob(job.id);
+                return `
+                    <tr class="hover:bg-slate-50/60 transition">
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="h-8 w-8 rounded-lg ${job.logo_color || 'bg-slate-800 text-white'} flex items-center justify-center text-[10px] font-bold shrink-0 uppercase">${job.icon || 'JP'}</div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <p class="text-[13px] font-bold text-slate-900 truncate">${escapeHtml(job.title)}</p>
+                                        ${job.featured ? `<svg class="icon w-3.5 h-3.5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.539-1.118l1.519-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>` : ''}
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 truncate">${escapeHtml(job.company)}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-3.5 text-[12px] text-slate-600 hidden md:table-cell">${escapeHtml(job.location)}</td>
+                        <td class="px-5 py-3.5 text-[12px] text-slate-600 hidden lg:table-cell">${escapeHtml(job.salary)}</td>
+                        <td class="px-5 py-3.5 hidden sm:table-cell">
+                            <span class="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(job.type)}</span>
+                        </td>
+                        <td class="px-5 py-3.5 text-center">
+                            <span class="text-[12px] font-bold text-slate-900">${applicantCount}</span>
+                        </td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center justify-end gap-1">
+                                <button onclick="openJobModal('${job.id}')" title="Edit" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition">
+                                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                                <button onclick="openDeleteJobModal('${job.id}')" title="Delete" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition">
+                                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ==================== JOB MODAL (CREATE / EDIT) ====================
+        function openJobModal(jobId = null) {
+            editingJobId = jobId;
+            const title = document.getElementById('job-modal-title');
+            const submitBtn = document.getElementById('job-form-submit-btn');
+
+            if (jobId) {
+                const job = jobsList.find(j => j.id === jobId);
+                if (!job) return;
+                title.textContent = 'Edit Job Posting';
+                submitBtn.textContent = 'Save Changes';
+                document.getElementById('job-form-id').value = job.id;
+                document.getElementById('job-form-title').value = job.title || '';
+                document.getElementById('job-form-company').value = job.company || '';
+                document.getElementById('job-form-location').value = job.location || '';
+                document.getElementById('job-form-salary').value = job.salary || '';
+                document.getElementById('job-form-type').value = job.type || 'Full-time';
+                document.getElementById('job-form-category').value = job.category || '';
+                document.getElementById('job-form-tags').value = (job.tags || []).join(', ');
+                document.getElementById('job-form-description').value = job.description || '';
+                document.getElementById('job-form-featured').checked = !!job.featured;
+            } else {
+                title.textContent = 'Post New Job';
+                submitBtn.textContent = 'Post Job';
+                document.getElementById('job-form-id').value = '';
+                document.getElementById('job-form-title').value = '';
+                document.getElementById('job-form-company').value = '';
+                document.getElementById('job-form-location').value = '';
+                document.getElementById('job-form-salary').value = '';
+                document.getElementById('job-form-type').value = 'Full-time';
+                document.getElementById('job-form-category').value = '';
+                document.getElementById('job-form-tags').value = '';
+                document.getElementById('job-form-description').value = '';
+                document.getElementById('job-form-featured').checked = false;
+            }
+
+            const backdrop = document.getElementById('job-modal-backdrop');
+            const panel = document.getElementById('job-modal-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        function closeJobModal() {
+            const backdrop = document.getElementById('job-modal-backdrop');
+            const panel = document.getElementById('job-modal-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+            }, 200);
+        }
+
+        async function submitJobForm() {
+            const title = document.getElementById('job-form-title').value.trim();
+            const company = document.getElementById('job-form-company').value.trim();
+            const location = document.getElementById('job-form-location').value.trim();
+            const salary = document.getElementById('job-form-salary').value.trim();
+            const type = document.getElementById('job-form-type').value;
+            const category = document.getElementById('job-form-category').value.trim();
+            const description = document.getElementById('job-form-description').value.trim();
+            const featured = document.getElementById('job-form-featured').checked;
+            const tags = document.getElementById('job-form-tags').value
+                .split(',').map(t => t.trim()).filter(Boolean);
+
+            if (!title || !company || !location || !salary || !description) {
+                showFloatingNotice('Please fill in all required fields.');
+                return;
+            }
+
+            const payload = { title, company, location, salary, type, category, description, featured, tags };
+            const submitBtn = document.getElementById('job-form-submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                let res;
+                if (editingJobId) {
+                    res = await fetch(`/api/jobs/${editingJobId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    res = await fetch('/api/jobs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to save job.');
+                }
+
+                const savedJob = await res.json();
+                if (editingJobId) {
+                    const idx = jobsList.findIndex(j => j.id === savedJob.id);
+                    if (idx > -1) jobsList[idx] = savedJob;
+                } else {
+                    jobsList.push(savedJob);
+                }
+
+                renderJobs();
+                renderApplicantFilterOptions();
+                renderStats();
+                closeJobModal();
+                showFloatingNotice(editingJobId ? 'Job posting updated.' : 'Job posted successfully.');
+            } catch (err) {
+                showFloatingNotice(err.message || 'Something went wrong. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        // ==================== DELETE JOB ====================
+        function openDeleteJobModal(jobId) {
+            jobIdPendingDelete = jobId;
+            const backdrop = document.getElementById('delete-job-backdrop');
+            const panel = document.getElementById('delete-job-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        function closeDeleteJobModal() {
+            const backdrop = document.getElementById('delete-job-backdrop');
+            const panel = document.getElementById('delete-job-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+                jobIdPendingDelete = null;
+            }, 200);
+        }
+
+        async function confirmDeleteJob() {
+            if (!jobIdPendingDelete) return;
+            try {
+                const res = await fetch(`/api/jobs/${jobIdPendingDelete}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Failed to delete job.');
+                jobsList = jobsList.filter(j => j.id !== jobIdPendingDelete);
+                renderJobs();
+                renderApplicantFilterOptions();
+                renderApplicants();
+                renderStats();
+                showFloatingNotice('Job posting deleted.');
+            } catch (err) {
+                showFloatingNotice('Could not delete this job. Please try again.');
+            } finally {
+                closeDeleteJobModal();
+            }
+        }
+
+        // ==================== APPLICANTS ====================
+        function renderApplicantFilterOptions() {
+            const select = document.getElementById('applicant-job-filter');
+            const currentValue = select.value || 'all';
+            select.innerHTML = '<option value="all">All Jobs</option>' +
+                jobsList.map(j => `<option value="${j.id}">${escapeHtml(j.title)}</option>`).join('');
+            select.value = jobsList.some(j => j.id === currentValue) ? currentValue : 'all';
+        }
+
+        function renderApplicants() {
+            const filterValue = document.getElementById('applicant-job-filter').value || 'all';
+            const tbody = document.getElementById('applicants-table-body');
+            const emptyState = document.getElementById('applicants-empty-state');
+
+            const filtered = filterValue === 'all'
+                ? applicationsList
+                : applicationsList.filter(a => a.jobId === filterValue);
+
+            if (!filtered.length) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            tbody.innerHTML = filtered.slice().reverse().map(app => {
+                const style = getStatusStyle(app.status);
+                const job = jobsList.find(j => j.id === app.jobId);
+                const jobTitle = job ? job.title : (app.job || 'Unknown Job');
+                const company = job ? job.company : (app.company || 'Unknown Company');
+
+                return `
+                    <tr class="hover:bg-slate-50/60 transition">
+                        <td class="px-5 py-3.5">
+                            <p class="text-[13px] font-bold text-slate-900">${escapeHtml(jobTitle)}</p>
+                            <p class="text-[11px] text-slate-400">${escapeHtml(company)}</p>
+                        </td>
+                        <td class="px-5 py-3.5 text-[12px] text-slate-500 hidden md:table-cell">${escapeHtml(app.date)}</td>
+                        <td class="px-5 py-3.5 text-[12px] text-slate-500 hidden lg:table-cell max-w-xs truncate">${escapeHtml(app.details) || '—'}</td>
+                        <td class="px-5 py-3.5">
+                            <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${style.badgeClass}">${escapeHtml(app.status || 'Pending')}</span>
+                        </td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="openApplicantDetailModal('${app.id}')" title="View Details" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition shrink-0">
+                                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </button>
+                                ${app.status === 'Rejected' ? `
+                                <button onclick="openDeleteApplicantModal('${app.id}')" title="Delete" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition shrink-0">
+                                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                                ` : ''}
+                                <select onchange="updateApplicantStatus('${app.id}', this.value)" class="text-[11px] font-medium border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+                                    <option value="">Change status...</option>
+                                    <option value="Pending" ${app.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="Interview" ${app.status === 'Interview' ? 'selected' : ''}>Interview</option>
+                                    <option value="Offer" ${app.status === 'Offer' ? 'selected' : ''}>Offer</option>
+                                    <option value="Rejected" ${app.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ==================== APPLICANT DETAIL MODAL ====================
+        async function openApplicantDetailModal(appId) {
+            const app = applicationsList.find(a => a.id === appId);
+            if (!app) return;
+
+            const job = jobsList.find(j => j.id === app.jobId);
+            const jobTitle = job ? job.title : (app.job || 'Unknown Job');
+            const company = job ? job.company : (app.company || 'Unknown Company');
+            const style = getStatusStyle(app.status);
+
+            document.getElementById('applicant-detail-job').textContent = jobTitle;
+            document.getElementById('applicant-detail-company').textContent = company;
+            document.getElementById('applicant-detail-date').textContent = app.date || '—';
+            document.getElementById('applicant-detail-notes').textContent = app.details || 'No additional details provided.';
+
+            const badge = document.getElementById('applicant-detail-status-badge');
+            badge.textContent = app.status || 'Pending';
+            badge.className = `inline-block text-[11px] font-bold px-2.5 py-1 rounded-full border ${style.badgeClass}`;
+
+            // Cover letter — show inline text, or a link to the uploaded file
+            const coverBox = document.getElementById('applicant-detail-cover-box');
+            if (app.coverLetterText) {
+                coverBox.innerHTML = `<p class="text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(app.coverLetterText)}</p>`;
+            } else if (app.coverLetterFile) {
+                coverBox.innerHTML = `
+                    <a href="/uploads/cover-letters/${app.coverLetterFile}" target="_blank" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition">
+                        <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 10l-2 2m0 0l-2-2m2 2V3m0 13a9 9 0 110-18 9 9 0 010 18z"></path></svg>
+                        Open ${escapeHtml(app.coverLetterOriginalName || 'cover letter file')}
+                    </a>
+                `;
+            } else {
+                coverBox.innerHTML = `<p class="text-slate-400 text-[12px]">No cover letter provided.</p>`;
+            }
+
+            // Resume — fetch the real record from the shared resume storage
+            const resumeBox = document.getElementById('applicant-detail-resume-box');
+            if (!app.resumeId) {
+                resumeBox.innerHTML = `<p class="text-slate-400 text-[12px]">No resume on file for this application.</p>`;
+            } else {
+                resumeBox.innerHTML = `<p class="text-slate-400 text-[12px]">Loading...</p>`;
+                try {
+                    const res = await fetch(`/api/resumes/${app.resumeId}`);
+                    if (!res.ok) throw new Error('not found');
+                    const resume = await res.json();
+
+                    if (resume.type === 'upload') {
+                        resumeBox.innerHTML = `
+                            <a href="/uploads/${resume.storedFileName}" target="_blank" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition">
+                                <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 10l-2 2m0 0l-2-2m2 2V3m0 13a9 9 0 110-18 9 9 0 010 18z"></path></svg>
+                                Open ${escapeHtml(resume.fileName || 'resume file')}
+                            </a>
+                        `;
+                    } else {
+                        // Builder-type resume: show a compact structured summary
+                        const info = resume.data?.personalInfo || {};
+                        const skills = resume.data?.skills || [];
+                        const experience = resume.data?.experience || [];
+                        resumeBox.innerHTML = `
+                            <p class="font-bold text-slate-900">${escapeHtml(resume.name)} <span class="font-normal text-slate-400">(${escapeHtml(resume.layout || 'modern')} template)</span></p>
+                            ${info.title ? `<p class="text-[12px] text-slate-500 mt-0.5">${escapeHtml(info.title)}</p>` : ''}
+                            ${info.summary ? `<p class="text-[12px] text-slate-600 mt-2 leading-relaxed">${escapeHtml(info.summary)}</p>` : ''}
+                            ${experience.length ? `
+                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-3 mb-1">Experience</p>
+                                ${experience.map(e => `<p class="text-[12px] text-slate-600">${escapeHtml(e.role)} at ${escapeHtml(e.company)}</p>`).join('')}
+                            ` : ''}
+                            ${skills.length ? `
+                                <div class="flex flex-wrap gap-1 mt-3">
+                                    ${skills.map(s => `<span class="text-[10px] font-semibold bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md">${escapeHtml(s)}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                        `;
+                    }
+                } catch (err) {
+                    resumeBox.innerHTML = `<p class="text-slate-400 text-[12px]">This resume is no longer available (it may have been deleted or edited since applying).</p>`;
+                }
+            }
+
+            const backdrop = document.getElementById('applicant-detail-backdrop');
+            const panel = document.getElementById('applicant-detail-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        function closeApplicantDetailModal() {
+            const backdrop = document.getElementById('applicant-detail-backdrop');
+            const panel = document.getElementById('applicant-detail-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+            }, 200);
+        }
+
+        async function updateApplicantStatus(appId, newStatus) {
+            if (!newStatus) return;
+            try {
+                const res = await fetch(`/api/applications/${appId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error('Failed to update status.');
+
+                const app = applicationsList.find(a => a.id === appId);
+                if (app) app.status = newStatus;
+
+                renderApplicants();
+                renderStats();
+                showFloatingNotice(`Applicant status updated to "${newStatus}".`);
+            } catch (err) {
+                showFloatingNotice('Could not update status. Please try again.');
+            }
+        }
+
+        // ==================== DELETE APPLICANT (Rejected only) ====================
+        let applicantIdPendingDelete = null;
+
+        function openDeleteApplicantModal(appId) {
+            applicantIdPendingDelete = appId;
+            const backdrop = document.getElementById('delete-applicant-backdrop');
+            const panel = document.getElementById('delete-applicant-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        function closeDeleteApplicantModal() {
+            const backdrop = document.getElementById('delete-applicant-backdrop');
+            const panel = document.getElementById('delete-applicant-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+                applicantIdPendingDelete = null;
+            }, 200);
+        }
+
+        async function confirmDeleteApplicant() {
+            if (!applicantIdPendingDelete) return;
+            try {
+                const res = await fetch(`/api/applications/${applicantIdPendingDelete}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to delete application.');
+                }
+                applicationsList = applicationsList.filter(a => a.id !== applicantIdPendingDelete);
+                renderApplicants();
+                renderJobs();
+                renderStats();
+                showFloatingNotice('Application record deleted.');
+            } catch (err) {
+                showFloatingNotice(err.message || 'Could not delete this application.');
+            } finally {
+                closeDeleteApplicantModal();
+            }
+        }
+
+        // ==================== TOAST ====================
+        let toastTimeout = null;
+        function showFloatingNotice(message) {
+            const toast = document.getElementById('toast-notice');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
