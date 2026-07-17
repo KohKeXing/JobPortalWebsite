@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Pytest
         run: |
-          pytest tests/ -v
+          python -m pytest tests/ -v
 
       - name: Upload HTML report
         if: always()
