@@ -729,20 +729,27 @@
                     if (!res.ok) throw new Error('not found');
                     const resume = await res.json();
 
-                    if (resume.type === 'upload') {
+                    if (resume.storedFileName) {
+                        const formatLabel = (resume.fileFormat || 'document').toUpperCase();
                         resumeBox.innerHTML = `
-                            <a href="/uploads/${resume.storedFileName}" target="_blank" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition">
+                            <a href="/uploads/${encodeURIComponent(resume.storedFileName)}" target="_blank" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition">
                                 <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 10l-2 2m0 0l-2-2m2 2V3m0 13a9 9 0 110-18 9 9 0 010 18z"></path></svg>
-                                Open ${escapeHtml(resume.fileName || 'resume file')}
+                                Open ${escapeHtml(resume.fileName || 'resume file')} (${escapeHtml(formatLabel)})
                             </a>
+                            ${resume.type === 'builder' ? `
+                                <p class="text-[11px] text-slate-400 mt-1">
+                                    Generated from the ${escapeHtml(resume.layout || 'modern')} template.
+                                </p>
+                            ` : ''}
                         `;
                     } else {
-                        // Builder-type resume: show a compact structured summary
+                        // Legacy builder resume saved before real file generation.
                         const info = resume.data?.personalInfo || {};
                         const skills = resume.data?.skills || [];
                         const experience = resume.data?.experience || [];
                         resumeBox.innerHTML = `
                             <p class="font-bold text-slate-900">${escapeHtml(resume.name)} <span class="font-normal text-slate-400">(${escapeHtml(resume.layout || 'modern')} template)</span></p>
+                            <p class="text-[11px] text-amber-600 mt-1">The candidate must edit and save this older resume as PDF or DOCX before it can be opened.</p>
                             ${info.title ? `<p class="text-[12px] text-slate-500 mt-0.5">${escapeHtml(info.title)}</p>` : ''}
                             ${info.summary ? `<p class="text-[12px] text-slate-600 mt-2 leading-relaxed">${escapeHtml(info.summary)}</p>` : ''}
                             ${experience.length ? `

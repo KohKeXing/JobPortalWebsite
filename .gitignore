@@ -4,3 +4,4 @@ __pycache__/
 data/
 report.html
 .pytest_cache/
+.env
