@@ -164,6 +164,7 @@ bookmark_store = BookmarkStorage()
 
 def create_app():
     app = Flask(__name__, template_folder="templates")
+    app.config["MAX_CONTENT_LENGTH"] = 11 * 1024 * 1024
     app.secret_key = "resume-management-production-secure-token"
 
     def get_bookmark_owner_key():
@@ -299,14 +300,18 @@ def create_app():
         file = request.files.get("coverLetter")
         if not file or not file.filename:
             return jsonify({"error": "No file was provided."}), 400
+
         try:
             record = save_cover_letter_file(file)
             return jsonify({"success": True, **record}), 201
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
+        except ValueError as exc:
+            app.logger.warning("Cover-letter validation failed: %s", exc)
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
             app.logger.exception("Cover-letter upload failed")
-            return jsonify({"error": "Could not upload the cover letter."}), 500
+            return jsonify({
+                "error": f"Could not upload the cover letter: {str(exc)}"
+            }), 500
 
     @app.route("/uploads/cover-letters/<filename>")
     def serve_cover_letter(filename):
@@ -354,14 +359,18 @@ def create_app():
         file = request.files.get("resume")
         if not file or not file.filename:
             return jsonify({"error": "No file was provided."}), 400
+
         try:
             record = resume_store.add_uploaded_resume(file)
             return jsonify({"success": True, "resume": record}), 201
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception:
+        except ValueError as exc:
+            app.logger.warning("Resume validation failed: %s", exc)
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
             app.logger.exception("Resume upload failed")
-            return jsonify({"error": "Could not upload the resume."}), 500
+            return jsonify({
+                "error": f"Could not upload the resume: {str(exc)}"
+            }), 500
 
     @app.route("/api/resumes/builder", methods=["POST"])
     def create_builder_resume():

@@ -1,7 +1,7 @@
 """Supabase-backed CRUD for job postings."""
 
 from __future__ import annotations
-
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -53,7 +53,42 @@ def _api_job(row: dict[str, Any]) -> dict[str, Any]:
         "icon": row.get("icon"),
     }
 
+def validate_job_data(data):
+    alpha_pattern = re.compile(r"^[A-Za-z ]+$")
+    salary_pattern = re.compile(r"^\d+$")
 
+    title = str(data.get("title", "")).strip()
+    location = str(data.get("location", "")).strip()
+    category = str(data.get("category", "")).strip()
+    salary = str(data.get("salary", "")).strip()
+    tags = data.get("tags") or []
+
+    if not alpha_pattern.fullmatch(title):
+        raise ValueError(
+            "Job title can only contain letters and spaces."
+        )
+
+    if not alpha_pattern.fullmatch(location):
+        raise ValueError(
+            "Location can only contain letters and spaces."
+        )
+
+    if category and not alpha_pattern.fullmatch(category):
+        raise ValueError(
+            "Category can only contain letters and spaces."
+        )
+
+    if not salary_pattern.fullmatch(salary):
+        raise ValueError(
+            "Salary can only contain numbers."
+        )
+
+    for tag in tags:
+        if not alpha_pattern.fullmatch(str(tag).strip()):
+            raise ValueError(
+                "Tags can only contain letters and spaces."
+            )
+        
 class JobStorage:
     """Shared Supabase persistence used by seeker and employer Flask apps."""
 
@@ -90,6 +125,8 @@ class JobStorage:
             raise ValueError(
                 f"Missing required field(s): {', '.join(missing)}"
             )
+
+        validate_job_data(data)
 
         job_count = len(self.get_jobs())
         company = data["company"].strip()
@@ -136,6 +173,8 @@ class JobStorage:
 
         if not changes:
             return self.get_job(job_id)
+
+        validate_job_data(changes)
 
         response = (
             self.client.table("jobs")

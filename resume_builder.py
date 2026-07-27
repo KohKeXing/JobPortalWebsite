@@ -26,6 +26,9 @@ import html
 import re
 from io import BytesIO
 from pathlib import Path
+
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 from typing import Dict, Any, List
 
 from werkzeug.utils import secure_filename
@@ -105,6 +108,8 @@ DEFAULT_RESUME = {
 
 RESUME_BUCKET = "resume-uploads"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_RESUME_PAGES = 10
+MAX_COVER_LETTER_PAGES = 5
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".docx"}
 ALLOWED_COVER_LETTER_EXTENSIONS = {".pdf", ".docx"}
 CONTENT_TYPES = {
@@ -154,9 +159,50 @@ def _api_resume(row):
     return record
 
 
-def _read_upload(file_storage, allowed_extensions):
+def _validate_pdf(content, max_pages):
+    """Validate that an uploaded PDF is readable and within the page limit."""
+    try:
+        reader = PdfReader(BytesIO(content))
+
+        if reader.is_encrypted:
+            raise ValueError(
+                "Password-protected PDF files are not allowed."
+            )
+
+        page_count = len(reader.pages)
+        print("Detected PDF pages:", page_count)
+
+        if page_count == 0:
+            raise ValueError(
+                "The uploaded PDF does not contain any pages."
+            )
+
+        if page_count > max_pages:
+            raise ValueError(
+                f"The uploaded PDF has {page_count} pages. "
+                f"The maximum allowed is {max_pages} pages."
+            )
+
+    except ValueError:
+        raise
+    except PdfReadError as exc:
+        raise ValueError(
+            "The uploaded PDF is corrupted or invalid."
+        ) from exc
+    except Exception as exc:
+        raise ValueError(
+            f"The uploaded PDF could not be read: {str(exc)}"
+        ) from exc
+
+
+def _read_upload(
+    file_storage,
+    allowed_extensions,
+    max_pages=None,
+):
     original_name = file_storage.filename or "uploaded_file"
     extension = Path(original_name).suffix.lower()
+
     if extension not in allowed_extensions:
         raise ValueError("Only PDF and DOCX files are supported.")
 
@@ -166,10 +212,23 @@ def _read_upload(file_storage, allowed_extensions):
 
     file_storage.stream.seek(0)
     content = file_storage.stream.read()
+
+    print("Upload filename:", safe_name)
+    print("Upload extension:", extension)
+    print("Upload size:", len(content), "bytes")
+
     if not content:
         raise ValueError("The uploaded file is empty.")
+
     if len(content) > MAX_UPLOAD_BYTES:
         raise ValueError("The uploaded file must not exceed 10 MB.")
+
+    # Page limits apply only to PDF files. DOCX files still upload normally.
+    if extension == ".pdf" and max_pages is not None:
+        _validate_pdf(content, max_pages)
+
+    # Reset the stream in case another part of the application needs it.
+    file_storage.stream.seek(0)
     return safe_name, extension, content
 
 
@@ -767,19 +826,32 @@ class ResumeStorage:
         safe_name, extension, content = _read_upload(
             file_storage,
             ALLOWED_RESUME_EXTENSIONS,
+            MAX_RESUME_PAGES,
         )
+
         stored_name = f"{uuid.uuid4().hex}{extension}"
         storage_path = f"unassigned/{stored_name}"
         bucket = self.client.storage.from_(RESUME_BUCKET)
 
-        bucket.upload(
-            path=storage_path,
-            file=content,
-            file_options={
-                "content-type": CONTENT_TYPES[extension],
-                "upsert": "false",
-            },
-        )
+        print("Validation passed.")
+        print("Uploading to bucket:", RESUME_BUCKET)
+        print("Storage path:", storage_path)
+
+        try:
+            bucket.upload(
+                path=storage_path,
+                file=content,
+                file_options={
+                    "content-type": CONTENT_TYPES[extension],
+                    "upsert": "false",
+                },
+            )
+            print("Supabase file upload successful.")
+        except Exception as exc:
+            print("SUPABASE STORAGE ERROR:", repr(exc))
+            raise RuntimeError(
+                f"Supabase Storage upload failed: {str(exc)}"
+            ) from exc
 
         row = {
             "id": "res-" + uuid.uuid4().hex[:12],
@@ -792,12 +864,32 @@ class ResumeStorage:
             "storage_path": storage_path,
             "last_modified": _utc_timestamp(),
         }
+
         try:
             response = self.client.table("resumes").insert(row).execute()
-        except Exception:
-            bucket.remove([storage_path])
-            raise
-        return _api_resume(response.data[0])
+            print("Resume database record created successfully.")
+        except Exception as exc:
+            print("SUPABASE DATABASE ERROR:", repr(exc))
+            try:
+                bucket.remove([storage_path])
+                print("Uploaded file removed after database failure.")
+            except Exception as cleanup_exc:
+                print("FILE CLEANUP ERROR:", repr(cleanup_exc))
+            raise RuntimeError(
+                f"Resume database insert failed: {str(exc)}"
+            ) from exc
+
+        rows = response.data or []
+        if not rows:
+            try:
+                bucket.remove([storage_path])
+            except Exception:
+                pass
+            raise RuntimeError(
+                "The resume was uploaded, but no database record was returned."
+            )
+
+        return _api_resume(rows[0])
 
     def _store_generated_document(
         self,
@@ -1013,6 +1105,7 @@ def save_cover_letter_file(file_storage):
     safe_name, extension, content = _read_upload(
         file_storage,
         ALLOWED_COVER_LETTER_EXTENSIONS,
+        MAX_COVER_LETTER_PAGES,
     )
     stored_name = f"{uuid.uuid4().hex}{extension}"
     get_supabase_client().storage.from_(RESUME_BUCKET).upload(
