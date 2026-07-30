@@ -559,6 +559,12 @@
 // Allows letters and spaces only
 const alphaPattern = /^[A-Za-z ]+$/;
 
+// Allows letters, spaces, and commas
+const locationPattern = /^[A-Za-z, ]+$/;
+
+// Category & Tags: letters, spaces, &, %
+const categoryTagPattern = /^[A-Za-z&% ]+$/;
+
 // Job title: letters and spaces only
 if (!alphaPattern.test(title)) {
     showFloatingNotice(
@@ -567,18 +573,18 @@ if (!alphaPattern.test(title)) {
     return;
 }
 
-// Location: letters and spaces only
-if (!alphaPattern.test(location)) {
+// Location: letters, spaces, and commas only
+if (!locationPattern.test(location)) {
     showFloatingNotice(
-        'Location can only contain letters and spaces.'
+        'Location can only contain letters, spaces, and commas.'
     );
     return;
 }
 
 // Category: letters and spaces only
-if (category && !alphaPattern.test(category)) {
+if (!categoryTagPattern.test(category)) {
     showFloatingNotice(
-        'Category can only contain letters and spaces.'
+        'Category can only contain letters, spaces, &, and %.'
     );
     return;
 }
@@ -586,11 +592,13 @@ if (category && !alphaPattern.test(category)) {
 // Tags: each tag can only contain letters and spaces
 const invalidTag = tags.find(tag => !alphaPattern.test(tag));
 
-if (invalidTag) {
-    showFloatingNotice(
-        'Tags can only contain letters and spaces. Separate tags using commas.'
-    );
-    return;
+for (const tag of tags) {
+    if (!categoryTagPattern.test(tag.trim())) {
+        showFloatingNotice(
+            'Tags can only contain letters, spaces, &, and %.'
+        );
+        return;
+    }
 }
 
 // Salary: numbers only
