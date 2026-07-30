@@ -55,6 +55,8 @@ def _api_job(row: dict[str, Any]) -> dict[str, Any]:
 
 def validate_job_data(data):
     alpha_pattern = re.compile(r"^[A-Za-z ]+$")
+    location_pattern = re.compile(r"^[A-Za-z, ]+$")
+    category_tag_pattern = re.compile(r"^[A-Za-z&% ]+$")
     salary_pattern = re.compile(r"^\d+$")
 
     title = str(data.get("title", "")).strip()
@@ -68,12 +70,12 @@ def validate_job_data(data):
             "Job title can only contain letters and spaces."
         )
 
-    if not alpha_pattern.fullmatch(location):
+    if not location_pattern.fullmatch(location):
         raise ValueError(
-            "Location can only contain letters and spaces."
-        )
+        "Location can only contain letters, spaces, and commas."
+    )
 
-    if category and not alpha_pattern.fullmatch(category):
+    if category and not category_tag_pattern.fullmatch(category):
         raise ValueError(
             "Category can only contain letters and spaces."
         )
@@ -84,7 +86,7 @@ def validate_job_data(data):
         )
 
     for tag in tags:
-        if not alpha_pattern.fullmatch(str(tag).strip()):
+        if not category_tag_pattern.fullmatch(str(tag).strip()):
             raise ValueError(
                 "Tags can only contain letters and spaces."
             )
