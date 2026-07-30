@@ -67,18 +67,27 @@ def create_app():
 
     @app.route("/api/jobs/<job_id>", methods=["DELETE"])
     def delete_job(job_id):
+        if job_store.get_job(job_id) is None:
+            return jsonify({"error": "Job not found"}), 404
+
         try:
-            if job_store.delete_job(job_id):
-                return jsonify({"success": True})
+            # Cascade: remove every application tied to this job first (and
+            # their cover letter files), so the FK constraint on
+            # applications.job_id doesn't block the job delete below.
+            removed_applications = app_tracker.delete_applications_for_job(job_id)
+            for application in removed_applications:
+                delete_cover_letter_file(application.get("coverLetterFile"))
+
+            job_store.delete_job(job_id)
+            return jsonify({
+                "success": True,
+                "deletedApplications": len(removed_applications),
+            })
         except Exception:
             app.logger.exception("Job deletion failed")
             return jsonify({
-                "error": (
-                    "This job could not be deleted. Remove its applications "
-                    "first."
-                )
-            }), 409
-        return jsonify({"error": "Job not found"}), 404
+                "error": "This job could not be deleted. Please try again."
+            }), 500
 
     # =============================================================
     # APPLICANT REVIEW (read applications, update their status)

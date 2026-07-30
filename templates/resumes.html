@@ -908,6 +908,13 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            const MAX_FILE_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE) {
+                event.target.value = '';
+                showFloatingNotice('The file must not exceed 10 MB.');
+                return;
+            }
+
             const name = file.name;
             const progressContainer = document.getElementById('upload-progress-container');
             const progressName = document.getElementById('uploading-file-name');

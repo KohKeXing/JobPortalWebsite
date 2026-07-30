@@ -129,3 +129,24 @@ class ApplicationTracking:
             return False
         self.client.table("applications").delete().eq("id", app_id).execute()
         return True
+
+    def get_applications_for_job(self, job_id: str) -> list[dict[str, Any]]:
+        """Return every application submitted against a specific job."""
+        response = (
+            self.client.table("applications")
+            .select(APPLICATION_COLUMNS)
+            .eq("job_id", job_id)
+            .execute()
+        )
+        return [_api_application(row) for row in (response.data or [])]
+
+    def delete_applications_for_job(self, job_id: str) -> list[dict[str, Any]]:
+        """Delete every application tied to a job (used for cascade delete).
+
+        Returns the applications that were removed so the caller can clean up
+        any associated files (e.g. cover letters) stored outside the table.
+        """
+        applications = self.get_applications_for_job(job_id)
+        if applications:
+            self.client.table("applications").delete().eq("job_id", job_id).execute()
+        return applications

@@ -1619,6 +1619,16 @@ function applySortAndFilter() {
         function handleCoverLetterSelection(event) {
             const file = event.target.files[0];
             if (!file) return;
+
+            const MAX_FILE_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE) {
+                event.target.value = '';
+                applyCoverLetterName = null;
+                applyCoverLetterFile = null;
+                showFloatingNotice('The file must not exceed 10 MB.');
+                return;
+            }
+
             applyCoverLetterName = file.name;
             applyCoverLetterFile = file;
             document.getElementById('apply-cover-dropzone-text').textContent = `✓ ${file.name}`;
