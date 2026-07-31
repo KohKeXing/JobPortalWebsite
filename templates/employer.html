@@ -193,13 +193,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Job Title *</label>
-                    <input
-    type="text"
-    id="job-form-title"
-    required
-    pattern="[A-Za-z ]+"
-    title="Job title can only contain letters and spaces"
-    class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                    <input type="text" id="job-form-title" required pattern="[A-Za-z ]+" title="Job title can only contain letters and spaces" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Company *</label>
@@ -209,25 +203,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Location *</label>
-                    <input
-    type="text"
-    id="job-form-location"
-    required
-    pattern="[A-Za-z ]+"
-    title="Location can only contain letters and spaces"
-    class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                    <input type="text" id="job-form-location" required pattern="[A-Za-z ]+" title="Location can only contain letters and spaces" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Salary Range *</label>
-                    <input
-    type="number"
-    id="job-form-salary"
-    min="0"
-    step="1"
-    required
-    placeholder="5000"
-    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-    class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                    <input type="number" id="job-form-salary" min="0" step="1" required placeholder="5000" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -244,21 +224,12 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Category</label>
-                    <input
-    type="text"
-    id="job-form-category"
-    pattern="[A-Za-z ]+"
-    title="Category can only contain letters and spaces"
-    class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                    <input type="text" id="job-form-category" pattern="[A-Za-z&, ]+" title="Category can only contain letters, spaces, commas, and &amp;" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                </div>
             </div>
             <div>
                 <label class="block font-semibold text-slate-700 mb-1.5">Tags (comma-separated)</label>
-                <input
-    type="text"
-    id="job-form-tags"
-    placeholder="Python, Flask, Software Development"
-    title="Enter alphabetic tags separated by commas"
-    class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                <input type="text" id="job-form-tags" placeholder="Python, Flask, Software Development" title="Enter alphabetic tags separated by commas" class="w-full border border-slate-200 rounded-lg px-3 py-2">
             </div>
             <div>
                 <label class="block font-semibold text-slate-700 mb-1.5">Job Description *</label>
@@ -276,19 +247,23 @@
         </div>
     </div>
 
-    <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
-    <div id="delete-job-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeDeleteJobModal()"></div>
-    <div id="delete-job-panel" class="fixed inset-x-4 top-1/3 max-w-sm mx-auto bg-white z-50 shadow-xl rounded-2xl border border-slate-200 p-6 flex flex-col gap-4 scale-[0.98] opacity-0 transition-all duration-200 ease-out hidden">
-        <div class="h-10 w-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-            <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        </div>
-        <div>
-            <h3 class="text-[14px] font-bold text-slate-900">Delete this job posting?</h3>
-            <p class="text-[12px] text-slate-500 mt-1">This can't be undone. The listing will be permanently removed.</p>
-        </div>
-        <div class="flex gap-2 justify-end mt-1">
-            <button onclick="closeDeleteJobModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Cancel</button>
-            <button onclick="confirmDeleteJob()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold transition text-[13px]">Delete</button>
+    <!-- ==================== DELETE CONFIRMATION MODAL (SIMPLIFIED) ==================== -->
+    <div id="delete-job-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:9999;" onclick="closeDeleteJobModal()"></div>
+    <div id="delete-job-panel" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+        <div style="max-width:28rem;width:100%;background:white;border-radius:1rem;border:1px solid #e2e8f0;padding:1.5rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+                <div style="height:2.5rem;width:2.5rem;border-radius:0.5rem;background:#fef2f2;color:#e11d48;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;">
+                    <svg style="width:1.25rem;height:1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+                <h3 style="font-weight:bold;font-size:0.875rem;color:#0f172a;">Delete this job posting?</h3>
+            </div>
+            <p style="font-size:0.75rem;color:#64748b;margin-bottom:1.5rem;">This can't be undone. The listing will be permanently removed.</p>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                <button onclick="closeDeleteJobModal()" style="padding:0.5rem 1rem;border:1px solid #e2e8f0;border-radius:0.5rem;background:white;font-weight:600;font-size:0.75rem;color:#475569;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">Cancel</button>
+                <button onclick="confirmDeleteJob()" style="padding:0.5rem 1rem;border-radius:0.5rem;background:#e11d48;color:white;font-weight:600;font-size:0.75rem;border:none;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#be123c'" onmouseout="this.style.background='#e11d48'">Delete</button>
+            </div>
         </div>
     </div>
 
@@ -552,62 +527,52 @@
                 .split(',').map(t => t.trim()).filter(Boolean);
 
             if (!title || !company || !location || !salary || !description) {
-    showFloatingNotice('Please fill in all required fields.');
-    return;
-}
+                showFloatingNotice('Please fill in all required fields.');
+                return;
+            }
 
-// Allows letters and spaces only
-const alphaPattern = /^[A-Za-z ]+$/;
+            // Allows letters and spaces only
+            const alphaPattern = /^[A-Za-z ]+$/;
+            // Allows letters, spaces, and commas
+            const locationPattern = /^[A-Za-z, ]+$/;
+            // Category & Tags: letters, spaces, &, %
+            const categoryTagPattern = /^[A-Za-z&, ]+$/;
 
-// Allows letters, spaces, and commas
-const locationPattern = /^[A-Za-z, ]+$/;
+            // Job title: letters and spaces only
+            if (!alphaPattern.test(title)) {
+                showFloatingNotice('Job title can only contain letters and spaces.');
+                return;
+            }
 
-// Category & Tags: letters, spaces, &, %
-const categoryTagPattern = /^[A-Za-z&% ]+$/;
+            // Location: letters, spaces, and commas only
+            if (!locationPattern.test(location)) {
+                showFloatingNotice('Location can only contain letters, spaces, and commas.');
+                return;
+            }
 
-// Job title: letters and spaces only
-if (!alphaPattern.test(title)) {
-    showFloatingNotice(
-        'Job title can only contain letters and spaces.'
-    );
-    return;
-}
+            // Category: letters and spaces only
+            if (!categoryTagPattern.test(category)) {
+                showFloatingNotice(
+                    'Category can only contain letters, spaces, commas, and &.'
+                );
+                return;
+            }
 
-// Location: letters, spaces, and commas only
-if (!locationPattern.test(location)) {
-    showFloatingNotice(
-        'Location can only contain letters, spaces, and commas.'
-    );
-    return;
-}
+            // Tags: each tag can only contain letters and spaces
+            for (const tag of tags) {
+            if (!categoryTagPattern.test(tag.trim())) {
+                showFloatingNotice(
+                    'Tags can only contain letters, spaces, commas, and &.'
+                );
+                return;
+            }           
+         }
 
-// Category: letters and spaces only
-if (!categoryTagPattern.test(category)) {
-    showFloatingNotice(
-        'Category can only contain letters, spaces, &, and %.'
-    );
-    return;
-}
-
-// Tags: each tag can only contain letters and spaces
-const invalidTag = tags.find(tag => !alphaPattern.test(tag));
-
-for (const tag of tags) {
-    if (!categoryTagPattern.test(tag.trim())) {
-        showFloatingNotice(
-            'Tags can only contain letters, spaces, &, and %.'
-        );
-        return;
-    }
-}
-
-// Salary: numbers only
-if (!/^\d+$/.test(salary)) {
-    showFloatingNotice(
-        'Salary can only contain numbers.'
-    );
-    return;
-}
+            // Salary: numbers only
+            if (!/^\d+$/.test(salary)) {
+                showFloatingNotice('Salary can only contain numbers.');
+                return;
+            }
 
             const payload = { title, company, location, salary, type, category, description, featured, tags };
             const submitBtn = document.getElementById('job-form-submit-btn');
@@ -659,41 +624,55 @@ if (!/^\d+$/.test(salary)) {
 
         // ==================== DELETE JOB ====================
         function openDeleteJobModal(jobId) {
+            console.log('Opening delete modal for job:', jobId);
             jobIdPendingDelete = jobId;
             const backdrop = document.getElementById('delete-job-backdrop');
             const panel = document.getElementById('delete-job-panel');
-            backdrop.classList.remove('hidden');
-            panel.classList.remove('hidden');
-            setTimeout(() => {
-                backdrop.classList.remove('opacity-0');
-                panel.classList.remove('opacity-0', 'scale-[0.98]');
-            }, 10);
+            
+            // Force show using inline styles
+            backdrop.style.display = 'block';
+            panel.style.display = 'flex';
+            
+            console.log('Modal should be visible now');
         }
 
         function closeDeleteJobModal() {
+            console.log('Closing delete modal');
             const backdrop = document.getElementById('delete-job-backdrop');
             const panel = document.getElementById('delete-job-panel');
-            backdrop.classList.add('opacity-0');
-            panel.classList.add('opacity-0', 'scale-[0.98]');
-            setTimeout(() => {
-                backdrop.classList.add('hidden');
-                panel.classList.add('hidden');
-                jobIdPendingDelete = null;
-            }, 200);
+            
+            backdrop.style.display = 'none';
+            panel.style.display = 'none';
+            jobIdPendingDelete = null;
         }
 
         async function confirmDeleteJob() {
-            if (!jobIdPendingDelete) return;
+            if (!jobIdPendingDelete) {
+                console.log('No job ID to delete');
+                return;
+            }
+            
+            console.log('Confirming delete for job:', jobIdPendingDelete);
+            
             try {
-                const res = await fetch(`/api/jobs/${jobIdPendingDelete}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Failed to delete job.');
+                const res = await fetch(`/api/jobs/${jobIdPendingDelete}`, { 
+                    method: 'DELETE' 
+                });
+                
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.error || 'Failed to delete job.');
+                }
+                
                 jobsList = jobsList.filter(j => j.id !== jobIdPendingDelete);
                 renderJobs();
                 renderApplicantFilterOptions();
                 renderApplicants();
                 renderStats();
                 showFloatingNotice('Job posting deleted.');
+                console.log('Job deleted successfully');
             } catch (err) {
+                console.error('Delete error:', err);
                 showFloatingNotice('Could not delete this job. Please try again.');
             } finally {
                 closeDeleteJobModal();

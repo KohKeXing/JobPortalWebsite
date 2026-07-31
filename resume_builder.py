@@ -1123,6 +1123,7 @@ def save_cover_letter_file(file_storage):
 
 
 def download_cover_letter_file(stored_filename):
+    """Download a cover letter file from Supabase Storage."""
     extension = Path(stored_filename).suffix.lower()
     if extension not in ALLOWED_COVER_LETTER_EXTENSIONS:
         return None
@@ -1140,6 +1141,7 @@ def download_cover_letter_file(stored_filename):
 
 
 def delete_cover_letter_file(stored_filename):
+    """Delete a cover letter file from Supabase Storage."""
     if not stored_filename:
         return
     try:

@@ -53,10 +53,12 @@ def _api_job(row: dict[str, Any]) -> dict[str, Any]:
         "icon": row.get("icon"),
     }
 
+
 def validate_job_data(data):
     alpha_pattern = re.compile(r"^[A-Za-z ]+$")
     location_pattern = re.compile(r"^[A-Za-z, ]+$")
-    category_tag_pattern = re.compile(r"^[A-Za-z&% ]+$")
+    # Changed: Allow letters, spaces, commas, and ampersand
+    category_tag_pattern = re.compile(r"^[A-Za-z&, ]+$")
     salary_pattern = re.compile(r"^\d+$")
 
     title = str(data.get("title", "")).strip()
@@ -72,12 +74,12 @@ def validate_job_data(data):
 
     if not location_pattern.fullmatch(location):
         raise ValueError(
-        "Location can only contain letters, spaces, and commas."
-    )
+            "Location can only contain letters, spaces, and commas."
+        )
 
     if category and not category_tag_pattern.fullmatch(category):
         raise ValueError(
-            "Category can only contain letters and spaces."
+            "Category can only contain letters, spaces, commas, and &."
         )
 
     if not salary_pattern.fullmatch(salary):
@@ -88,9 +90,10 @@ def validate_job_data(data):
     for tag in tags:
         if not category_tag_pattern.fullmatch(str(tag).strip()):
             raise ValueError(
-                "Tags can only contain letters and spaces."
+                "Tags can only contain letters, spaces, commas, and &."
             )
-        
+
+
 class JobStorage:
     """Shared Supabase persistence used by seeker and employer Flask apps."""
 
