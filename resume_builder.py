@@ -33,6 +33,17 @@ from typing import Dict, Any, List
 
 from werkzeug.utils import secure_filename
 from supabase_client import get_supabase_client
+from file_encryption import encrypt_bytes, decrypt_bytes
+
+
+def _safe_decrypt(raw_content: bytes) -> bytes:
+    """Decrypt storage content, but tolerate files uploaded before
+    encryption was added — those are still plain PDF/DOCX bytes in the
+    bucket, so a decrypt failure there is expected, not an error."""
+    try:
+        return decrypt_bytes(raw_content)
+    except RuntimeError:
+        return raw_content
 
 # Try to import the modern official Google GenAI SDK
 try:
@@ -121,7 +132,7 @@ CONTENT_TYPES = {
 }
 RESUME_COLUMNS = (
     "id,name,type,file_name,stored_file_name,file_format,storage_bucket,"
-    "storage_path,layout,data,last_modified"
+    "storage_path,layout,data,last_modified,owner_key"
 )
 
 
@@ -140,6 +151,7 @@ def _api_resume(row):
         "name": row.get("name"),
         "type": row.get("type"),
         "lastModified": row.get("last_modified"),
+        "ownerKey": row.get("owner_key"),
     }
     if row.get("file_name") or row.get("stored_file_name"):
         record.update(
@@ -822,7 +834,7 @@ class ResumeStorage:
         rows = response.data or []
         return _api_resume(rows[0]) if rows else None
 
-    def add_uploaded_resume(self, file_storage):
+    def add_uploaded_resume(self, file_storage, owner_key=None):
         safe_name, extension, content = _read_upload(
             file_storage,
             ALLOWED_RESUME_EXTENSIONS,
@@ -840,7 +852,7 @@ class ResumeStorage:
         try:
             bucket.upload(
                 path=storage_path,
-                file=content,
+                file=encrypt_bytes(content),
                 file_options={
                     "content-type": CONTENT_TYPES[extension],
                     "upsert": "false",
@@ -863,6 +875,7 @@ class ResumeStorage:
             "storage_bucket": RESUME_BUCKET,
             "storage_path": storage_path,
             "last_modified": _utc_timestamp(),
+            "owner_key": owner_key,
         }
 
         try:
@@ -919,7 +932,7 @@ class ResumeStorage:
         storage_path = f"unassigned/{stored_name}"
         self.client.storage.from_(RESUME_BUCKET).upload(
             path=storage_path,
-            file=content,
+            file=encrypt_bytes(content),
             file_options={
                 "content-type": CONTENT_TYPES[extension],
                 "upsert": "false",
@@ -939,6 +952,7 @@ class ResumeStorage:
         layout,
         data,
         output_format,
+        owner_key=None,
     ):
         name = name or "Untitled Resume"
         layout = layout or "modern"
@@ -957,6 +971,7 @@ class ResumeStorage:
             "data": data,
             **stored_file,
             "last_modified": _utc_timestamp(),
+            "owner_key": owner_key,
         }
         try:
             response = self.client.table("resumes").insert(row).execute()
@@ -1074,8 +1089,8 @@ class ResumeStorage:
         response = (
             self.client.table("resumes")
             .select(
-                "file_name,file_format,storage_bucket,storage_path,"
-                "stored_file_name"
+                "id,file_name,file_format,storage_bucket,storage_path,"
+                "stored_file_name,owner_key"
             )
             .eq("stored_file_name", stored_filename)
             .limit(1)
@@ -1087,9 +1102,10 @@ class ResumeStorage:
 
         row = rows[0]
         extension = "." + (row.get("file_format") or "pdf").lower()
-        content = self.client.storage.from_(
+        encrypted_content = self.client.storage.from_(
             row.get("storage_bucket") or RESUME_BUCKET
         ).download(row["storage_path"])
+        content = _safe_decrypt(encrypted_content)
         return {
             "content": content,
             "file_name": row.get("file_name") or stored_filename,
@@ -1097,6 +1113,8 @@ class ResumeStorage:
                 extension,
                 "application/octet-stream",
             ),
+            "resume_id": row.get("id"),
+            "owner_key": row.get("owner_key"),
         }
 
 
@@ -1110,7 +1128,7 @@ def save_cover_letter_file(file_storage):
     stored_name = f"{uuid.uuid4().hex}{extension}"
     get_supabase_client().storage.from_(RESUME_BUCKET).upload(
         path=f"cover-letters/{stored_name}",
-        file=content,
+        file=encrypt_bytes(content),
         file_options={
             "content-type": CONTENT_TYPES[extension],
             "upsert": "false",
@@ -1128,11 +1146,12 @@ def download_cover_letter_file(stored_filename):
     if extension not in ALLOWED_COVER_LETTER_EXTENSIONS:
         return None
     try:
-        content = get_supabase_client().storage.from_(RESUME_BUCKET).download(
+        encrypted_content = get_supabase_client().storage.from_(RESUME_BUCKET).download(
             f"cover-letters/{stored_filename}"
         )
     except Exception:
         return None
+    content = _safe_decrypt(encrypted_content)
     return {
         "content": content,
         "file_name": stored_filename,

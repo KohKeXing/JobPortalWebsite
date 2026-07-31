@@ -11,10 +11,25 @@ from supabase_client import get_supabase_client
 
 VALID_STATUSES = ["Pending", "Interview", "Offer", "Rejected"]
 
+
+def _is_valid_uuid(value: Any) -> bool:
+    """Check a string looks like a UUID before querying a UUID column.
+
+    Without this, an ID like "does-not-exist-123" reaches Postgres and
+    raises a raw type error (22P02) instead of a clean "not found" --
+    Flask turns that into an unhandled 500 rather than the intended 404.
+    """
+    try:
+        uuid.UUID(str(value))
+        return True
+    except (ValueError, AttributeError, TypeError):
+        return False
+
+
 APPLICATION_COLUMNS = (
     "id,job_id,job_title_snapshot,company_snapshot,application_date,status,"
     "details,resume_id,cover_letter_text,cover_letter_file,"
-    "cover_letter_original_name"
+    "cover_letter_original_name,owner_key"
 )
 
 
@@ -32,6 +47,7 @@ def _api_application(row: dict[str, Any]) -> dict[str, Any]:
         "coverLetterText": row.get("cover_letter_text"),
         "coverLetterFile": row.get("cover_letter_file"),
         "coverLetterOriginalName": row.get("cover_letter_original_name"),
+        "ownerKey": row.get("owner_key"),
     }
 
 
@@ -55,6 +71,8 @@ class ApplicationTracking:
         return [_api_application(row) for row in (response.data or [])]
 
     def get_application(self, app_id: str) -> dict[str, Any] | None:
+        if not _is_valid_uuid(app_id):
+            return None
         response = (
             self.client.table("applications")
             .select(APPLICATION_COLUMNS)
@@ -77,6 +95,7 @@ class ApplicationTracking:
         cover_letter_text: str | None = None,
         cover_letter_file: str | None = None,
         cover_letter_original_name: str | None = None,
+        owner_key: str | None = None,
     ) -> dict[str, Any]:
         if status not in VALID_STATUSES:
             raise ValueError(
@@ -97,6 +116,7 @@ class ApplicationTracking:
             "cover_letter_text": cover_letter_text,
             "cover_letter_file": cover_letter_file,
             "cover_letter_original_name": cover_letter_original_name,
+            "owner_key": owner_key,
         }
         response = self.client.table("applications").insert(row).execute()
         return _api_application(response.data[0])
@@ -111,6 +131,8 @@ class ApplicationTracking:
             raise ValueError(
                 f"Status must be one of: {', '.join(VALID_STATUSES)}"
             )
+        if not _is_valid_uuid(app_id):
+            return False
 
         changes: dict[str, Any] = {"status": new_status}
         if new_details is not None:
@@ -129,6 +151,45 @@ class ApplicationTracking:
             return False
         self.client.table("applications").delete().eq("id", app_id).execute()
         return True
+
+    def get_owner_key_for_cover_letter(self, cover_letter_file: str) -> str | None:
+        """Return the owner_key of the application this cover letter belongs
+        to, or None if no application references it (or it predates the
+        owner_key migration)."""
+        response = (
+            self.client.table("applications")
+            .select("owner_key")
+            .eq("cover_letter_file", cover_letter_file)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0].get("owner_key") if rows else None
+
+    def cover_letter_belongs_to_application(self, cover_letter_file: str) -> bool:
+        """True if some application actually references this file (used by
+        the employer app, which has no owner session of its own)."""
+        response = (
+            self.client.table("applications")
+            .select("id")
+            .eq("cover_letter_file", cover_letter_file)
+            .limit(1)
+            .execute()
+        )
+        return bool(response.data)
+
+    def resume_belongs_to_application(self, resume_id: str) -> bool:
+        """True if some application actually references this resume (used
+        by the employer app to confirm a resume was really submitted, not
+        just guessed)."""
+        response = (
+            self.client.table("applications")
+            .select("id")
+            .eq("resume_id", resume_id)
+            .limit(1)
+            .execute()
+        )
+        return bool(response.data)
 
     def get_applications_for_job(self, job_id: str) -> list[dict[str, Any]]:
         """Return every application submitted against a specific job."""

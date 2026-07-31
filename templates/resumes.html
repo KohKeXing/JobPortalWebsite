@@ -732,6 +732,11 @@
                 } catch (e) {}
             }
 
+            const displayNameEl = document.getElementById('user-display-name');
+            if (displayNameEl) {
+                displayNameEl.innerText = profileState.name;
+            }
+
             const savedLayoutChoice = localStorage.getItem('jobportal_saved_template_choice') || 'modern';
             setTemplateLayoutChoice(savedLayoutChoice);
             const indicator = document.getElementById('preferred-layout-indicator');
