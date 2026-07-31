@@ -1,5 +1,4 @@
 name: Automated Testing
-
 on:
   push:
   pull_request:
@@ -8,28 +7,26 @@ on:
     # automated builds" requirement, in addition to running on every
     # push/PR so issues are caught immediately too.
     - cron: "0 0 * * *"
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-
       - name: Run Pytest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          RESUME_ENCRYPTION_KEY: ${{ secrets.RESUME_ENCRYPTION_KEY }}
         run: |
           python -m pytest tests/ -v
-
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
