@@ -6,11 +6,11 @@ so that I can submit applications easily.
 """
 import io
 
-from conftest import post_job
+from conftest import post_job, valid_pdf_bytes
 
 
 def _upload_resume(seeker_client, filename='my_resume.pdf'):
-    fake_pdf = (io.BytesIO(b'%PDF-1.4 sample resume'), filename)
+    fake_pdf = (io.BytesIO(valid_pdf_bytes()), filename)
     res = seeker_client.post(
         '/api/resumes/upload',
         data={'resume': fake_pdf},
@@ -52,7 +52,7 @@ def test_successfully_apply_with_an_uploaded_cover_letter_file(employer_client, 
     job = post_job(employer_client, title='Backend Engineer', company='Acme Corp').get_json()
     resume = _upload_resume(seeker_client)
 
-    fake_cover = (io.BytesIO(b'%PDF-1.4 cover letter content'), 'my_cover_letter.pdf')
+    fake_cover = (io.BytesIO(valid_pdf_bytes()), 'my_cover_letter.pdf')
     cover_res = seeker_client.post(
         '/api/cover-letters/upload',
         data={'coverLetter': fake_cover},

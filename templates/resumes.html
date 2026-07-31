@@ -618,15 +618,15 @@
         </div>
     </div>
 
-    <!-- ==================== DOWNLOAD FORMAT MODAL ==================== -->
+    <!-- ==================== REAL RESUME FILE FORMAT MODAL ==================== -->
     <div id="download-format-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeDownloadFormatModal()"></div>
     <div id="download-format-modal" class="fixed inset-x-4 top-[25%] max-w-md mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-100 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden">
         <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-blue-50/50">
             <div class="flex items-center gap-2 text-blue-800">
                 <span class="text-xl">📥</span>
                 <div>
-                    <h3 class="text-sm font-extrabold text-slate-900 leading-tight">Select Export Format</h3>
-                    <p class="text-[10px] text-slate-500 font-semibold">Choose your download preference</p>
+                    <h3 id="format-modal-title" class="text-sm font-extrabold text-slate-900 leading-tight">Choose Resume File Format</h3>
+                    <p id="format-modal-subtitle" class="text-[10px] text-slate-500 font-semibold">A real document will be generated and stored securely</p>
                 </div>
             </div>
             <button onclick="closeDownloadFormatModal()" class="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition">
@@ -638,7 +638,7 @@
         
         <div class="p-5 flex flex-col gap-3">
             <p class="text-xs text-slate-500 leading-relaxed">
-                Choose your preferred file extension format to export your professional resume:
+                Choose the file employers will receive when you use this resume:
             </p>
             
             <div class="flex flex-col gap-2">
@@ -658,13 +658,6 @@
                     </div>
                 </label>
                 
-                <label class="flex items-center gap-3 p-3 border border-slate-150 rounded-xl hover:bg-slate-50 cursor-pointer transition">
-                    <input type="radio" name="download-format-opt" value="html" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-800">Interactive Webpage (.html)</span>
-                        <span class="text-[9px] text-slate-400 font-medium">Self-contained responsive web representation</span>
-                    </div>
-                </label>
             </div>
         </div>
 
@@ -672,8 +665,8 @@
             <button onclick="closeDownloadFormatModal()" class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-100 font-semibold text-slate-600 transition text-xs">
                 Cancel
             </button>
-            <button onclick="executeDownloadFormat()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md shadow-blue-100 text-xs">
-                Download Resume File
+            <button id="format-modal-confirm" onclick="confirmResumeFormatChoice()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md shadow-blue-100 text-xs">
+                Generate &amp; Save
             </button>
         </div>
     </div>
@@ -706,7 +699,7 @@
         ];
 
         // Resumes are no longer stored in the browser — they're fetched from the
-        // Python/Flask backend (see resume_storage.py), which is the real source of truth.
+        // Python/Flask backend (see resume_builder.py), which is the real source of truth.
         let resumesList = [];
 
         let profileState = {
@@ -721,6 +714,7 @@
         let selectedActiveResume = null;
         let resumeToDeleteId = null;
         let isEmployerPersona = false;
+        let formatChoiceResolve = null;
 
         // 2. BOOTSTRAP INITIALIZATION
         window.addEventListener('DOMContentLoaded', async () => {
@@ -738,6 +732,11 @@
                 } catch (e) {}
             }
 
+            const displayNameEl = document.getElementById('user-display-name');
+            if (displayNameEl) {
+                displayNameEl.innerText = profileState.name;
+            }
+
             const savedLayoutChoice = localStorage.getItem('jobportal_saved_template_choice') || 'modern';
             setTemplateLayoutChoice(savedLayoutChoice);
             const indicator = document.getElementById('preferred-layout-indicator');
@@ -746,8 +745,8 @@
             }
         }
 
-        // ---- Resume persistence: all real data now goes through the Flask API ----
-        // (resume_storage.py), backed by an actual JSON file + on-disk uploads on the server.
+        // Resume metadata and generated/uploaded files are stored through Flask
+        // in Supabase Database and private Storage.
 
         async function fetchResumesFromServer() {
             try {
@@ -759,13 +758,16 @@
             }
         }
 
-        async function persistBuilderResume(name, layout, data) {
+        async function persistBuilderResume(name, layout, data, outputFormat) {
             const res = await fetch('/api/resumes/builder', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, layout, data })
+                body: JSON.stringify({ name, layout, data, outputFormat })
             });
-            if (!res.ok) throw new Error('Failed to save resume to the server');
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                throw new Error(error.error || 'Failed to save resume to the server');
+            }
             const result = await res.json();
             return result.resume;
         }
@@ -776,7 +778,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
             });
-            if (!res.ok) throw new Error('Failed to update resume on the server');
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                throw new Error(error.error || 'Failed to update resume on the server');
+            }
             const result = await res.json();
             return result.resume;
         }
@@ -841,12 +846,23 @@
                     let nameClickAttr = '';
 
                     if (res.type === 'builder') {
-                        infoText = `<span class="bg-violet-50 text-violet-700 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase border border-violet-100">Template: ${res.layout}</span>`;
+                        const formatBadge = res.fileFormat
+                            ? ` • ${res.fileFormat.toUpperCase()}`
+                            : ' • FILE NOT GENERATED';
+                        infoText = `<span class="bg-violet-50 text-violet-700 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase border border-violet-100">Template: ${res.layout}${formatBadge}</span>`;
                         editBtnHTML = `
                             <button onclick="openTemplateBuilder('${res.id}')" class="h-9 px-3.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition">
                                 Edit Info
                             </button>
                         `;
+                        if (res.storedFileName) {
+                            viewBtnHTML = `
+                                <button onclick="viewUploadedResume('${res.id}')" class="h-9 px-3.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition">
+                                    View
+                                </button>
+                            `;
+                            nameClickAttr = `onclick="viewUploadedResume('${res.id}')" role="button" tabindex="0"`;
+                        }
                     } else {
                         infoText = `<span class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase border border-blue-100">Uploaded Document</span>`;
                         viewBtnHTML = `
@@ -864,7 +880,7 @@
                                     ${res.type === 'builder' ? '📄' : '📁'}
                                 </div>
                                 <div class="flex flex-col gap-0.5">
-                                    <h4 class="text-xs sm:text-sm font-bold text-slate-900 ${res.type === 'upload' ? 'cursor-pointer hover:text-blue-600 hover:underline transition' : ''}" ${nameClickAttr}>${res.name}</h4>
+                                    <h4 class="text-xs sm:text-sm font-bold text-slate-900 ${res.storedFileName ? 'cursor-pointer hover:text-blue-600 hover:underline transition' : ''}" ${nameClickAttr}>${res.name}</h4>
                                     <div class="flex flex-wrap items-center gap-2 mt-0.5 text-[10px] text-slate-400 font-semibold">
                                         <span>Modified: ${modifiedDate}</span>
                                         <span>•</span>
@@ -896,6 +912,13 @@
         async function handleFileSelection(event) {
             const file = event.target.files[0];
             if (!file) return;
+
+            const MAX_FILE_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE) {
+                event.target.value = '';
+                showFloatingNotice('The file must not exceed 10 MB.');
+                return;
+            }
 
             const name = file.name;
             const progressContainer = document.getElementById('upload-progress-container');
@@ -962,7 +985,6 @@
 
             let resumeData = null;
             let resumeName = `${profileState.name.replace(/\s+/g, '_')}_AI_Resume`;
-            let successNotice = "✨ Gemini has assembled a tailored professional layout from your profile!";
 
             try {
                 const res = await fetch('/api/resume/auto-generate', {
@@ -1018,7 +1040,6 @@
                 // Gemini unavailable — fall back to a locally assembled mock resume.
                 // Either way, the record below always gets saved through the real Python backend.
                 resumeName = `${profileState.name.replace(/\s+/g, '_')}_Offline_AI_Resume`;
-                successNotice = "Offline co-pilot has assembled a structured Resume from your profile state.";
                 resumeData = {
                     personalInfo: {
                         name: profileState.name,
@@ -1062,12 +1083,32 @@
             }
 
             try {
-                const record = await persistBuilderResume(resumeName, 'modern', resumeData);
+                const outputFormat = await chooseResumeFileFormat({
+                    title: 'Save AI Resume',
+                    subtitle: 'Choose the real document format employers will receive',
+                    confirmText: 'Generate & Save AI Resume',
+                    defaultFormat: 'pdf'
+                });
+                if (!outputFormat) {
+                    showFloatingNotice('AI resume was not saved.');
+                    return;
+                }
+                const record = await persistBuilderResume(
+                    resumeName,
+                    'modern',
+                    resumeData,
+                    outputFormat
+                );
                 resumesList.push(record);
-                showFloatingNotice(successNotice);
+                showFloatingNotice(
+                    `${record.fileName || `${resumeName}.${outputFormat}`} already saved.`
+                );
                 showResumesSubView('list');
             } catch (saveErr) {
-                showFloatingNotice("Generated the resume, but couldn't save it to the server. Please try again.");
+                showFloatingNotice(
+                    saveErr.message ||
+                    "Generated the resume, but couldn't save it to the server."
+                );
             } finally {
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
@@ -1121,35 +1162,60 @@
             }
         }
 
-        // DOWNLOAD COMPILED RESUME SYSTEM WITH MULTI-FORMAT SELECTION (PDF, DOCX, HTML)
-        let activeDownloadResumeId = null;
-
-        function downloadResume(resumeId) {
-            const resume = resumesList.find(r => r.id === resumeId);
-
-            // Uploaded files are real files on the server — just download them directly,
-            // no fake "format choice" needed since the file already has a real format.
-            if (resume && resume.type === 'upload') {
-                if (!resume.storedFileName) {
-                    showFloatingNotice("This file was uploaded before downloading was supported — re-upload it.");
-                    return;
-                }
-                const a = document.createElement('a');
-                a.href = `/uploads/${resume.storedFileName}`;
-                a.download = resume.fileName || 'resume';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showFloatingNotice(`Downloading ${resume.fileName}...`);
+        // DOWNLOAD A REAL FILE FROM SUPABASE STORAGE.
+        // Legacy builder records without a file are upgraded before downloading.
+        async function downloadResume(resumeId) {
+            let resume = resumesList.find(r => r.id === resumeId);
+            if (!resume) {
+                showFloatingNotice("Resume not found.");
                 return;
             }
 
-            // Builder/template resumes are compiled on demand, so the format choice still applies
-            activeDownloadResumeId = resumeId;
-            openDownloadFormatModal();
+            if (!resume.storedFileName && resume.type === 'builder') {
+                const outputFormat = await chooseResumeFileFormat({
+                    title: 'Generate Resume File',
+                    subtitle: 'This text-only resume must be saved as a real file first',
+                    confirmText: 'Generate & Download',
+                    defaultFormat: resume.fileFormat || 'pdf'
+                });
+                if (!outputFormat) return;
+
+                try {
+                    const record = await persistResumeUpdate(resume.id, {
+                        name: resume.name,
+                        layout: resume.layout,
+                        data: resume.data,
+                        outputFormat
+                    });
+                    const index = resumesList.findIndex(r => r.id === record.id);
+                    if (index > -1) resumesList[index] = record;
+                    resume = record;
+                    renderResumesHubList();
+                } catch (err) {
+                    showFloatingNotice(err.message || "Couldn't generate this resume file.");
+                    return;
+                }
+            }
+
+            if (!resume.storedFileName) {
+                showFloatingNotice(
+                    resume.type === 'upload'
+                        ? "This old upload has no stored file. Please upload it again."
+                        : "Save this resume as PDF or DOCX first."
+                );
+                return;
+            }
+
+            const a = document.createElement('a');
+            a.href = `/uploads/${encodeURIComponent(resume.storedFileName)}`;
+            a.download = resume.fileName || `${resume.name}.${resume.fileFormat || 'pdf'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showFloatingNotice(`Downloading ${resume.fileName || resume.name}...`);
         }
 
-        // Opens the actual uploaded file (served directly by Flask from disk) in a new tab.
+        // Opens the actual uploaded or generated file in a new tab.
         // PDFs render inline; DOCX will prompt a download since browsers can't display
         // Word docs natively — that's expected, not a bug.
         function viewUploadedResume(resumeId) {
@@ -1159,10 +1225,10 @@
                 return;
             }
             if (!resume.storedFileName) {
-                showFloatingNotice("This file was uploaded before viewing was supported — re-upload it to enable preview.");
+                showFloatingNotice("No document file exists yet. Save it as PDF or DOCX first.");
                 return;
             }
-            window.open(`/uploads/${resume.storedFileName}`, '_blank');
+            window.open(`/uploads/${encodeURIComponent(resume.storedFileName)}`, '_blank');
         }
 
         function openDownloadFormatModal() {
@@ -1178,7 +1244,7 @@
             }
         }
 
-        function closeDownloadFormatModal() {
+        function hideResumeFormatModal() {
             const backdrop = document.getElementById('download-format-backdrop');
             const panel = document.getElementById('download-format-modal');
             if (backdrop && panel) {
@@ -1189,6 +1255,54 @@
                     panel.classList.add('hidden');
                 }, 300);
             }
+        }
+
+        function closeDownloadFormatModal() {
+            const resolve = formatChoiceResolve;
+            formatChoiceResolve = null;
+            hideResumeFormatModal();
+            if (resolve) resolve(null);
+        }
+
+        function chooseResumeFileFormat({
+            title = 'Choose Resume File Format',
+            subtitle = 'Choose the real document format employers will receive',
+            confirmText = 'Generate & Save',
+            defaultFormat = 'pdf'
+        } = {}) {
+            if (formatChoiceResolve) {
+                formatChoiceResolve(null);
+                formatChoiceResolve = null;
+            }
+
+            const modalTitle = document.getElementById('format-modal-title');
+            const modalSubtitle = document.getElementById('format-modal-subtitle');
+            const confirmButton = document.getElementById('format-modal-confirm');
+            if (modalTitle) modalTitle.textContent = title;
+            if (modalSubtitle) modalSubtitle.textContent = subtitle;
+            if (confirmButton) confirmButton.textContent = confirmText;
+
+            const chosenRadio = document.querySelector(
+                `input[name="download-format-opt"][value="${defaultFormat === 'docx' ? 'docx' : 'pdf'}"]`
+            );
+            if (chosenRadio) chosenRadio.checked = true;
+
+            openDownloadFormatModal();
+            return new Promise(resolve => {
+                formatChoiceResolve = resolve;
+            });
+        }
+
+        function confirmResumeFormatChoice() {
+            const formatRadio = document.querySelector(
+                'input[name="download-format-opt"]:checked'
+            );
+            if (!formatRadio || !formatChoiceResolve) return;
+
+            const resolve = formatChoiceResolve;
+            formatChoiceResolve = null;
+            hideResumeFormatModal();
+            resolve(formatRadio.value);
         }
 
         function compileResumeToHtml(resume) {
@@ -1398,86 +1512,9 @@
 </html>`;
         }
 
+        // Kept for compatibility with older cached HTML.
         function executeDownloadFormat() {
-            const formatRadio = document.querySelector('input[name="download-format-opt"]:checked');
-            if (!formatRadio) return;
-            const selectedFormat = formatRadio.value;
-            closeDownloadFormatModal();
-
-            const resumeId = activeDownloadResumeId;
-            const resume = resumesList.find(r => r.id === resumeId);
-            if (!resume) return;
-
-            const name = (resume.data && resume.data.personalInfo && resume.data.personalInfo.name) ? resume.data.personalInfo.name : 'resume';
-            const baseName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-            const fileName = `${baseName}_resume.${selectedFormat}`;
-
-            // Handled templates / auto-generated resumes
-            const htmlContent = compileResumeToHtml(resume);
-
-            if (selectedFormat === 'html') {
-                const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showFloatingNotice(`Downloaded resume webpage: ${fileName}`);
-            } else if (selectedFormat === 'docx') {
-                const docxContent = `
-                    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                    <head><title>${name} - Resume</title></head>
-                    <body>${htmlContent}</body>
-                    </html>
-                `;
-                const blob = new Blob([docxContent], { type: 'application/msword' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showFloatingNotice(`Downloaded editable Microsoft Word (.docx) layout: ${fileName}`);
-            } else if (selectedFormat === 'pdf') {
-                // Instantly trigger browser print with print-to-pdf guidelines, as well as delivering direct pdf mime download stream
-                const blob = new Blob([htmlContent], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                showFloatingNotice(`Generated standard PDF: ${fileName}. Opening print selector for custom styling alignment...`);
-
-                // Create offscreen iframe for pristine full CSS media query printing
-                const printFrame = document.createElement('iframe');
-                printFrame.style.position = 'fixed';
-                printFrame.style.right = '0';
-                printFrame.style.bottom = '0';
-                printFrame.style.width = '0';
-                printFrame.style.height = '0';
-                printFrame.style.border = '0';
-                document.body.appendChild(printFrame);
-                
-                printFrame.contentDocument.write(htmlContent);
-                printFrame.contentDocument.close();
-                
-                setTimeout(() => {
-                    printFrame.contentWindow.focus();
-                    printFrame.contentWindow.print();
-                    setTimeout(() => {
-                        document.body.removeChild(printFrame);
-                    }, 500);
-                }, 500);
-            }
+            confirmResumeFormatChoice();
         }
 
         // DELETE CONFIRM MODAL OPERATIONS
@@ -2014,6 +2051,17 @@
             selectedActiveResume.data.personalInfo.summary = document.getElementById('builder-summary').value.trim();
             selectedActiveResume.data.accentColor = builderAccentColor;
 
+            const outputFormat = await chooseResumeFileFormat({
+                title: selectedActiveResume.id ? 'Update Resume File' : 'Save Resume File',
+                subtitle: 'Choose the document format employers will receive with applications',
+                confirmText: selectedActiveResume.id ? 'Regenerate & Save' : 'Generate & Save',
+                defaultFormat: selectedActiveResume.fileFormat || 'pdf'
+            });
+            if (!outputFormat) {
+                showFloatingNotice("Resume changes were not saved.");
+                return;
+            }
+
             const saveBtn = document.getElementById('btn-save-builder-resume');
             const originalBtnHTML = saveBtn ? saveBtn.innerHTML : null;
             if (saveBtn) {
@@ -2027,7 +2075,8 @@
                     const record = await persistResumeUpdate(selectedActiveResume.id, {
                         name: selectedActiveResume.name,
                         layout: selectedActiveResume.layout,
-                        data: selectedActiveResume.data
+                        data: selectedActiveResume.data,
+                        outputFormat
                     });
                     const idx = resumesList.findIndex(r => r.id === record.id);
                     if (idx > -1) resumesList[idx] = record;
@@ -2036,15 +2085,20 @@
                     const record = await persistBuilderResume(
                         selectedActiveResume.name,
                         selectedActiveResume.layout,
-                        selectedActiveResume.data
+                        selectedActiveResume.data,
+                        outputFormat
                     );
                     resumesList.push(record);
                 }
 
-                showFloatingNotice(`Resume "${selectedActiveResume.name}" saved successfully!`);
+                showFloatingNotice(
+                    `Resume "${selectedActiveResume.name}" saved as ${outputFormat.toUpperCase()}!`
+                );
                 showResumesSubView('list');
             } catch (err) {
-                showFloatingNotice("Couldn't save this resume to the server. Please try again.");
+                showFloatingNotice(
+                    err.message || "Couldn't save this resume to the server. Please try again."
+                );
             } finally {
                 if (saveBtn) {
                     saveBtn.disabled = false;

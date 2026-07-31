@@ -1,20 +1,18 @@
-import json
-import uuid
-from datetime import datetime
-from pathlib import Path
+from io import BytesIO
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_file
 
 # Import the shared application tracking module (same one seeker_main.py uses)
 from application_tracking import ApplicationTracking, VALID_STATUSES
 
-# Import the shared resume/cover-letter storage (same JSON file + upload folders
-# that seeker_main.py writes to, since both apps live in the same project folder).
-# This is how the employer console can actually open what a candidate submitted.
-from resume_builder import ResumeStorage, UPLOAD_DIR as RESUME_UPLOAD_DIR, COVER_LETTER_UPLOAD_DIR
+# Import the shared Supabase Database + private Storage helpers.
+from resume_builder import (
+    ResumeStorage,
+    delete_cover_letter_file,
+    download_cover_letter_file,
+)
 
-# Import the shared job storage (same data/jobs.json that seeker_main.py reads),
-# so jobs posted here actually show up on the job seeker site.
+# Import the shared Supabase job storage.
 from job import JobStorage
 
 REQUIRED_JOB_FIELDS = ["title", "company", "location", "salary", "type", "description"]
@@ -69,9 +67,27 @@ def create_app():
 
     @app.route("/api/jobs/<job_id>", methods=["DELETE"])
     def delete_job(job_id):
-        if job_store.delete_job(job_id):
-            return jsonify({"success": True})
-        return jsonify({"error": "Job not found"}), 404
+        if job_store.get_job(job_id) is None:
+            return jsonify({"error": "Job not found"}), 404
+
+        try:
+            # Cascade: remove every application tied to this job first (and
+            # their cover letter files), so the FK constraint on
+            # applications.job_id doesn't block the job delete below.
+            removed_applications = app_tracker.delete_applications_for_job(job_id)
+            for application in removed_applications:
+                delete_cover_letter_file(application.get("coverLetterFile"))
+
+            job_store.delete_job(job_id)
+            return jsonify({
+                "success": True,
+                "deletedApplications": len(removed_applications),
+            })
+        except Exception:
+            app.logger.exception("Job deletion failed")
+            return jsonify({
+                "error": "This job could not be deleted. Please try again."
+            }), 500
 
     # =============================================================
     # APPLICANT REVIEW (read applications, update their status)
@@ -105,6 +121,7 @@ def create_app():
 
         success = app_tracker.delete_application(app_id)
         if success:
+            delete_cover_letter_file(application.get("coverLetterFile"))
             return jsonify({"success": True}), 200
         return jsonify({"error": "Application not found"}), 404
 
@@ -121,11 +138,27 @@ def create_app():
 
     @app.route("/uploads/<filename>")
     def serve_resume_file(filename):
-        return send_from_directory(RESUME_UPLOAD_DIR, filename)
+        stored_file = resume_store.download_uploaded_resume(filename)
+        if stored_file is None:
+            return jsonify({"error": "Resume file not found"}), 404
+        return send_file(
+            BytesIO(stored_file["content"]),
+            mimetype=stored_file["content_type"],
+            download_name=stored_file["file_name"],
+            as_attachment=False,
+        )
 
     @app.route("/uploads/cover-letters/<filename>")
     def serve_cover_letter_file(filename):
-        return send_from_directory(COVER_LETTER_UPLOAD_DIR, filename)
+        stored_file = download_cover_letter_file(filename)
+        if stored_file is None:
+            return jsonify({"error": "Cover letter not found"}), 404
+        return send_file(
+            BytesIO(stored_file["content"]),
+            mimetype=stored_file["content_type"],
+            download_name=stored_file["file_name"],
+            as_attachment=False,
+        )
 
     return app
 

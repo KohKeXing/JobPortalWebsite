@@ -22,10 +22,28 @@ import json
 import sys
 import uuid
 import datetime
+import html
+import re
+from io import BytesIO
 from pathlib import Path
+
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 from typing import Dict, Any, List
 
 from werkzeug.utils import secure_filename
+from supabase_client import get_supabase_client
+from file_encryption import encrypt_bytes, decrypt_bytes
+
+
+def _safe_decrypt(raw_content: bytes) -> bytes:
+    """Decrypt storage content, but tolerate files uploaded before
+    encryption was added — those are still plain PDF/DOCX bytes in the
+    bucket, so a decrypt failure there is expected, not an error."""
+    try:
+        return decrypt_bytes(raw_content)
+    except RuntimeError:
+        return raw_content
 
 # Try to import the modern official Google GenAI SDK
 try:
@@ -96,169 +114,1062 @@ DEFAULT_RESUME = {
 
 
 # ======================================================================
-# WEB APP BACKEND STORAGE
-# ======================================================================
-# The class below (ResumeStorage) is imported by seeker_main.py to power
-# the live Flask web app's "My Resumes" feature. It is NOT the interactive
-# CLI tool — that's the ResumePortalPython class further down this file.
-#
-# ResumeStorage handles real persistence for job-seeker resumes:
-#   - "upload" resumes: the actual PDF/DOCX file is saved to disk under
-#     UPLOAD_DIR, and its metadata is saved in RESUMES_FILE.
-#   - "builder" resumes: the full structured resume data (personal info,
-#     experience, education, skills, projects) is saved directly inside
-#     the resume record in RESUMES_FILE.
-#
-# Everything here is plain Python file I/O + JSON — no browser storage
-# involved, so resumes survive server restarts.
+# WEB APP BACKEND STORAGE AND DOCUMENT GENERATION
 # ======================================================================
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-UPLOAD_DIR = DATA_DIR / "resume_uploads"
-RESUMES_FILE = DATA_DIR / "resumes.json"
-
+RESUME_BUCKET = "resume-uploads"
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_RESUME_PAGES = 10
+MAX_COVER_LETTER_PAGES = 5
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".docx"}
-
-
-class ResumeStorage:
-    """Handles all persistence for job-seeker resumes on the web app."""
-
-    def __init__(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        if not RESUMES_FILE.exists():
-            self._write([])
-
-    # -----------------------------------------------------
-    # Low-level JSON file helpers
-    # -----------------------------------------------------
-    def _read(self):
-        try:
-            return json.loads(RESUMES_FILE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, FileNotFoundError):
-            return []
-
-    def _write(self, resumes):
-        RESUMES_FILE.write_text(json.dumps(resumes, indent=2), encoding="utf-8")
-
-    # -----------------------------------------------------
-    # Read operations
-    # -----------------------------------------------------
-    def get_resumes(self):
-        return self._read()
-
-    def get_resume(self, resume_id):
-        for resume in self._read():
-            if resume["id"] == resume_id:
-                return resume
-        return None
-
-    # -----------------------------------------------------
-    # Create operations
-    # -----------------------------------------------------
-    def add_uploaded_resume(self, file_storage):
-        """Saves an uploaded PDF/DOCX to disk and records its metadata."""
-        original_name = file_storage.filename or "resume"
-        extension = Path(original_name).suffix.lower()
-        if extension not in ALLOWED_RESUME_EXTENSIONS:
-            raise ValueError("Only PDF and DOCX files are supported.")
-
-        safe_name = secure_filename(original_name)
-        stored_name = f"{uuid.uuid4().hex}{extension}"
-        file_storage.save(UPLOAD_DIR / stored_name)
-
-        record = {
-            "id": "res-" + uuid.uuid4().hex[:12],
-            "name": Path(safe_name).stem,
-            "type": "upload",
-            "fileName": safe_name,
-            "storedFileName": stored_name,
-            "fileFormat": extension.lstrip("."),
-            "lastModified": datetime.datetime.utcnow().isoformat() + "Z",
-        }
-
-        resumes = self._read()
-        resumes.append(record)
-        self._write(resumes)
-        return record
-
-    def add_builder_resume(self, name, layout, data):
-        """Creates a resume record from structured template-builder data."""
-        record = {
-            "id": "res-" + uuid.uuid4().hex[:12],
-            "name": name or "Untitled Resume",
-            "type": "builder",
-            "layout": layout or "modern",
-            "data": data or {},
-            "lastModified": datetime.datetime.utcnow().isoformat() + "Z",
-        }
-
-        resumes = self._read()
-        resumes.append(record)
-        self._write(resumes)
-        return record
-
-    # -----------------------------------------------------
-    # Update operation
-    # -----------------------------------------------------
-    def update_resume(self, resume_id, updates):
-        resumes = self._read()
-        for resume in resumes:
-            if resume["id"] == resume_id:
-                resume.update(updates)
-                resume["lastModified"] = datetime.datetime.utcnow().isoformat() + "Z"
-                self._write(resumes)
-                return resume
-        return None
-
-    # -----------------------------------------------------
-    # Delete operation
-    # -----------------------------------------------------
-    def delete_resume(self, resume_id):
-        resumes = self._read()
-        target = next((r for r in resumes if r["id"] == resume_id), None)
-        if target is None:
-            return False
-
-        # Clean up the real file on disk for uploaded resumes
-        if target.get("type") == "upload" and target.get("storedFileName"):
-            file_path = UPLOAD_DIR / target["storedFileName"]
-            if file_path.exists():
-                file_path.unlink()
-
-        resumes = [r for r in resumes if r["id"] != resume_id]
-        self._write(resumes)
-        return True
-
-
-# ---------------------------------------------------------
-# Cover letter file storage — a lighter sibling to ResumeStorage.
-# Cover letters don't need full CRUD (no editing/listing), just
-# "save an uploaded file, give it back a permanent URL to open later"
-# so an employer can actually open what a candidate submitted.
-# ---------------------------------------------------------
-COVER_LETTER_UPLOAD_DIR = DATA_DIR / "cover_letter_uploads"
 ALLOWED_COVER_LETTER_EXTENSIONS = {".pdf", ".docx"}
+CONTENT_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": (
+        "application/vnd.openxmlformats-officedocument."
+        "wordprocessingml.document"
+    ),
+}
+RESUME_COLUMNS = (
+    "id,name,type,file_name,stored_file_name,file_format,storage_bucket,"
+    "storage_path,layout,data,last_modified,owner_key"
+)
 
 
-def save_cover_letter_file(file_storage):
-    """Saves an uploaded cover letter PDF/DOCX to disk and returns its metadata."""
-    COVER_LETTER_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+def _utc_timestamp():
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
-    original_name = file_storage.filename or "cover_letter"
+
+def _api_resume(row):
+    """Map Supabase columns to the field names already used by the UI."""
+    record = {
+        "id": row.get("id"),
+        "name": row.get("name"),
+        "type": row.get("type"),
+        "lastModified": row.get("last_modified"),
+        "ownerKey": row.get("owner_key"),
+    }
+    if row.get("file_name") or row.get("stored_file_name"):
+        record.update(
+            {
+                "fileName": row.get("file_name"),
+                "storedFileName": row.get("stored_file_name"),
+                "fileFormat": row.get("file_format"),
+            }
+        )
+    if row.get("type") == "builder":
+        record.update(
+            {
+                "layout": row.get("layout") or "modern",
+                "data": row.get("data") or {},
+            }
+        )
+    return record
+
+
+def _validate_pdf(content, max_pages):
+    """Validate that an uploaded PDF is readable and within the page limit."""
+    try:
+        reader = PdfReader(BytesIO(content))
+
+        if reader.is_encrypted:
+            raise ValueError(
+                "Password-protected PDF files are not allowed."
+            )
+
+        page_count = len(reader.pages)
+        print("Detected PDF pages:", page_count)
+
+        if page_count == 0:
+            raise ValueError(
+                "The uploaded PDF does not contain any pages."
+            )
+
+        if page_count > max_pages:
+            raise ValueError(
+                f"The uploaded PDF has {page_count} pages. "
+                f"The maximum allowed is {max_pages} pages."
+            )
+
+    except ValueError:
+        raise
+    except PdfReadError as exc:
+        raise ValueError(
+            "The uploaded PDF is corrupted or invalid."
+        ) from exc
+    except Exception as exc:
+        raise ValueError(
+            f"The uploaded PDF could not be read: {str(exc)}"
+        ) from exc
+
+
+def _read_upload(
+    file_storage,
+    allowed_extensions,
+    max_pages=None,
+):
+    original_name = file_storage.filename or "uploaded_file"
     extension = Path(original_name).suffix.lower()
-    if extension not in ALLOWED_COVER_LETTER_EXTENSIONS:
+
+    if extension not in allowed_extensions:
         raise ValueError("Only PDF and DOCX files are supported.")
 
     safe_name = secure_filename(original_name)
-    stored_name = f"{uuid.uuid4().hex}{extension}"
-    file_storage.save(COVER_LETTER_UPLOAD_DIR / stored_name)
+    if not safe_name:
+        safe_name = f"uploaded_file{extension}"
 
+    file_storage.stream.seek(0)
+    content = file_storage.stream.read()
+
+    print("Upload filename:", safe_name)
+    print("Upload extension:", extension)
+    print("Upload size:", len(content), "bytes")
+
+    if not content:
+        raise ValueError("The uploaded file is empty.")
+
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise ValueError("The uploaded file must not exceed 10 MB.")
+
+    # Page limits apply only to PDF files. DOCX files still upload normally.
+    if extension == ".pdf" and max_pages is not None:
+        _validate_pdf(content, max_pages)
+
+    # Reset the stream in case another part of the application needs it.
+    file_storage.stream.seek(0)
+    return safe_name, extension, content
+
+
+def _clean_text(value):
+    return str(value or "").strip()
+
+
+def _description_lines(value):
+    lines = []
+    for line in _clean_text(value).splitlines():
+        cleaned = re.sub(r"^[\s\u2022\-*]+", "", line).strip()
+        if cleaned:
+            lines.append(cleaned)
+    return lines
+
+
+def _output_format(value):
+    output_format = _clean_text(value).lower().lstrip(".")
+    if output_format not in {"pdf", "docx"}:
+        raise ValueError("Choose either PDF or DOCX as the resume format.")
+    return output_format
+
+
+def _accent_hex(data, layout):
+    defaults = {
+        "modern": "#2563EB",
+        "tech": "#0F766E",
+        "elegant": "#7E22CE",
+        "minimalist": "#334155",
+    }
+    accent = _clean_text((data or {}).get("accentColor"))
+    if re.fullmatch(r"#[0-9a-fA-F]{6}", accent):
+        return accent.upper()
+    return defaults.get(layout, defaults["modern"])
+
+
+def _generate_pdf_resume(name, layout, data):
+    """Create a genuine, multi-page PDF resume in memory."""
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import (
+            KeepTogether,
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
+    except ImportError as exc:
+        raise RuntimeError(
+            "PDF generation requires reportlab. "
+            "Run: python -m pip install reportlab"
+        ) from exc
+
+    data = data or {}
+    info = data.get("personalInfo") or {}
+    accent = colors.HexColor(_accent_hex(data, layout))
+    buffer = BytesIO()
+    document = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=17 * mm,
+        leftMargin=17 * mm,
+        topMargin=15 * mm,
+        bottomMargin=16 * mm,
+        title=_clean_text(name) or "Resume",
+        author=_clean_text(info.get("name")) or "JobPortal Candidate",
+    )
+
+    font_map = {
+        "modern": ("Helvetica", "Helvetica-Bold"),
+        "tech": ("Courier", "Courier-Bold"),
+        "elegant": ("Times-Roman", "Times-Bold"),
+        "minimalist": ("Times-Roman", "Times-Bold"),
+    }
+    body_font, bold_font = font_map.get(layout, font_map["modern"])
+    centered_header = layout in {"elegant", "minimalist"}
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="ResumeName",
+        parent=styles["Title"],
+        fontName=bold_font,
+        fontSize=22,
+        leading=26,
+        textColor=accent,
+        alignment=TA_CENTER if centered_header else TA_LEFT,
+        spaceAfter=3,
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeTitle",
+        parent=styles["Normal"],
+        fontName=body_font,
+        fontSize=11,
+        leading=14,
+        textColor=colors.HexColor("#475569"),
+        alignment=TA_CENTER if centered_header else TA_LEFT,
+        spaceAfter=4,
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeContact",
+        parent=styles["Normal"],
+        fontName=body_font,
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor("#64748B"),
+        alignment=TA_CENTER if centered_header else TA_LEFT,
+        spaceAfter=10,
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeSection",
+        parent=styles["Heading2"],
+        fontName=bold_font,
+        fontSize=10,
+        leading=13,
+        textColor=accent,
+        spaceBefore=8,
+        spaceAfter=5,
+        uppercase=True,
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeBody",
+        parent=styles["BodyText"],
+        fontName=body_font,
+        fontSize=9.2,
+        leading=13,
+        textColor=colors.HexColor("#334155"),
+        spaceAfter=4,
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeItemTitle",
+        parent=styles["BodyText"],
+        fontName=bold_font,
+        fontSize=9.5,
+        leading=12,
+        textColor=colors.HexColor("#0F172A"),
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeDate",
+        parent=styles["BodyText"],
+        fontName=body_font,
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor("#64748B"),
+        alignment=2,
+    ))
+    styles.add(ParagraphStyle(
+        name="ResumeBullet",
+        parent=styles["BodyText"],
+        fontName=body_font,
+        fontSize=8.8,
+        leading=12,
+        leftIndent=10,
+        firstLineIndent=-7,
+        bulletIndent=0,
+        textColor=colors.HexColor("#334155"),
+        spaceAfter=2,
+    ))
+
+    story = []
+    person_name = _clean_text(info.get("name")) or _clean_text(name)
+    story.append(Paragraph(html.escape(person_name or "Candidate"), styles["ResumeName"]))
+    if _clean_text(info.get("title")):
+        story.append(Paragraph(
+            html.escape(_clean_text(info.get("title"))),
+            styles["ResumeTitle"],
+        ))
+    contact = [
+        _clean_text(info.get("email")),
+        _clean_text(info.get("phone")),
+        _clean_text(info.get("location")),
+        _clean_text(info.get("website")),
+    ]
+    contact = [html.escape(value) for value in contact if value]
+    if contact:
+        story.append(Paragraph(" &bull; ".join(contact), styles["ResumeContact"]))
+    story.append(Table(
+        [[""]],
+        colWidths=[document.width],
+        rowHeights=[1],
+        style=TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), accent),
+            ("LINEBELOW", (0, 0), (-1, -1), 0, accent),
+        ]),
+    ))
+    story.append(Spacer(1, 5))
+
+    def add_section(title):
+        story.append(Paragraph(html.escape(title.upper()), styles["ResumeSection"]))
+
+    summary = _clean_text(info.get("summary"))
+    if summary:
+        add_section("Professional Summary")
+        story.append(Paragraph(
+            html.escape(summary).replace("\n", "<br/>"),
+            styles["ResumeBody"],
+        ))
+
+    experiences = data.get("experience") or []
+    if experiences:
+        add_section("Experience")
+        for item in experiences:
+            role = html.escape(_clean_text(item.get("role")) or "Role")
+            company = html.escape(_clean_text(item.get("company")))
+            dates = " - ".join(
+                value for value in [
+                    _clean_text(item.get("startDate")),
+                    _clean_text(item.get("endDate")),
+                ] if value
+            )
+            block = [
+                Table(
+                    [[
+                        Paragraph(role, styles["ResumeItemTitle"]),
+                        Paragraph(html.escape(dates), styles["ResumeDate"]),
+                    ]],
+                    colWidths=[document.width * 0.72, document.width * 0.28],
+                    style=TableStyle([
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ]),
+                ),
+            ]
+            if company:
+                block.append(Paragraph(company, styles["ResumeBody"]))
+            for line in _description_lines(item.get("description")):
+                block.append(Paragraph(
+                    html.escape(line),
+                    styles["ResumeBullet"],
+                    bulletText="\u2022",
+                ))
+            block.append(Spacer(1, 4))
+            story.append(KeepTogether(block))
+
+    education = data.get("education") or []
+    if education:
+        add_section("Education")
+        for item in education:
+            qualification = " in ".join(
+                value for value in [
+                    _clean_text(item.get("degree")),
+                    _clean_text(item.get("field")),
+                ] if value
+            )
+            school = _clean_text(item.get("school"))
+            dates = " - ".join(
+                value for value in [
+                    _clean_text(item.get("startDate")),
+                    _clean_text(item.get("endDate")),
+                ] if value
+            )
+            story.append(KeepTogether([
+                Table(
+                    [[
+                        Paragraph(
+                            html.escape(qualification or "Qualification"),
+                            styles["ResumeItemTitle"],
+                        ),
+                        Paragraph(html.escape(dates), styles["ResumeDate"]),
+                    ]],
+                    colWidths=[document.width * 0.72, document.width * 0.28],
+                    style=TableStyle([
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ]),
+                ),
+                Paragraph(html.escape(school), styles["ResumeBody"]),
+                Spacer(1, 3),
+            ]))
+
+    projects = data.get("projects") or []
+    if projects:
+        add_section("Key Projects")
+        for item in projects:
+            block = [
+                Paragraph(
+                    html.escape(_clean_text(item.get("name")) or "Project"),
+                    styles["ResumeItemTitle"],
+                ),
+            ]
+            if _clean_text(item.get("description")):
+                block.append(Paragraph(
+                    html.escape(_clean_text(item.get("description"))),
+                    styles["ResumeBody"],
+                ))
+            technologies = [
+                _clean_text(value)
+                for value in (item.get("technologies") or [])
+                if _clean_text(value)
+            ]
+            if technologies:
+                block.append(Paragraph(
+                    "<b>Technologies:</b> " + html.escape(", ".join(technologies)),
+                    styles["ResumeBody"],
+                ))
+            block.append(Spacer(1, 3))
+            story.append(KeepTogether(block))
+
+    skills = [
+        _clean_text(value)
+        for value in (data.get("skills") or [])
+        if _clean_text(value)
+    ]
+    if skills:
+        add_section("Core Skills")
+        story.append(Paragraph(
+            " &bull; ".join(html.escape(value) for value in skills),
+            styles["ResumeBody"],
+        ))
+
+    def draw_page(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor("#E2E8F0"))
+        canvas.line(17 * mm, 11 * mm, A4[0] - 17 * mm, 11 * mm)
+        canvas.setFont(body_font, 7.5)
+        canvas.setFillColor(colors.HexColor("#94A3B8"))
+        canvas.drawRightString(
+            A4[0] - 17 * mm,
+            7 * mm,
+            f"Page {doc.page}",
+        )
+        canvas.restoreState()
+
+    document.build(story, onFirstPage=draw_page, onLaterPages=draw_page)
+    return buffer.getvalue()
+
+
+def _generate_docx_resume(name, layout, data):
+    """Create a genuine Microsoft Word DOCX resume in memory."""
+    try:
+        from docx import Document
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+        from docx.shared import Mm, Pt, RGBColor
+    except ImportError as exc:
+        raise RuntimeError(
+            "DOCX generation requires python-docx. "
+            "Run: python -m pip install python-docx"
+        ) from exc
+
+    data = data or {}
+    info = data.get("personalInfo") or {}
+    accent = _accent_hex(data, layout).lstrip("#")
+    accent_color = RGBColor.from_string(accent)
+    font_map = {
+        "modern": "Aptos",
+        "tech": "Consolas",
+        "elegant": "Georgia",
+        "minimalist": "Georgia",
+    }
+    font_name = font_map.get(layout, font_map["modern"])
+    centered_header = layout in {"elegant", "minimalist"}
+
+    document = Document()
+    section = document.sections[0]
+    section.page_width = Mm(210)
+    section.page_height = Mm(297)
+    section.top_margin = Mm(15)
+    section.bottom_margin = Mm(15)
+    section.left_margin = Mm(18)
+    section.right_margin = Mm(18)
+
+    normal = document.styles["Normal"]
+    normal.font.name = font_name
+    normal.font.size = Pt(9.5)
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), font_name)
+
+    def set_paragraph_spacing(paragraph, before=0, after=0, line=1.05):
+        paragraph.paragraph_format.space_before = Pt(before)
+        paragraph.paragraph_format.space_after = Pt(after)
+        paragraph.paragraph_format.line_spacing = line
+
+    def shade_paragraph(paragraph, fill):
+        properties = paragraph._p.get_or_add_pPr()
+        shading = OxmlElement("w:shd")
+        shading.set(qn("w:fill"), fill)
+        properties.append(shading)
+
+    def add_section_heading(title):
+        paragraph = document.add_paragraph()
+        set_paragraph_spacing(paragraph, before=7, after=3)
+        run = paragraph.add_run(title.upper())
+        run.bold = True
+        run.font.name = font_name
+        run.font.size = Pt(10)
+        run.font.color.rgb = accent_color
+        border = OxmlElement("w:pBdr")
+        bottom = OxmlElement("w:bottom")
+        bottom.set(qn("w:val"), "single")
+        bottom.set(qn("w:sz"), "6")
+        bottom.set(qn("w:space"), "2")
+        bottom.set(qn("w:color"), accent)
+        border.append(bottom)
+        paragraph._p.get_or_add_pPr().append(border)
+
+    header = document.add_paragraph()
+    header.alignment = (
+        WD_ALIGN_PARAGRAPH.CENTER
+        if centered_header
+        else WD_ALIGN_PARAGRAPH.LEFT
+    )
+    set_paragraph_spacing(header, after=1)
+    name_run = header.add_run(
+        _clean_text(info.get("name")) or _clean_text(name) or "Candidate"
+    )
+    name_run.bold = True
+    name_run.font.name = font_name
+    name_run.font.size = Pt(21)
+    name_run.font.color.rgb = accent_color
+
+    if _clean_text(info.get("title")):
+        title_paragraph = document.add_paragraph()
+        title_paragraph.alignment = header.alignment
+        set_paragraph_spacing(title_paragraph, after=2)
+        title_run = title_paragraph.add_run(_clean_text(info.get("title")))
+        title_run.font.name = font_name
+        title_run.font.size = Pt(11)
+        title_run.font.color.rgb = RGBColor(71, 85, 105)
+
+    contact_values = [
+        _clean_text(info.get("email")),
+        _clean_text(info.get("phone")),
+        _clean_text(info.get("location")),
+        _clean_text(info.get("website")),
+    ]
+    contact_values = [value for value in contact_values if value]
+    if contact_values:
+        contact = document.add_paragraph()
+        contact.alignment = header.alignment
+        set_paragraph_spacing(contact, after=5)
+        contact_run = contact.add_run("  •  ".join(contact_values))
+        contact_run.font.name = font_name
+        contact_run.font.size = Pt(8.5)
+        contact_run.font.color.rgb = RGBColor(100, 116, 139)
+
+    accent_bar = document.add_paragraph()
+    set_paragraph_spacing(accent_bar, after=3)
+    shade_paragraph(accent_bar, accent)
+    accent_bar.add_run(" ")
+
+    summary = _clean_text(info.get("summary"))
+    if summary:
+        add_section_heading("Professional Summary")
+        paragraph = document.add_paragraph(summary)
+        set_paragraph_spacing(paragraph, after=3)
+
+    experiences = data.get("experience") or []
+    if experiences:
+        add_section_heading("Experience")
+        for item in experiences:
+            paragraph = document.add_paragraph()
+            set_paragraph_spacing(paragraph, before=2, after=0)
+            role = paragraph.add_run(_clean_text(item.get("role")) or "Role")
+            role.bold = True
+            dates = " - ".join(
+                value for value in [
+                    _clean_text(item.get("startDate")),
+                    _clean_text(item.get("endDate")),
+                ] if value
+            )
+            if dates:
+                date_run = paragraph.add_run(f"  |  {dates}")
+                date_run.italic = True
+                date_run.font.color.rgb = RGBColor(100, 116, 139)
+            company_name = _clean_text(item.get("company"))
+            if company_name:
+                company = document.add_paragraph(company_name)
+                set_paragraph_spacing(company, after=1)
+                company.runs[0].font.color.rgb = accent_color
+            for line in _description_lines(item.get("description")):
+                bullet = document.add_paragraph(line, style="List Bullet")
+                set_paragraph_spacing(bullet, after=0)
+
+    education = data.get("education") or []
+    if education:
+        add_section_heading("Education")
+        for item in education:
+            qualification = " in ".join(
+                value for value in [
+                    _clean_text(item.get("degree")),
+                    _clean_text(item.get("field")),
+                ] if value
+            )
+            dates = " - ".join(
+                value for value in [
+                    _clean_text(item.get("startDate")),
+                    _clean_text(item.get("endDate")),
+                ] if value
+            )
+            paragraph = document.add_paragraph()
+            set_paragraph_spacing(paragraph, before=2, after=0)
+            paragraph.add_run(qualification or "Qualification").bold = True
+            if dates:
+                date_run = paragraph.add_run(f"  |  {dates}")
+                date_run.italic = True
+                date_run.font.color.rgb = RGBColor(100, 116, 139)
+            school = document.add_paragraph(_clean_text(item.get("school")))
+            set_paragraph_spacing(school, after=1)
+
+    projects = data.get("projects") or []
+    if projects:
+        add_section_heading("Key Projects")
+        for item in projects:
+            paragraph = document.add_paragraph()
+            set_paragraph_spacing(paragraph, before=2, after=0)
+            paragraph.add_run(
+                _clean_text(item.get("name")) or "Project"
+            ).bold = True
+            if _clean_text(item.get("description")):
+                description = document.add_paragraph(
+                    _clean_text(item.get("description"))
+                )
+                set_paragraph_spacing(description, after=0)
+            technologies = [
+                _clean_text(value)
+                for value in (item.get("technologies") or [])
+                if _clean_text(value)
+            ]
+            if technologies:
+                technology = document.add_paragraph()
+                set_paragraph_spacing(technology, after=1)
+                technology.add_run("Technologies: ").bold = True
+                technology.add_run(", ".join(technologies))
+
+    skills = [
+        _clean_text(value)
+        for value in (data.get("skills") or [])
+        if _clean_text(value)
+    ]
+    if skills:
+        add_section_heading("Core Skills")
+        skills_paragraph = document.add_paragraph("  •  ".join(skills))
+        set_paragraph_spacing(skills_paragraph, after=1)
+
+    footer = section.footer.paragraphs[0]
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    footer_run = footer.add_run("JobPortal Resume")
+    footer_run.font.name = font_name
+    footer_run.font.size = Pt(7.5)
+    footer_run.font.color.rgb = RGBColor(148, 163, 184)
+
+    buffer = BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()
+
+
+def _generate_builder_document(name, layout, data, output_format):
+    output_format = _output_format(output_format)
+    if output_format == "pdf":
+        return _generate_pdf_resume(name, layout, data)
+    return _generate_docx_resume(name, layout, data)
+
+
+class ResumeStorage:
+    """Supabase Database and private Storage CRUD for resumes."""
+
+    def __init__(self, client=None):
+        self._provided_client = client
+
+    @property
+    def client(self):
+        return self._provided_client or get_supabase_client()
+
+    def get_resumes(self):
+        response = (
+            self.client.table("resumes")
+            .select(RESUME_COLUMNS)
+            .order("last_modified", desc=True)
+            .execute()
+        )
+        return [_api_resume(row) for row in (response.data or [])]
+
+    def get_resume(self, resume_id):
+        response = (
+            self.client.table("resumes")
+            .select(RESUME_COLUMNS)
+            .eq("id", resume_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return _api_resume(rows[0]) if rows else None
+
+    def add_uploaded_resume(self, file_storage, owner_key=None):
+        safe_name, extension, content = _read_upload(
+            file_storage,
+            ALLOWED_RESUME_EXTENSIONS,
+            MAX_RESUME_PAGES,
+        )
+
+        stored_name = f"{uuid.uuid4().hex}{extension}"
+        storage_path = f"unassigned/{stored_name}"
+        bucket = self.client.storage.from_(RESUME_BUCKET)
+
+        print("Validation passed.")
+        print("Uploading to bucket:", RESUME_BUCKET)
+        print("Storage path:", storage_path)
+
+        try:
+            bucket.upload(
+                path=storage_path,
+                file=encrypt_bytes(content),
+                file_options={
+                    "content-type": CONTENT_TYPES[extension],
+                    "upsert": "false",
+                },
+            )
+            print("Supabase file upload successful.")
+        except Exception as exc:
+            print("SUPABASE STORAGE ERROR:", repr(exc))
+            raise RuntimeError(
+                f"Supabase Storage upload failed: {str(exc)}"
+            ) from exc
+
+        row = {
+            "id": "res-" + uuid.uuid4().hex[:12],
+            "name": Path(safe_name).stem,
+            "type": "upload",
+            "file_name": safe_name,
+            "stored_file_name": stored_name,
+            "file_format": extension.lstrip("."),
+            "storage_bucket": RESUME_BUCKET,
+            "storage_path": storage_path,
+            "last_modified": _utc_timestamp(),
+            "owner_key": owner_key,
+        }
+
+        try:
+            response = self.client.table("resumes").insert(row).execute()
+            print("Resume database record created successfully.")
+        except Exception as exc:
+            print("SUPABASE DATABASE ERROR:", repr(exc))
+            try:
+                bucket.remove([storage_path])
+                print("Uploaded file removed after database failure.")
+            except Exception as cleanup_exc:
+                print("FILE CLEANUP ERROR:", repr(cleanup_exc))
+            raise RuntimeError(
+                f"Resume database insert failed: {str(exc)}"
+            ) from exc
+
+        rows = response.data or []
+        if not rows:
+            try:
+                bucket.remove([storage_path])
+            except Exception:
+                pass
+            raise RuntimeError(
+                "The resume was uploaded, but no database record was returned."
+            )
+
+        return _api_resume(rows[0])
+
+    def _store_generated_document(
+        self,
+        name,
+        layout,
+        data,
+        output_format,
+    ):
+        output_format = _output_format(output_format)
+        content = _generate_builder_document(
+            name,
+            layout,
+            data,
+            output_format,
+        )
+        if not content:
+            raise RuntimeError("The generated resume file is empty.")
+        if len(content) > MAX_UPLOAD_BYTES:
+            raise ValueError("The generated resume must not exceed 10 MB.")
+
+        safe_stem = secure_filename(
+            Path(name or "resume").stem
+        ) or "resume"
+        extension = f".{output_format}"
+        original_name = f"{safe_stem}{extension}"
+        stored_name = f"{uuid.uuid4().hex}{extension}"
+        storage_path = f"unassigned/{stored_name}"
+        self.client.storage.from_(RESUME_BUCKET).upload(
+            path=storage_path,
+            file=encrypt_bytes(content),
+            file_options={
+                "content-type": CONTENT_TYPES[extension],
+                "upsert": "false",
+            },
+        )
+        return {
+            "file_name": original_name,
+            "stored_file_name": stored_name,
+            "file_format": output_format,
+            "storage_bucket": RESUME_BUCKET,
+            "storage_path": storage_path,
+        }
+
+    def add_builder_resume(
+        self,
+        name,
+        layout,
+        data,
+        output_format,
+        owner_key=None,
+    ):
+        name = name or "Untitled Resume"
+        layout = layout or "modern"
+        data = data or {}
+        stored_file = self._store_generated_document(
+            name,
+            layout,
+            data,
+            output_format,
+        )
+        row = {
+            "id": "res-" + uuid.uuid4().hex[:12],
+            "name": name,
+            "type": "builder",
+            "layout": layout,
+            "data": data,
+            **stored_file,
+            "last_modified": _utc_timestamp(),
+            "owner_key": owner_key,
+        }
+        try:
+            response = self.client.table("resumes").insert(row).execute()
+        except Exception:
+            self.client.storage.from_(RESUME_BUCKET).remove(
+                [stored_file["storage_path"]]
+            )
+            raise
+        return _api_resume(response.data[0])
+
+    def update_resume(self, resume_id, updates):
+        existing_response = (
+            self.client.table("resumes")
+            .select(RESUME_COLUMNS)
+            .eq("id", resume_id)
+            .limit(1)
+            .execute()
+        )
+        existing_rows = existing_response.data or []
+        if not existing_rows:
+            return None
+        existing = existing_rows[0]
+
+        field_map = {
+            "name": "name",
+            "layout": "layout",
+            "data": "data",
+        }
+        changes = {
+            database_field: updates[api_field]
+            for api_field, database_field in field_map.items()
+            if api_field in updates
+        }
+        changes["last_modified"] = _utc_timestamp()
+
+        new_file = None
+        builder_fields_changed = any(
+            field in updates for field in ("name", "layout", "data", "outputFormat")
+        )
+        if existing.get("type") == "builder" and builder_fields_changed:
+            output_format = (
+                updates.get("outputFormat")
+                or existing.get("file_format")
+            )
+            if not output_format:
+                raise ValueError(
+                    "Choose PDF or DOCX before saving this resume."
+                )
+            name = changes.get("name", existing.get("name"))
+            layout = changes.get("layout", existing.get("layout") or "modern")
+            data = changes.get("data", existing.get("data") or {})
+            new_file = self._store_generated_document(
+                name,
+                layout,
+                data,
+                output_format,
+            )
+            changes.update(new_file)
+
+        try:
+            response = (
+                self.client.table("resumes")
+                .update(changes)
+                .eq("id", resume_id)
+                .execute()
+            )
+        except Exception:
+            if new_file:
+                self.client.storage.from_(RESUME_BUCKET).remove(
+                    [new_file["storage_path"]]
+                )
+            raise
+
+        old_storage_path = existing.get("storage_path")
+        if (
+            new_file
+            and old_storage_path
+            and old_storage_path != new_file["storage_path"]
+        ):
+            try:
+                self.client.storage.from_(
+                    existing.get("storage_bucket") or RESUME_BUCKET
+                ).remove([old_storage_path])
+            except Exception:
+                # The new database/file record is valid even if an old object
+                # was already missing.
+                pass
+
+        rows = response.data or []
+        if rows:
+            return _api_resume(rows[0])
+        return self.get_resume(resume_id)
+
+    def delete_resume(self, resume_id):
+        response = (
+            self.client.table("resumes")
+            .select(RESUME_COLUMNS)
+            .eq("id", resume_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        if not rows:
+            return False
+
+        row = rows[0]
+        self.client.table("resumes").delete().eq("id", resume_id).execute()
+        if row.get("storage_path"):
+            self.client.storage.from_(
+                row.get("storage_bucket") or RESUME_BUCKET
+            ).remove([row["storage_path"]])
+        return True
+
+    def download_uploaded_resume(self, stored_filename):
+        response = (
+            self.client.table("resumes")
+            .select(
+                "id,file_name,file_format,storage_bucket,storage_path,"
+                "stored_file_name,owner_key"
+            )
+            .eq("stored_file_name", stored_filename)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        if not rows:
+            return None
+
+        row = rows[0]
+        extension = "." + (row.get("file_format") or "pdf").lower()
+        encrypted_content = self.client.storage.from_(
+            row.get("storage_bucket") or RESUME_BUCKET
+        ).download(row["storage_path"])
+        content = _safe_decrypt(encrypted_content)
+        return {
+            "content": content,
+            "file_name": row.get("file_name") or stored_filename,
+            "content_type": CONTENT_TYPES.get(
+                extension,
+                "application/octet-stream",
+            ),
+            "resume_id": row.get("id"),
+            "owner_key": row.get("owner_key"),
+        }
+
+
+def save_cover_letter_file(file_storage):
+    """Upload a cover letter to the private resume bucket."""
+    safe_name, extension, content = _read_upload(
+        file_storage,
+        ALLOWED_COVER_LETTER_EXTENSIONS,
+        MAX_COVER_LETTER_PAGES,
+    )
+    stored_name = f"{uuid.uuid4().hex}{extension}"
+    get_supabase_client().storage.from_(RESUME_BUCKET).upload(
+        path=f"cover-letters/{stored_name}",
+        file=encrypt_bytes(content),
+        file_options={
+            "content-type": CONTENT_TYPES[extension],
+            "upsert": "false",
+        },
+    )
     return {
         "originalName": safe_name,
         "storedFileName": stored_name,
     }
+
+
+def download_cover_letter_file(stored_filename):
+    """Download a cover letter file from Supabase Storage."""
+    extension = Path(stored_filename).suffix.lower()
+    if extension not in ALLOWED_COVER_LETTER_EXTENSIONS:
+        return None
+    try:
+        encrypted_content = get_supabase_client().storage.from_(RESUME_BUCKET).download(
+            f"cover-letters/{stored_filename}"
+        )
+    except Exception:
+        return None
+    content = _safe_decrypt(encrypted_content)
+    return {
+        "content": content,
+        "file_name": stored_filename,
+        "content_type": CONTENT_TYPES[extension],
+    }
+
+
+def delete_cover_letter_file(stored_filename):
+    """Delete a cover letter file from Supabase Storage."""
+    if not stored_filename:
+        return
+    try:
+        get_supabase_client().storage.from_(RESUME_BUCKET).remove(
+            [f"cover-letters/{stored_filename}"]
+        )
+    except Exception:
+        # The application row is still deleted even if an old file is missing.
+        pass
 
 
 # ======================================================================

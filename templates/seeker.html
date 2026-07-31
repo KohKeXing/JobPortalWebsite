@@ -227,11 +227,11 @@
         <div class="flex flex-col gap-3">
             <div class="flex justify-between items-center text-xs">
                 <span class="font-extrabold text-slate-900 uppercase tracking-wide">Min Salary</span>
-                <span id="label-min-salary" class="font-extrabold text-blue-600">RM 3,000+</span>
+                <span id="label-min-salary" class="font-extrabold text-blue-600">RM 500+</span>
             </div>
-            <input type="range" id="slider-min-salary" min="3" max="15" step="1" value="3" oninput="triggerFilters()" class="w-full accent-blue-600 cursor-pointer">
+            <input type="range" id="slider-min-salary" min="0.5" max="15" step="0.5" value="0.5" oninput="triggerFilters()" class="w-full accent-blue-600 cursor-pointer">
             <div class="flex justify-between text-[10px] text-slate-400 font-extrabold">
-                <span>RM 3,000</span>
+                <span>RM 500</span>
                 <span>RM 15,000</span>
             </div>
             <div class="h-[1px] bg-slate-100 my-2"></div>
@@ -611,16 +611,35 @@
             </div>
             <div>
                 <label class="block font-bold text-slate-700 mb-1.5">Full Name</label>
-                <input type="text" id="edit-name" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <input
+    type="text"
+    id="edit-name"
+    required
+    pattern="[A-Za-zÀ-ÖØ-öø-ÿ' -]+"
+    title="Name can only contain letters, spaces, apostrophes and hyphens"
+    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
             </div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Professional Headline</label>
-                <input type="text" id="edit-headline" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-            </div>
+    <label class="block font-bold text-slate-700 mb-1.5">
+        Professional Headline
+    </label>
+
+    <textarea
+        id="edit-headline"
+        rows="3"
+        class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+        placeholder="e.g. Full-Stack Software Engineer specializing in React & Node.js"
+    ></textarea>
+</div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1.5">Email Address</label>
-                    <input type="email" id="edit-email" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    <input
+    type="email"
+    id="edit-email"
+    required
+    title="Please enter a valid email address"
+    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1.5">Phone Number</label>
@@ -827,7 +846,7 @@
         
         let categoryFilter = 'all';
         let jobTypeFilter = 'all';
-        let minSalaryFilter = 3; // K (thousands)
+        let minSalaryFilter = 0.5; // K (thousands)
 
         let selectedJob = null;
         const isEmployer = false;
@@ -849,9 +868,10 @@
 
         // 2. BOOTSTRAP INITIALIZATION - 改为异步加载
         window.addEventListener('DOMContentLoaded', async () => {
-            loadLocalStorageData(); // 加载 profile, bookmarks
+            loadLocalStorageData(); // Profile remains local until Sprint 3
             await loadApplicationsFromServer(); // 从后端加载申请列表
             await fetchJobs(); // 加载职位列表
+            await loadBookmarksFromServer(); // 从 Supabase 加载收藏
             document.getElementById('sort-select').value = 'match';
             applySortAndFilter();
             syncProfileUI();
@@ -875,12 +895,8 @@
                 }
             }
 
-            const savedBookmarks = localStorage.getItem('jobportal_bookmarks');
-            if (savedBookmarks) {
-                try {
-                    bookmarkedJobs = JSON.parse(savedBookmarks);
-                } catch (e) {}
-            }
+            // Bookmarks now live in Supabase. Remove the obsolete browser copy.
+            localStorage.removeItem('jobportal_bookmarks');
         }
 
         // 从后端加载申请数据
@@ -906,8 +922,19 @@
             syncProfileUI();
         }
 
-        function saveBookmarksState() {
-            localStorage.setItem('jobportal_bookmarks', JSON.stringify(bookmarkedJobs));
+        async function loadBookmarksFromServer() {
+            try {
+                const res = await fetch('/api/bookmarks');
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to load bookmarks.');
+                }
+                bookmarkedJobs = Array.isArray(data) ? data : [];
+            } catch (e) {
+                console.warn('Failed to load bookmarks from Supabase', e);
+                bookmarkedJobs = [];
+            }
+            renderJobsGrid();
             syncDashboardUI();
         }
 
@@ -1080,7 +1107,7 @@
         function resetFilters() {
             document.getElementById('input-search-title').value = '';
             document.getElementById('input-search-location').value = '';
-            document.getElementById('slider-min-salary').value = 3;
+            document.getElementById('slider-min-salary').value = 0.5;
             
             // Reset radio buttons to 'all'
             const radios = document.getElementsByName('job-type');
@@ -1100,7 +1127,7 @@
     const typeRadios = document.getElementsByName('job-type');
     typeRadios.forEach(r => { if (r.checked) selectedType = r.value; });
 
-    const minSalary = parseInt(document.getElementById('slider-min-salary').value, 10);
+    const minSalary = parseFloat(document.getElementById('slider-min-salary').value);
     document.getElementById('label-min-salary').innerText = `RM ${(minSalary * 1000).toLocaleString()}+`;
 
     // Filter logic
@@ -1388,29 +1415,45 @@ function applySortAndFilter() {
         }
 
         // Bookmark management triggers
-        function toggleCardBookmark(event, jobId) {
-            event.stopPropagation();
-            const index = bookmarkedJobs.indexOf(jobId);
-            if (index > -1) {
-                bookmarkedJobs.splice(index, 1);
-            } else {
-                bookmarkedJobs.push(jobId);
+        async function toggleBookmarkOnServer(jobId) {
+            const wasBookmarked = bookmarkedJobs.includes(jobId);
+            try {
+                const res = await fetch(`/api/bookmarks/${encodeURIComponent(jobId)}`, {
+                    method: wasBookmarked ? 'DELETE' : 'POST'
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Bookmark update failed.');
+                }
+
+                bookmarkedJobs = Array.isArray(data.bookmarks)
+                    ? data.bookmarks
+                    : bookmarkedJobs;
+                renderJobsGrid();
+                syncDashboardUI();
+                showFloatingNotice(
+                    wasBookmarked
+                        ? 'Job removed from bookmarks.'
+                        : 'Job bookmarked successfully!'
+                );
+                return true;
+            } catch (e) {
+                console.error('Bookmark update failed', e);
+                showFloatingNotice(e.message || 'Bookmark update failed.');
+                return false;
             }
-            saveBookmarksState();
-            renderJobsGrid();
         }
 
-        function toggleDrawerBookmark() {
+        async function toggleCardBookmark(event, jobId) {
+            event.stopPropagation();
+            await toggleBookmarkOnServer(jobId);
+        }
+
+        async function toggleDrawerBookmark() {
             if (!selectedJob) return;
             const jobId = selectedJob.id;
-            const index = bookmarkedJobs.indexOf(jobId);
-            if (index > -1) {
-                bookmarkedJobs.splice(index, 1);
-            } else {
-                bookmarkedJobs.push(jobId);
-            }
-            saveBookmarksState();
-            renderJobsGrid();
+            const updated = await toggleBookmarkOnServer(jobId);
+            if (!updated) return;
             
             // Re-sync drawer icon state
             const isBookmarked = bookmarkedJobs.includes(jobId);
@@ -1576,6 +1619,16 @@ function applySortAndFilter() {
         function handleCoverLetterSelection(event) {
             const file = event.target.files[0];
             if (!file) return;
+
+            const MAX_FILE_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE) {
+                event.target.value = '';
+                applyCoverLetterName = null;
+                applyCoverLetterFile = null;
+                showFloatingNotice('The file must not exceed 10 MB.');
+                return;
+            }
+
             applyCoverLetterName = file.name;
             applyCoverLetterFile = file;
             document.getElementById('apply-cover-dropzone-text').textContent = `✓ ${file.name}`;
@@ -1938,28 +1991,109 @@ function applySortAndFilter() {
         }
 
         function saveProfileData() {
-            profileState.name = document.getElementById('edit-name').value.trim();
-            profileState.headline = document.getElementById('edit-headline').value.trim();
-            profileState.email = document.getElementById('edit-email').value.trim();
+    const name = document.getElementById('edit-name').value.trim();
+    const email = document.getElementById('edit-email').value.trim();
 
-            const countryCode = document.getElementById('edit-phone-country').value;
-            const phoneNum = document.getElementById('edit-phone').value.trim();
-            profileState.phone = phoneNum ? `${countryCode} ${phoneNum}` : "";
+    // Name cannot be empty
+    if (!name) {
+        showFloatingNotice("Please enter your name.");
+        return;
+    }
 
-            profileState.bio = document.getElementById('edit-bio').value.trim();
-            
-            const rawSkills = document.getElementById('edit-skills').value;
-            profileState.skills = rawSkills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    // Name cannot contain numbers
+    if (/\d/.test(name)) {
+        showFloatingNotice("Name cannot contain numbers.");
+        return;
+    }
 
-            // Only touch the stored avatar if the user actually changed something this session
-            if (pendingAvatarDataUrl !== undefined) {
-                profileState.avatar = pendingAvatarDataUrl;
-            }
+    // Name only allows letters, spaces, apostrophes and hyphens
+    if (!/^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(name)) {
+        showFloatingNotice(
+            "Name can only contain letters, spaces, apostrophes and hyphens."
+        );
+        return;
+    }
 
-            saveProfileState();
-            closeProfileModal();
-            showFloatingNotice("Seeker profile successfully updated and saved locally!");
-        }
+    // Email cannot be empty
+    if (!email) {
+        showFloatingNotice("Please enter your email address.");
+        return;
+    }
+
+    // Email must have a valid format, including @
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+        showFloatingNotice(
+            "Please enter a valid email address, for example name@example.com."
+        );
+        return;
+    }
+
+    profileState.name = name;
+    const headline =
+    document.getElementById('edit-headline').value.trim();
+
+const headlinePattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s&(),.'/-]+$/;
+
+if (headline && !headlinePattern.test(headline)) {
+    showFloatingNotice(
+        "Professional headline can only contain letters and common punctuation."
+    );
+    return;
+}
+
+profileState.headline = headline;
+    profileState.email = email;
+
+    const countryCode =
+        document.getElementById('edit-phone-country').value;
+    const phoneNum =
+        document.getElementById('edit-phone').value.trim();
+
+    profileState.phone = phoneNum
+        ? `${countryCode} ${phoneNum}`
+        : "";
+
+    profileState.bio =
+        document.getElementById('edit-bio').value.trim();
+
+    const rawSkills =
+    document.getElementById('edit-skills').value;
+
+const skills = rawSkills
+    .split(',')
+    .map(skill => skill.trim())
+    .filter(skill => skill.length > 0);
+
+// Allow letters, spaces and common programming symbols
+const skillPattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s.+#/-]+$/;
+
+const invalidSkill = skills.find(
+    skill => !skillPattern.test(skill)
+);
+
+if (invalidSkill) {
+    showFloatingNotice(
+        "Each skill can only contain letters and symbols like +, #, ., / and -."
+    );
+    return;
+}
+
+profileState.skills = skills;
+
+    if (pendingAvatarDataUrl !== undefined) {
+        profileState.avatar = pendingAvatarDataUrl;
+    }
+
+    saveProfileState();
+    syncProfileUI();
+    closeProfileModal();
+
+    showFloatingNotice(
+        "Seeker profile successfully updated and saved!"
+    );
+}
 
         // 9. CO-PILOT SYSTEM (ATS SCAN & RESUME TAILORING ON ACTIVE JOBS)
         async function runATSScanner() {

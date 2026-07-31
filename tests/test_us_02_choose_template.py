@@ -24,7 +24,7 @@ def test_create_a_resume_with_a_chosen_template(seeker_client):
     Then the resume should be saved with layout "Elegant"
     """
     res = seeker_client.post('/api/resumes/builder', json={
-        'name': 'My_Resume', 'layout': 'Elegant', 'data': RESUME_DATA
+        'name': 'My_Resume', 'layout': 'Elegant', 'data': RESUME_DATA, 'outputFormat': 'pdf'
     })
 
     assert res.status_code == 201
@@ -39,7 +39,7 @@ def test_save_a_resume_using_each_supported_template(seeker_client, template):
     Then the resume should be saved with layout "{template}"
     """
     res = seeker_client.post('/api/resumes/builder', json={
-        'name': 'My_Resume', 'layout': template, 'data': RESUME_DATA
+        'name': 'My_Resume', 'layout': template, 'data': RESUME_DATA, 'outputFormat': 'pdf'
     })
 
     assert res.status_code == 201
@@ -53,7 +53,7 @@ def test_template_defaults_to_modern_when_none_is_specified(seeker_client):
     Then the resume should default to layout "modern"
     """
     res = seeker_client.post('/api/resumes/builder', json={
-        'name': 'My_Resume', 'data': RESUME_DATA
+        'name': 'My_Resume', 'data': RESUME_DATA, 'outputFormat': 'pdf'
     })
 
     assert res.status_code == 201
@@ -68,7 +68,7 @@ def test_template_choice_persists_after_being_changed(seeker_client):
     And the resume's other data should be unchanged
     """
     create_res = seeker_client.post('/api/resumes/builder', json={
-        'name': 'My_Resume', 'layout': 'Modern', 'data': RESUME_DATA
+        'name': 'My_Resume', 'layout': 'Modern', 'data': RESUME_DATA, 'outputFormat': 'pdf'
     })
     resume_id = create_res.get_json()['resume']['id']
 

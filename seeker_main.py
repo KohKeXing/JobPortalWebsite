@@ -3,18 +3,24 @@ import os
 import urllib.request
 import urllib.error
 import datetime
+import uuid
+from io import BytesIO
 
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_file, session
 
 # Import application tracking module
-from application_tracking import ApplicationTracking
+from application_tracking import ApplicationTracking, VALID_STATUSES
 
-# Import resume storage module (handles real file uploads + JSON persistence)
-from resume_builder import ResumeStorage, UPLOAD_DIR as RESUME_UPLOAD_DIR, save_cover_letter_file, COVER_LETTER_UPLOAD_DIR
+# Import Supabase Database + private Storage helpers.
+from resume_builder import (
+    ResumeStorage,
+    download_cover_letter_file,
+    save_cover_letter_file,
+)
 
-# Import shared job storage (same data/jobs.json that employer_main.py writes to),
-# so jobs posted by employers actually show up here for job seekers to browse.
+# Import the shared Supabase job storage.
 from job import JobStorage
+from bookmark import BookmarkStorage
 
 job_store = JobStorage()
 
@@ -152,12 +158,22 @@ def call_gemini(prompt, system_instruction=None, response_schema=None):
 # Instantiate application tracker
 app_tracker = ApplicationTracking()
 
-# Instantiate resume storage (real JSON file + on-disk uploads, survives restarts)
+# Instantiate shared Supabase storage classes.
 resume_store = ResumeStorage()
+bookmark_store = BookmarkStorage()
 
 def create_app():
     app = Flask(__name__, template_folder="templates")
+    app.config["MAX_CONTENT_LENGTH"] = 11 * 1024 * 1024
     app.secret_key = "resume-management-production-secure-token"
+
+    def get_bookmark_owner_key():
+        """Identify this browser until Supabase Auth is added in Sprint 3."""
+        owner_key = session.get("bookmark_owner_key")
+        if not owner_key:
+            owner_key = f"anonymous-{uuid.uuid4().hex}"
+            session["bookmark_owner_key"] = owner_key
+        return owner_key
 
     @app.route("/")
     def index():
@@ -197,6 +213,16 @@ def create_app():
             return jsonify({"error": "jobId, job title and company are required"}), 400
         if not resume_id:
             return jsonify({"error": "A resume must be selected to apply."}), 400
+        selected_resume = resume_store.get_resume(resume_id)
+        if not selected_resume:
+            return jsonify({"error": "The selected resume was not found."}), 400
+        if not selected_resume.get("storedFileName"):
+            return jsonify({
+                "error": (
+                    "Save the selected builder resume as PDF or DOCX "
+                    "before applying."
+                )
+            }), 400
         if not cover_letter_text and not cover_letter_file:
             return jsonify({"error": "A cover letter (written or uploaded) is required to apply."}), 400
 
@@ -213,20 +239,91 @@ def create_app():
         )
         return jsonify({"success": True, "application": new_app}), 201
 
+    # ---------------------------------------------------------
+    # BOOKMARK CRUD API ROUTES (Supabase Database)
+    # ---------------------------------------------------------
+    @app.route("/api/bookmarks", methods=["GET"])
+    def get_bookmarks():
+        try:
+            return jsonify(
+                bookmark_store.get_job_ids(get_bookmark_owner_key())
+            )
+        except Exception:
+            app.logger.exception("Could not load bookmarks")
+            return jsonify({"error": "Could not load bookmarks."}), 500
+
+    @app.route("/api/bookmarks/<job_id>", methods=["POST"])
+    def add_bookmark(job_id):
+        try:
+            if job_store.get_job(job_id) is None:
+                return jsonify({"error": "Job not found."}), 404
+
+            created = bookmark_store.add_bookmark(
+                get_bookmark_owner_key(),
+                job_id,
+            )
+            bookmarks = bookmark_store.get_job_ids(
+                get_bookmark_owner_key()
+            )
+            return jsonify({
+                "success": True,
+                "created": created,
+                "jobId": job_id,
+                "bookmarks": bookmarks,
+            }), 201 if created else 200
+        except Exception:
+            app.logger.exception("Could not add bookmark")
+            return jsonify({"error": "Could not add bookmark."}), 500
+
+    @app.route("/api/bookmarks/<job_id>", methods=["DELETE"])
+    def delete_bookmark(job_id):
+        try:
+            removed = bookmark_store.delete_bookmark(
+                get_bookmark_owner_key(),
+                job_id,
+            )
+            bookmarks = bookmark_store.get_job_ids(
+                get_bookmark_owner_key()
+            )
+            return jsonify({
+                "success": True,
+                "removed": removed,
+                "jobId": job_id,
+                "bookmarks": bookmarks,
+            })
+        except Exception:
+            app.logger.exception("Could not delete bookmark")
+            return jsonify({"error": "Could not delete bookmark."}), 500
+
     @app.route("/api/cover-letters/upload", methods=["POST"])
     def upload_cover_letter():
         file = request.files.get("coverLetter")
         if not file or not file.filename:
             return jsonify({"error": "No file was provided."}), 400
+
         try:
             record = save_cover_letter_file(file)
             return jsonify({"success": True, **record}), 201
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+        except ValueError as exc:
+            app.logger.warning("Cover-letter validation failed: %s", exc)
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            app.logger.exception("Cover-letter upload failed")
+            return jsonify({
+                "error": f"Could not upload the cover letter: {str(exc)}"
+            }), 500
 
     @app.route("/uploads/cover-letters/<filename>")
     def serve_cover_letter(filename):
-        return send_from_directory(COVER_LETTER_UPLOAD_DIR, filename)
+        stored_file = download_cover_letter_file(filename)
+        if stored_file is None:
+            return jsonify({"error": "Cover letter not found"}), 404
+        return send_file(
+            BytesIO(stored_file["content"]),
+            mimetype=stored_file["content_type"],
+            download_name=stored_file["file_name"],
+            as_attachment=False,
+        )
 
     @app.route("/api/applications/<app_id>", methods=["PUT"])
     def update_application_status(app_id):
@@ -239,6 +336,10 @@ def create_app():
         new_details = data.get("details")
         if not new_status:
             return jsonify({"error": "Status is required"}), 400
+        if new_status not in VALID_STATUSES:
+            return jsonify({
+                "error": f"Status must be one of: {', '.join(VALID_STATUSES)}"
+            }), 400
 
         success = app_tracker.update_status(app_id, new_status, new_details)
         if success:
@@ -247,8 +348,7 @@ def create_app():
             return jsonify({"error": "Application not found"}), 404
 
     # ---------------------------------------------------------
-    # RESUME STORAGE API ROUTES (real Python/Flask persistence,
-    # replacing the old browser-only localStorage approach)
+    # RESUME STORAGE API ROUTES (Supabase Database + private Storage)
     # ---------------------------------------------------------
     @app.route("/api/resumes", methods=["GET"])
     def get_resumes():
@@ -259,11 +359,18 @@ def create_app():
         file = request.files.get("resume")
         if not file or not file.filename:
             return jsonify({"error": "No file was provided."}), 400
+
         try:
             record = resume_store.add_uploaded_resume(file)
             return jsonify({"success": True, "resume": record}), 201
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+        except ValueError as exc:
+            app.logger.warning("Resume validation failed: %s", exc)
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            app.logger.exception("Resume upload failed")
+            return jsonify({
+                "error": f"Could not upload the resume: {str(exc)}"
+            }), 500
 
     @app.route("/api/resumes/builder", methods=["POST"])
     def create_builder_resume():
@@ -271,16 +378,38 @@ def create_app():
         name = body.get("name", "Untitled Resume")
         layout = body.get("layout", "modern")
         data = body.get("data", {})
-        record = resume_store.add_builder_resume(name, layout, data)
-        return jsonify({"success": True, "resume": record}), 201
+        output_format = body.get("outputFormat")
+        try:
+            record = resume_store.add_builder_resume(
+                name,
+                layout,
+                data,
+                output_format,
+            )
+            return jsonify({"success": True, "resume": record}), 201
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception:
+            app.logger.exception("Builder resume generation failed")
+            return jsonify({
+                "error": "Could not generate and save the resume file."
+            }), 500
 
     @app.route("/api/resumes/<resume_id>", methods=["PUT"])
     def update_resume(resume_id):
         updates = request.get_json() or {}
-        record = resume_store.update_resume(resume_id, updates)
-        if record:
-            return jsonify({"success": True, "resume": record}), 200
-        return jsonify({"error": "Resume not found"}), 404
+        try:
+            record = resume_store.update_resume(resume_id, updates)
+            if record:
+                return jsonify({"success": True, "resume": record}), 200
+            return jsonify({"error": "Resume not found"}), 404
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception:
+            app.logger.exception("Resume update/generation failed")
+            return jsonify({
+                "error": "Could not update and generate the resume file."
+            }), 500
 
     @app.route("/api/resumes/<resume_id>", methods=["DELETE"])
     def delete_resume(resume_id):
@@ -291,7 +420,15 @@ def create_app():
 
     @app.route("/uploads/<filename>")
     def serve_uploaded_resume(filename):
-        return send_from_directory(RESUME_UPLOAD_DIR, filename)
+        stored_file = resume_store.download_uploaded_resume(filename)
+        if stored_file is None:
+            return jsonify({"error": "Resume file not found"}), 404
+        return send_file(
+            BytesIO(stored_file["content"]),
+            mimetype=stored_file["content_type"],
+            download_name=stored_file["file_name"],
+            as_attachment=False,
+        )
 
     # ---------------------------------------------------------
     # RESUME PORTAL API ENDPOINTS (MERGED FROM server.py)

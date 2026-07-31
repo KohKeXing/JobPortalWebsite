@@ -6,6 +6,8 @@ reuse a resume I already have instead of building a new one.
 """
 import io
 
+from conftest import valid_pdf_bytes
+
 
 def test_successfully_upload_a_valid_resume_file(seeker_client):
     """
@@ -14,7 +16,7 @@ def test_successfully_upload_a_valid_resume_file(seeker_client):
     Then the file should be uploaded successfully
     And it should appear in "Your Resumes & Saved Materials" with its original filename
     """
-    fake_pdf = (io.BytesIO(b'%PDF-1.4 sample resume content'), 'My_Resume.pdf')
+    fake_pdf = (io.BytesIO(valid_pdf_bytes()), 'My_Resume.pdf')
 
     res = seeker_client.post(
         '/api/resumes/upload',
@@ -87,7 +89,7 @@ def test_accept_an_uppercase_file_extension(seeker_client):
     When I upload a valid PDF file named "MY_RESUME.PDF" (uppercase extension)
     Then the file should be uploaded successfully
     """
-    fake_pdf = (io.BytesIO(b'%PDF-1.4 sample resume content'), 'MY_RESUME.PDF')
+    fake_pdf = (io.BytesIO(valid_pdf_bytes()), 'MY_RESUME.PDF')
 
     res = seeker_client.post(
         '/api/resumes/upload',
@@ -104,7 +106,7 @@ def test_view_an_uploaded_resume(seeker_client):
     When I view that resume
     Then the actual resume file should be retrievable
     """
-    fake_pdf = (io.BytesIO(b'%PDF-1.4 sample resume content'), 'My_Resume.pdf')
+    fake_pdf = (io.BytesIO(valid_pdf_bytes()), 'My_Resume.pdf')
     upload_res = seeker_client.post(
         '/api/resumes/upload',
         data={'resume': fake_pdf},
@@ -125,7 +127,7 @@ def test_delete_an_uploaded_resume(seeker_client):
     Then the resume should no longer appear in "Your Resumes & Saved Materials"
     And the underlying file should no longer be accessible
     """
-    fake_pdf = (io.BytesIO(b'%PDF-1.4 sample resume content'), 'My_Resume.pdf')
+    fake_pdf = (io.BytesIO(valid_pdf_bytes()), 'My_Resume.pdf')
     upload_res = seeker_client.post(
         '/api/resumes/upload',
         data={'resume': fake_pdf},

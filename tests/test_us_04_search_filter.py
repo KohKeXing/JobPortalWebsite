@@ -26,10 +26,10 @@ def test_job_listings_include_the_fields_required_for_clientside_filtering(emplo
     When I fetch the job listings
     Then each job should include a title, type, salary, and location field
     """
-    post_job(employer_client, title='Remote Developer', location='KL, Malaysia (Remote)',
-              salary='RM 5000-7000', type='Remote')
+    post_job(employer_client, title='Remote Developer', location='Kuala Lumpur, Malaysia',
+              salary='5000', type='Remote')
     post_job(employer_client, title='Onsite Analyst', location='Penang, Malaysia',
-              salary='RM 4000-6000', type='Full-time')
+              salary='4000', type='Full-time')
 
     res = seeker_client.get('/api/jobs')
     jobs = res.get_json()
