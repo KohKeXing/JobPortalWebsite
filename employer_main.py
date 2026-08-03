@@ -1,8 +1,7 @@
 from io import BytesIO
-
 from flask import Flask, jsonify, render_template, request, send_file
 
-# Import the shared application tracking module (same one seeker_main.py uses)
+# Import the shared application tracking module
 from application_tracking import ApplicationTracking, VALID_STATUSES
 
 # Import the shared Supabase Database + private Storage helpers.
@@ -17,6 +16,8 @@ from job import JobStorage
 
 REQUIRED_JOB_FIELDS = ["title", "company", "location", "salary", "type", "description"]
 
+# Import encryption for decryption
+from file_encryption import decrypt_bytes
 
 # ---------------------------------------------------------
 # Instantiate storage
@@ -25,6 +26,33 @@ job_store = JobStorage()
 app_tracker = ApplicationTracking()
 resume_store = ResumeStorage()  # shared with seeker_main.py — read-only use here
 
+# ---------------------------------------------------------
+# Simple employer authorization (temporary)
+# In production, use a database table for employers
+# ---------------------------------------------------------
+# Simple employer API keys - in production, store these in a database
+EMPLOYER_KEYS = {
+    "pixelcraft": "emp_key_12345",
+    "synthetix": "emp_key_67890",
+    "cloudnet": "emp_key_11111",
+    "test_employer": "test_key_99999",
+}
+
+def verify_employer(employer_id: str, api_key: str) -> bool:
+    """Verify if employer has valid credentials."""
+    if not employer_id or not api_key:
+        return False
+    return EMPLOYER_KEYS.get(employer_id) == api_key
+
+def verify_employer_for_file(employer_id: str, file_owner_key: str) -> bool:
+    """
+    Verify employer can access a file.
+    In a real system, you'd check if the employer owns the job
+    that the file is associated with.
+    """
+    # For now, if employer is verified, they can access
+    # In production, add job ownership check
+    return True
 
 def create_app():
     app = Flask(__name__, template_folder="templates")
@@ -35,7 +63,32 @@ def create_app():
         return render_template("employer.html")
 
     # =============================================================
-    # JOB POSTING CRUD (the employer's core function)
+    # EMPLOYER AUTHENTICATION
+    # =============================================================
+    @app.route("/api/employer/verify", methods=["POST"])
+    def verify_employer_endpoint():
+        """Simple employer verification endpoint."""
+        data = request.get_json() or {}
+        employer_id = data.get("employer_id")
+        api_key = data.get("api_key")
+        
+        if not employer_id or not api_key:
+            return jsonify({"error": "Employer ID and API key required"}), 400
+        
+        if verify_employer(employer_id, api_key):
+            # Generate a session token (simple for now)
+            import uuid
+            session_token = str(uuid.uuid4())
+            return jsonify({
+                "success": True,
+                "message": "Verified",
+                "token": session_token,
+                "employer_id": employer_id
+            }), 200
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    # =============================================================
+    # JOB POSTING CRUD
     # =============================================================
     @app.route("/api/jobs", methods=["GET"])
     def get_jobs():
@@ -71,9 +124,6 @@ def create_app():
             return jsonify({"error": "Job not found"}), 404
 
         try:
-            # Cascade: remove every application tied to this job first (and
-            # their cover letter files), so the FK constraint on
-            # applications.job_id doesn't block the job delete below.
             removed_applications = app_tracker.delete_applications_for_job(job_id)
             for application in removed_applications:
                 delete_cover_letter_file(application.get("coverLetterFile"))
@@ -90,7 +140,7 @@ def create_app():
             }), 500
 
     # =============================================================
-    # APPLICANT REVIEW (read applications, update their status)
+    # APPLICANT REVIEW
     # =============================================================
     @app.route("/api/applications", methods=["GET"])
     def get_applications():
@@ -126,11 +176,20 @@ def create_app():
         return jsonify({"error": "Application not found"}), 404
 
     # =============================================================
-    # VIEWING CANDIDATE SUBMISSIONS (read-only access to the
-    # resume/cover-letter storage that seeker_main.py writes to)
+    # VIEWING CANDIDATE SUBMISSIONS (with Authorization)
     # =============================================================
     @app.route("/api/resumes/<resume_id>", methods=["GET"])
     def get_candidate_resume(resume_id):
+        # Check authorization - employer must provide credentials
+        employer_id = request.headers.get("X-Employer-ID")
+        api_key = request.headers.get("X-API-Key")
+        
+        if not employer_id or not api_key:
+            return jsonify({"error": "Authorization required. Provide X-Employer-ID and X-API-Key headers."}), 401
+        
+        if not verify_employer(employer_id, api_key):
+            return jsonify({"error": "Invalid employer credentials"}), 403
+        
         resume = resume_store.get_resume(resume_id)
         if resume:
             return jsonify(resume)
@@ -138,9 +197,26 @@ def create_app():
 
     @app.route("/uploads/<filename>")
     def serve_resume_file(filename):
+        """
+        Serve a resume file - ONLY for authorized employers.
+        The file is decrypted before being sent.
+        """
+        # Get employer credentials from request headers
+        employer_id = request.headers.get("X-Employer-ID")
+        api_key = request.headers.get("X-API-Key")
+        
+        if not employer_id or not api_key:
+            return jsonify({"error": "Authorization required. Provide X-Employer-ID and X-API-Key headers."}), 401
+        
+        if not verify_employer(employer_id, api_key):
+            return jsonify({"error": "Invalid employer credentials"}), 403
+        
+        # Download the file (which includes decryption)
         stored_file = resume_store.download_uploaded_resume(filename)
         if stored_file is None:
             return jsonify({"error": "Resume file not found"}), 404
+        
+        # The file is already decrypted by download_uploaded_resume
         return send_file(
             BytesIO(stored_file["content"]),
             mimetype=stored_file["content_type"],
@@ -150,9 +226,26 @@ def create_app():
 
     @app.route("/uploads/cover-letters/<filename>")
     def serve_cover_letter_file(filename):
+        """
+        Serve a cover letter file - ONLY for authorized employers.
+        The file is decrypted before being sent.
+        """
+        # Get employer credentials from request headers
+        employer_id = request.headers.get("X-Employer-ID")
+        api_key = request.headers.get("X-API-Key")
+        
+        if not employer_id or not api_key:
+            return jsonify({"error": "Authorization required. Provide X-Employer-ID and X-API-Key headers."}), 401
+        
+        if not verify_employer(employer_id, api_key):
+            return jsonify({"error": "Invalid employer credentials"}), 403
+        
+        # Download the file (which includes decryption)
         stored_file = download_cover_letter_file(filename)
         if stored_file is None:
             return jsonify({"error": "Cover letter not found"}), 404
+        
+        # The file is already decrypted by download_cover_letter_file
         return send_file(
             BytesIO(stored_file["content"]),
             mimetype=stored_file["content_type"],
@@ -161,7 +254,6 @@ def create_app():
         )
 
     return app
-
 
 if __name__ == "__main__":
     app = create_app()
