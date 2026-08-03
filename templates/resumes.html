@@ -718,24 +718,31 @@
 
         // 2. BOOTSTRAP INITIALIZATION
         window.addEventListener('DOMContentLoaded', async () => {
-            loadLocalStorageData();
+            await loadProfileFromServer();
             await fetchResumesFromServer();
             renderResumesHubList();
         });
 
-        // 3. PERSISTENCE ENGINE
-        function loadLocalStorageData() {
-            const savedProfile = localStorage.getItem('jobportal_profile');
-            if (savedProfile) {
-                try {
-                    profileState = JSON.parse(savedProfile);
-                } catch (e) {}
+        async function loadProfileFromServer() {
+            const response = await fetch('/api/profile');
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
             }
-
+            const profile = await response.json();
+            if (!response.ok) {
+                throw new Error(profile.error || 'Could not load profile.');
+            }
+            profileState = {
+                name: profile.full_name || '',
+                headline: profile.headline || '',
+                email: profile.email || '',
+                phone: profile.phone || '',
+                bio: profile.bio || '',
+                skills: Array.isArray(profile.skills) ? profile.skills : []
+            };
             const displayNameEl = document.getElementById('user-display-name');
-            if (displayNameEl) {
-                displayNameEl.innerText = profileState.name;
-            }
+            if (displayNameEl) displayNameEl.innerText = profileState.name;
 
             const savedLayoutChoice = localStorage.getItem('jobportal_saved_template_choice') || 'modern';
             setTemplateLayoutChoice(savedLayoutChoice);
@@ -743,6 +750,11 @@
             if (indicator) {
                 indicator.textContent = `Preferred: ${savedLayoutChoice.charAt(0).toUpperCase() + savedLayoutChoice.slice(1)}`;
             }
+        }
+
+        async function logoutUser() {
+            await fetch('/api/auth/logout', {method: 'POST'});
+            window.location.href = '/login';
         }
 
         // Resume metadata and generated/uploaded files are stored through Flask

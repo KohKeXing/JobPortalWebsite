@@ -6,7 +6,10 @@ import datetime
 import uuid
 from io import BytesIO
 
-from flask import Flask, render_template, request, jsonify, send_file, session
+from flask import (
+    Flask, render_template, request, jsonify, send_file, session,
+    redirect, url_for,
+)
 
 # Import application tracking module
 from application_tracking import ApplicationTracking, VALID_STATUSES
@@ -21,6 +24,8 @@ from resume_builder import (
 # Import the shared Supabase job storage.
 from job import JobStorage
 from bookmark import BookmarkStorage
+from auth_service import AuthService, JOB_SEEKER_ROLE
+from login_required import seeker_required
 
 job_store = JobStorage()
 
@@ -161,32 +166,198 @@ app_tracker = ApplicationTracking()
 # Instantiate shared Supabase storage classes.
 resume_store = ResumeStorage()
 bookmark_store = BookmarkStorage()
+auth_service = AuthService()
 
 def create_app():
     app = Flask(__name__, template_folder="templates")
     app.config["MAX_CONTENT_LENGTH"] = 11 * 1024 * 1024
-    app.secret_key = "resume-management-production-secure-token"
+    app.config["SECRET_KEY"] = os.environ.get(
+        "FLASK_SECRET_KEY",
+        "local-development-secret-change-me",
+    )
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     def get_bookmark_owner_key():
-        """Identify this browser until Supabase Auth is added in Sprint 3."""
-        owner_key = session.get("bookmark_owner_key")
-        if not owner_key:
-            owner_key = f"anonymous-{uuid.uuid4().hex}"
-            session["bookmark_owner_key"] = owner_key
-        return owner_key
+        """Use the authenticated user ID as the bookmark owner."""
+        return session["user_id"]
 
+    # =========================================================
+    # AUTHENTICATION PAGES
+    # =========================================================
+    @app.route("/login")
+    def login_page():
+        if (
+            session.get("user_id")
+            and session.get("role") == JOB_SEEKER_ROLE
+        ):
+            return redirect(url_for("dashboard"))
+        return render_template("login.html")
+
+    @app.route("/register")
+    def register_page():
+        if (
+            session.get("user_id")
+            and session.get("role") == JOB_SEEKER_ROLE
+        ):
+            return redirect(url_for("dashboard"))
+        return render_template("register.html")
+
+    # =========================================================
+    # AUTHENTICATION API
+    # =========================================================
+    @app.route("/api/auth/register", methods=["POST"])
+    def register_user():
+        data = request.get_json(silent=True) or {}
+        full_name = str(data.get("name", "")).strip()
+        email = str(data.get("email", "")).strip().lower()
+        password = str(data.get("password", ""))
+
+        if not full_name:
+            return jsonify({"error": "Full name is required."}), 400
+        if not email or "@" not in email:
+            return jsonify({"error": "A valid email is required."}), 400
+        if len(password) < 6:
+            return jsonify({
+                "error": "Password must contain at least 6 characters."
+            }), 400
+
+        user, error = auth_service.register_user(
+            email=email,
+            password=password,
+            full_name=full_name,
+        )
+        if error:
+            return jsonify({"error": error}), 400
+
+        return jsonify({
+            "success": True,
+            "message": (
+                "Registration successful. Confirm your email if required, "
+                "then sign in."
+            ),
+            "user": {
+                "id": user.get("id"),
+                "full_name": user.get("full_name"),
+                "role": user.get("role"),
+            },
+        }), 201
+
+    @app.route("/api/auth/login", methods=["POST"])
+    def login_user():
+        data = request.get_json(silent=True) or {}
+        email = str(data.get("email", "")).strip().lower()
+        password = str(data.get("password", ""))
+
+        if not email or not password:
+            return jsonify({
+                "error": "Email and password are required."
+            }), 400
+
+        user, error = auth_service.login_user(email, password)
+        if error:
+            return jsonify({"error": error}), 401
+
+        session.clear()
+        session["user_id"] = user["id"]
+        session["email"] = user["email"]
+        session["full_name"] = user.get("full_name", "")
+        session["role"] = user.get("role", JOB_SEEKER_ROLE)
+        session["access_token"] = user.get("access_token")
+        session["refresh_token"] = user.get("refresh_token")
+
+        return jsonify({
+            "success": True,
+            "redirect": "/dashboard",
+            "user": {
+                "id": session["user_id"],
+                "email": session["email"],
+                "full_name": session["full_name"],
+                "role": session["role"],
+            },
+        }), 200
+
+    @app.route("/api/auth/logout", methods=["POST"])
+    def logout_user():
+        session.clear()
+        return jsonify({
+            "success": True,
+            "redirect": "/login",
+        })
+
+    @app.route("/api/auth/me")
+    def current_user():
+        if not session.get("user_id"):
+            return jsonify({"authenticated": False}), 401
+
+        return jsonify({
+            "authenticated": True,
+            "user": {
+                "id": session.get("user_id"),
+                "email": session.get("email"),
+                "full_name": session.get("full_name"),
+                "role": session.get("role"),
+            },
+        })
+
+    # =========================================================
+    # PROFILE API
+    # =========================================================
+    @app.route("/api/profile", methods=["GET"])
+    @seeker_required
+    def get_profile():
+        profile = auth_service.get_profile(session["user_id"])
+        if not profile:
+            return jsonify({"error": "Profile not found."}), 404
+        profile["email"] = session.get("email", "")
+        return jsonify(profile)
+
+    @app.route("/api/profile", methods=["PUT"])
+    @seeker_required
+    def update_profile():
+        data = request.get_json(silent=True) or {}
+
+        full_name = str(data.get("full_name", "")).strip()
+        if not full_name:
+            return jsonify({"error": "Full name is required."}), 400
+
+        skills = data.get("skills", [])
+        if not isinstance(skills, list):
+            return jsonify({"error": "Skills must be a list."}), 400
+
+        profile = auth_service.update_profile(
+            session["user_id"],
+            {
+                "full_name": full_name,
+                "headline": str(data.get("headline", "")).strip(),
+                "phone": str(data.get("phone", "")).strip(),
+                "bio": str(data.get("bio", "")).strip(),
+                "skills": skills,
+                "avatar": data.get("avatar"),
+            },
+        )
+        if not profile:
+            return jsonify({"error": "Profile update failed."}), 500
+
+        session["full_name"] = profile.get("full_name", full_name)
+        profile["email"] = session.get("email", "")
+        return jsonify({"success": True, "profile": profile})
+
+    # =========================================================
+    # PROTECTED SEEKER PAGES
+    # =========================================================
     @app.route("/")
+    @seeker_required
     def index():
         return render_template("seeker.html")
 
     @app.route("/dashboard")
+    @seeker_required
     def dashboard():
-        # Serves the same page as "/" — seeker.html checks the URL on load and
-        # opens straight to the Dashboard view. This used to render a separate
-        # dashboard.html file that had drifted out of sync with the real one.
         return render_template("seeker.html")
 
     @app.route("/resumes")
+    @seeker_required
     def resumes():
         return render_template("resumes.html")
 
@@ -194,10 +365,12 @@ def create_app():
     # APPLICATION TRACKING API ROUTES
     # ---------------------------------------------------------
     @app.route("/api/applications", methods=["GET"])
+    @seeker_required
     def get_applications():
         return jsonify(app_tracker.get_applications())
 
     @app.route("/api/applications", methods=["POST"])
+    @seeker_required
     def add_application():
         data = request.get_json() or {}
         job_id = data.get("jobId")
@@ -243,6 +416,7 @@ def create_app():
     # BOOKMARK CRUD API ROUTES (Supabase Database)
     # ---------------------------------------------------------
     @app.route("/api/bookmarks", methods=["GET"])
+    @seeker_required
     def get_bookmarks():
         try:
             return jsonify(
@@ -253,6 +427,7 @@ def create_app():
             return jsonify({"error": "Could not load bookmarks."}), 500
 
     @app.route("/api/bookmarks/<job_id>", methods=["POST"])
+    @seeker_required
     def add_bookmark(job_id):
         try:
             if job_store.get_job(job_id) is None:
@@ -276,6 +451,7 @@ def create_app():
             return jsonify({"error": "Could not add bookmark."}), 500
 
     @app.route("/api/bookmarks/<job_id>", methods=["DELETE"])
+    @seeker_required
     def delete_bookmark(job_id):
         try:
             removed = bookmark_store.delete_bookmark(
@@ -296,6 +472,7 @@ def create_app():
             return jsonify({"error": "Could not delete bookmark."}), 500
 
     @app.route("/api/cover-letters/upload", methods=["POST"])
+    @seeker_required
     def upload_cover_letter():
         file = request.files.get("coverLetter")
         if not file or not file.filename:

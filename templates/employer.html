@@ -43,10 +43,17 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="text-right hidden sm:block">
-                        <div class="text-[13px] font-semibold text-slate-900 leading-tight">Hiring Team</div>
-                        <div class="text-[11px] text-slate-400 leading-tight">PixelCraft Studio</div>
+                        <div class="text-[13px] font-semibold text-slate-900 leading-tight" id="employer-name-display">Hiring Team</div>
+                        <div class="text-[11px] text-slate-400 leading-tight" id="employer-company-display">PixelCraft Studio</div>
                     </div>
-                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] border border-slate-200">HT</div>
+                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] border border-slate-200" id="employer-initials">HT</div>
+                    <!-- Logout Button -->
+                    <button onclick="logoutEmployer()" class="text-xs font-bold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 bg-red-50/30 hover:bg-red-50/50">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -203,7 +210,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Location *</label>
-                    <input type="text" id="job-form-location" required pattern="[A-Za-z ]+" title="Location can only contain letters and spaces" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                    <input type="text" id="job-form-location" required pattern="[A-Za-z, ]+" title="Location can only contain letters, spaces and commas" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Salary Range *</label>
@@ -247,7 +254,7 @@
         </div>
     </div>
 
-    <!-- ==================== DELETE CONFIRMATION MODAL (SIMPLIFIED) ==================== -->
+    <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
     <div id="delete-job-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:9999;" onclick="closeDeleteJobModal()"></div>
     <div id="delete-job-panel" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:1rem;">
         <div style="max-width:28rem;width:100%;background:white;border-radius:1rem;border:1px solid #e2e8f0;padding:1.5rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
@@ -354,7 +361,40 @@
             renderApplicantFilterOptions();
             renderApplicants();
             renderStats();
+            
+            // Display employer name in header
+            const employerId = localStorage.getItem('employer_id') || 'pixelcraft';
+            const displayName = document.getElementById('employer-name-display');
+            const companyDisplay = document.getElementById('employer-company-display');
+            const initials = document.getElementById('employer-initials');
+            
+            if (displayName) {
+                const formatted = employerId.charAt(0).toUpperCase() + employerId.slice(1);
+                displayName.textContent = 'Hiring Team';
+            }
+            if (companyDisplay) {
+                const formatted = employerId.charAt(0).toUpperCase() + employerId.slice(1);
+                companyDisplay.textContent = formatted + ' Studio';
+            }
+            if (initials) {
+                initials.textContent = employerId.slice(0, 2).toUpperCase();
+            }
         });
+
+        // ==================== LOGOUT FUNCTION ====================
+        async function logoutEmployer() {
+            try {
+                const res = await fetch('/api/employer/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                localStorage.removeItem('employer_token');
+                localStorage.removeItem('employer_id');
+                window.location.href = '/employer/login';
+            } catch (e) {
+                window.location.href = '/employer/login';
+            }
+        }
 
         // ==================== DATA FETCHING ====================
         async function fetchJobs() {
@@ -531,44 +571,33 @@
                 return;
             }
 
-            // Allows letters and spaces only
+            // Validation
             const alphaPattern = /^[A-Za-z ]+$/;
-            // Allows letters, spaces, and commas
             const locationPattern = /^[A-Za-z, ]+$/;
-            // Category & Tags: letters, spaces, &, %
             const categoryTagPattern = /^[A-Za-z&, ]+$/;
 
-            // Job title: letters and spaces only
             if (!alphaPattern.test(title)) {
                 showFloatingNotice('Job title can only contain letters and spaces.');
                 return;
             }
 
-            // Location: letters, spaces, and commas only
             if (!locationPattern.test(location)) {
                 showFloatingNotice('Location can only contain letters, spaces, and commas.');
                 return;
             }
 
-            // Category: letters and spaces only
-            if (!categoryTagPattern.test(category)) {
-                showFloatingNotice(
-                    'Category can only contain letters, spaces, commas, and &.'
-                );
+            if (category && !categoryTagPattern.test(category)) {
+                showFloatingNotice('Category can only contain letters, spaces, commas, and &.');
                 return;
             }
 
-            // Tags: each tag can only contain letters and spaces
             for (const tag of tags) {
-            if (!categoryTagPattern.test(tag.trim())) {
-                showFloatingNotice(
-                    'Tags can only contain letters, spaces, commas, and &.'
-                );
-                return;
-            }           
-         }
+                if (!categoryTagPattern.test(tag.trim())) {
+                    showFloatingNotice('Tags can only contain letters, spaces, commas, and &.');
+                    return;
+                }
+            }
 
-            // Salary: numbers only
             if (!/^\d+$/.test(salary)) {
                 showFloatingNotice('Salary can only contain numbers.');
                 return;
@@ -624,20 +653,15 @@
 
         // ==================== DELETE JOB ====================
         function openDeleteJobModal(jobId) {
-            console.log('Opening delete modal for job:', jobId);
             jobIdPendingDelete = jobId;
             const backdrop = document.getElementById('delete-job-backdrop');
             const panel = document.getElementById('delete-job-panel');
             
-            // Force show using inline styles
             backdrop.style.display = 'block';
             panel.style.display = 'flex';
-            
-            console.log('Modal should be visible now');
         }
 
         function closeDeleteJobModal() {
-            console.log('Closing delete modal');
             const backdrop = document.getElementById('delete-job-backdrop');
             const panel = document.getElementById('delete-job-panel');
             
@@ -647,12 +671,7 @@
         }
 
         async function confirmDeleteJob() {
-            if (!jobIdPendingDelete) {
-                console.log('No job ID to delete');
-                return;
-            }
-            
-            console.log('Confirming delete for job:', jobIdPendingDelete);
+            if (!jobIdPendingDelete) return;
             
             try {
                 const res = await fetch(`/api/jobs/${jobIdPendingDelete}`, { 
@@ -670,9 +689,7 @@
                 renderApplicants();
                 renderStats();
                 showFloatingNotice('Job posting deleted.');
-                console.log('Job deleted successfully');
             } catch (err) {
-                console.error('Delete error:', err);
                 showFloatingNotice('Could not delete this job. Please try again.');
             } finally {
                 closeDeleteJobModal();
@@ -764,7 +781,7 @@
             badge.textContent = app.status || 'Pending';
             badge.className = `inline-block text-[11px] font-bold px-2.5 py-1 rounded-full border ${style.badgeClass}`;
 
-            // Cover letter — show inline text, or a link to the uploaded file
+            // Cover letter
             const coverBox = document.getElementById('applicant-detail-cover-box');
             if (app.coverLetterText) {
                 coverBox.innerHTML = `<p class="text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(app.coverLetterText)}</p>`;
@@ -779,7 +796,7 @@
                 coverBox.innerHTML = `<p class="text-slate-400 text-[12px]">No cover letter provided.</p>`;
             }
 
-            // Resume — fetch the real record from the shared resume storage
+            // Resume
             const resumeBox = document.getElementById('applicant-detail-resume-box');
             if (!app.resumeId) {
                 resumeBox.innerHTML = `<p class="text-slate-400 text-[12px]">No resume on file for this application.</p>`;
@@ -804,7 +821,6 @@
                             ` : ''}
                         `;
                     } else {
-                        // Legacy builder resume saved before real file generation.
                         const info = resume.data?.personalInfo || {};
                         const skills = resume.data?.skills || [];
                         const experience = resume.data?.experience || [];
@@ -871,7 +887,7 @@
             }
         }
 
-        // ==================== DELETE APPLICANT (Rejected only) ====================
+        // ==================== DELETE APPLICANT ====================
         let applicantIdPendingDelete = null;
 
         function openDeleteApplicantModal(appId) {
