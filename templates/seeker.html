@@ -957,8 +957,23 @@
         }
 
         async function logoutUser() {
-            await fetch('/api/auth/logout', {method: 'POST'});
-            window.location.href = '/login';
+            try {
+                // Clear local storage first
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Call logout API
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                // Force redirect to login with cache busting
+                window.location.replace('/login?t=' + Date.now());
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.replace('/login?t=' + Date.now());
+            }
         }
 
         async function loadBookmarksFromServer() {

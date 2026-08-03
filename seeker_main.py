@@ -8,7 +8,7 @@ from io import BytesIO
 
 from flask import (
     Flask, render_template, request, jsonify, send_file, session,
-    redirect, url_for,
+    redirect, url_for, make_response
 )
 
 # Import application tracking module
@@ -26,6 +26,7 @@ from job import JobStorage
 from bookmark import BookmarkStorage
 from auth_service import AuthService, JOB_SEEKER_ROLE
 from login_required import seeker_required
+from supabase_client import create_supabase_auth_client
 
 job_store = JobStorage()
 
@@ -203,6 +204,28 @@ def create_app():
             return redirect(url_for("dashboard"))
         return render_template("register.html")
 
+    @app.route("/forgot-password")
+    def forgot_password_page():
+        """Render forgot password page"""
+        return render_template("forgot_password.html")
+
+    @app.route("/reset-password")
+    def reset_password_page():
+        """Render reset password page - Force logout to prevent auto-login"""
+        # Clear all session data to prevent auto-login
+        session.clear()
+        
+        # Create response with cleared session
+        resp = make_response(render_template("reset_password.html"))
+        
+        # Clear all cookies that might cause auto-login
+        resp.set_cookie('session', '', expires=0)
+        resp.set_cookie('supabase-auth-token', '', expires=0)
+        resp.set_cookie('sb-refresh-token', '', expires=0)
+        resp.set_cookie('sb-access-token', '', expires=0)
+        
+        return resp
+
     # =========================================================
     # AUTHENTICATION API
     # =========================================================
@@ -232,10 +255,7 @@ def create_app():
 
         return jsonify({
             "success": True,
-            "message": (
-                "Registration successful. Confirm your email if required, "
-                "then sign in."
-            ),
+            "message": "Registration successful. Please sign in.",
             "user": {
                 "id": user.get("id"),
                 "full_name": user.get("full_name"),
@@ -285,6 +305,17 @@ def create_app():
             "redirect": "/login",
         })
 
+    @app.route("/logout-direct")
+    def logout_direct():
+        """Direct logout - clears everything and redirects to login"""
+        session.clear()
+        resp = make_response(redirect(url_for('login_page')))
+        resp.set_cookie('session', '', expires=0)
+        resp.set_cookie('supabase-auth-token', '', expires=0)
+        resp.set_cookie('sb-refresh-token', '', expires=0)
+        resp.set_cookie('sb-access-token', '', expires=0)
+        return resp
+
     @app.route("/api/auth/me")
     def current_user():
         if not session.get("user_id"):
@@ -299,6 +330,147 @@ def create_app():
                 "role": session.get("role"),
             },
         })
+
+    @app.route("/api/auth/forgot-password", methods=["POST"])
+    def forgot_password():
+        """Send password reset email - Debug version"""
+        data = request.get_json() or {}
+        email = str(data.get("email", "")).strip().lower()
+        
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+        
+        print(f"🔍 DEBUG: Attempting to send reset email to: {email}")
+        
+        try:
+            from supabase_client import create_supabase_auth_client
+            auth_client = create_supabase_auth_client()
+            
+            print("📤 DEBUG: Calling auth_client.auth.reset_password_for_email...")
+            result = auth_client.auth.reset_password_for_email(email)
+            print(f"📥 DEBUG: Result: {result}")
+            
+            print(f"✅ DEBUG: Reset email sent to {email}")
+            return jsonify({
+                "success": True,
+                "message": "Password reset email sent! Please check your inbox."
+            }), 200
+            
+        except Exception as e:
+            print(f"❌ DEBUG ERROR: {repr(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Always return success for security
+            return jsonify({
+                "success": True,
+                "message": "If this email is registered, you will receive a reset link shortly."
+            }), 200
+
+    @app.route("/api/auth/update-password", methods=["POST"])
+    def update_password():
+        """Update password after reset"""
+        data = request.get_json() or {}
+        new_password = data.get("password", "")
+        access_token = data.get("access_token")
+        
+        if len(new_password) < 6:
+            return jsonify({
+                "error": "Password must contain at least 6 characters."
+            }), 400
+        
+        try:
+            from supabase_client import create_supabase_auth_client
+            supabase = create_supabase_auth_client()
+            
+            if access_token:
+                supabase.auth.set_session(access_token, None)
+            else:
+                return jsonify({
+                    "error": "Invalid reset token. Please request a new password reset."
+                }), 400
+            
+            supabase.auth.update_user({
+                "password": new_password
+            })
+            
+            supabase.auth.sign_out()
+            
+            return jsonify({
+                "success": True,
+                "message": "Password updated successfully! Please login with your new password."
+            }), 200
+        except Exception as e:
+            print("PASSWORD UPDATE ERROR:", repr(e))
+            return jsonify({
+                "error": "Failed to update password. Please try again or request a new reset link."
+            }), 500
+
+    # =========================================================
+    # MANUAL RESET - FOR DEVELOPMENT ONLY (REMOVE IN PRODUCTION)
+    # =========================================================
+    @app.route("/api/auth/manual-reset", methods=["POST"])
+    def manual_reset():
+        """Manual password reset for development (REMOVE IN PRODUCTION)"""
+        try:
+            data = request.get_json() or {}
+            email = data.get("email", "").strip().lower()
+            new_password = data.get("new_password", "")
+            
+            if not email or not new_password:
+                return jsonify({"error": "Email and new password required"}), 400
+            
+            if len(new_password) < 6:
+                return jsonify({"error": "Password must be at least 6 characters"}), 400
+            
+            from supabase_client import get_supabase_admin_client
+            admin = get_supabase_admin_client()
+            
+            # Find user by email - FIXED for newer Supabase versions
+            response = admin.auth.admin.list_users()
+            
+            # Check if response is a list directly (newer versions)
+            if isinstance(response, list):
+                users = response
+            # Check if response has data attribute (older versions)
+            elif hasattr(response, 'data'):
+                users = response.data
+            else:
+                users = []
+            
+            target_user = None
+            for user in users:
+                if user.email == email:
+                    target_user = user
+                    break
+            
+            if not target_user:
+                return jsonify({"error": "User not found"}), 404
+            
+            # Update password - FIXED for newer Supabase versions
+            try:
+                # Try the newer method
+                admin.auth.admin.update_user_by_id(
+                    target_user.id,
+                    {"password": new_password}
+                )
+            except AttributeError:
+                # Fallback for older versions
+                admin.auth.admin.update_user(
+                    target_user.id,
+                    {"password": new_password}
+                )
+            
+            return jsonify({
+                "success": True,
+                "message": f"Password reset for {email} successfully! You can now login with your new password."
+            }), 200
+            
+        except Exception as e:
+            print(f"Manual reset error: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
 
     # =========================================================
     # PROFILE API
@@ -347,14 +519,18 @@ def create_app():
     # PROTECTED SEEKER PAGES
     # =========================================================
     @app.route("/")
-    @seeker_required
     def index():
-        return render_template("seeker.html")
+        """Root route - redirect to dashboard if logged in, else login"""
+        if session.get("user_id") and session.get("role") == JOB_SEEKER_ROLE:
+            return render_template("seeker.html")
+        return redirect(url_for("login_page"))
 
     @app.route("/dashboard")
-    @seeker_required
     def dashboard():
-        return render_template("seeker.html")
+        """Dashboard - redirect to login if not authenticated"""
+        if session.get("user_id") and session.get("role") == JOB_SEEKER_ROLE:
+            return render_template("seeker.html")
+        return redirect(url_for("login_page"))
 
     @app.route("/resumes")
     @seeker_required
@@ -391,10 +567,7 @@ def create_app():
             return jsonify({"error": "The selected resume was not found."}), 400
         if not selected_resume.get("storedFileName"):
             return jsonify({
-                "error": (
-                    "Save the selected builder resume as PDF or DOCX "
-                    "before applying."
-                )
+                "error": "Save the selected builder resume as PDF or DOCX before applying."
             }), 400
         if not cover_letter_text and not cover_letter_file:
             return jsonify({"error": "A cover letter (written or uploaded) is required to apply."}), 400
@@ -608,7 +781,7 @@ def create_app():
         )
 
     # ---------------------------------------------------------
-    # RESUME PORTAL API ENDPOINTS (MERGED FROM server.py)
+    # RESUME PORTAL API ENDPOINTS
     # ---------------------------------------------------------
     @app.route("/api/health")
     def api_health():
@@ -677,10 +850,10 @@ def create_app():
         {target_role or profile.get("personalInfo", {}).get("title") or "Professional matching their background"}
 
         CRITICAL INSTRUCTIONS:
-        1. Write a compelling, high-impact 3-4 sentence professional summary in 'personalInfo.summary'. Highlight core strengths, years of value, and target role relevance. Do NOT use generic text.
-        2. Rewrite each 'experience' description to be extremely polished. Use strong active verbs (e.g., Spearheaded, Formulated, Orchestrated, Engineered). Expand brief sentences into professional bullet points (using bullet character '•' at the start of each line) emphasizing results and metrics.
-        3. For the 'skills' array, expand the user's initial list with relevant high-demand industry skills that logically match their profile and target role (total of 10-15 solid skill keywords).
-        4. Rewrite the 'projects' descriptions to showcase complexity, technical stack integration, and end-user benefits.
+        1. Write a compelling, high-impact 3-4 sentence professional summary in 'personalInfo.summary'.
+        2. Rewrite each 'experience' description to be extremely polished using strong active verbs.
+        3. For the 'skills' array, expand with relevant high-demand industry skills (10-15 total).
+        4. Rewrite the 'projects' descriptions to showcase complexity and technical details.
         5. Retain all IDs and dates exactly.
         """
         
@@ -722,9 +895,9 @@ def create_app():
 
         Instructions:
         1. Use high-impact active verbs (e.g. Spearheaded, Accelerated, Pioneered).
-        2. If experience description, format as 2-3 high-quality professional bullets, starting with the bullet character "• " on separate lines.
+        2. If experience description, format as 2-3 high-quality professional bullets.
         3. Focus on outcomes, efficiency gains, or technical proficiency.
-        4. Return ONLY the polished text block, no introduction, wrapping, or markdown code syntax blocks.
+        4. Return ONLY the polished text block.
         """
         
         try:

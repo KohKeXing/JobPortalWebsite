@@ -25,8 +25,8 @@ def _load_settings() -> tuple[str, str, str]:
 
     url = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
     admin_key = (
-        os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        or os.getenv("SUPABASE_SECRET_KEY")
+        os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # ← This should be here
+        or os.getenv("SUPABASE_SECRET_KEY")     # ← Fallback for backwards compatibility
         or ""
     ).strip()
     anon_key = (
