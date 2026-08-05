@@ -18,16 +18,16 @@ template_html = """
 <p>Click the link below to reset your password:</p>
 
 <p>
-  <a href="http://127.0.0.1:3000/reset-password#access_token={{ .Token }}" 
+  <a href="{{ .ConfirmationURL }}" 
      style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
     Reset Password
   </a>
 </p>
 
 <p>Or copy and paste this link into your browser:</p>
-<p>http://127.0.0.1:3000/reset-password#access_token={{ .Token }}</p>
+<p>{{ .ConfirmationURL }}</p>
 
-<p>This link will expire in 24 hours.</p>
+<p>For your security, this link will expire.</p>
 
 <p>If you didn't request this, please ignore this email.</p>
 
@@ -45,7 +45,7 @@ headers = {
 payload = {
     "subject": "Reset Your Password - JobPortal",
     "html": template_html,
-    "text": "Reset your password for JobPortal. Click the link: http://127.0.0.1:3000/reset-password#access_token={{ .Token }}"
+    "text": "Reset your password for JobPortal. Click the link: {{ .ConfirmationURL }}"
 }
 
 try:

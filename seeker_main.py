@@ -333,35 +333,41 @@ def create_app():
 
     @app.route("/api/auth/forgot-password", methods=["POST"])
     def forgot_password():
-        """Send password reset email - Debug version"""
-        data = request.get_json() or {}
+        """Send a Supabase recovery email back to this app's reset page."""
+        data = request.get_json(silent=True) or {}
         email = str(data.get("email", "")).strip().lower()
-        
-        if not email:
-            return jsonify({"error": "Email is required"}), 400
-        
-        print(f"🔍 DEBUG: Attempting to send reset email to: {email}")
-        
+
+        if not email or "@" not in email:
+            return jsonify({"error": "A valid email is required."}), 400
+
         try:
-            from supabase_client import create_supabase_auth_client
+            # Creating the client also loads the project's .env file.
             auth_client = create_supabase_auth_client()
-            
-            print("📤 DEBUG: Calling auth_client.auth.reset_password_for_email...")
-            result = auth_client.auth.reset_password_for_email(email)
-            print(f"📥 DEBUG: Result: {result}")
-            
-            print(f"✅ DEBUG: Reset email sent to {email}")
+
+            # Set PASSWORD_RESET_REDIRECT_URL in .env for production. During
+            # local development, this resolves to the host that served the form.
+            reset_redirect_url = (
+                os.environ.get("PASSWORD_RESET_REDIRECT_URL", "").strip()
+                or url_for("reset_password_page", _external=True)
+            )
+
+            auth_client.auth.reset_password_for_email(
+                email,
+                {"redirect_to": reset_redirect_url},
+            )
+
             return jsonify({
                 "success": True,
-                "message": "Password reset email sent! Please check your inbox."
+                "message": (
+                    "If this email is registered, you will receive a reset "
+                    "link shortly."
+                ),
             }), 200
-            
+
         except Exception as e:
-            print(f"❌ DEBUG ERROR: {repr(e)}")
-            import traceback
-            traceback.print_exc()
-            
-            # Always return success for security
+            # Do not reveal whether an account exists, but keep the real error
+            # in the server log so redirect allow-list problems are visible.
+            print("PASSWORD RESET EMAIL ERROR:", repr(e))
             return jsonify({
                 "success": True,
                 "message": "If this email is registered, you will receive a reset link shortly."
@@ -370,32 +376,37 @@ def create_app():
     @app.route("/api/auth/update-password", methods=["POST"])
     def update_password():
         """Update password after reset"""
-        data = request.get_json() or {}
-        new_password = data.get("password", "")
-        access_token = data.get("access_token")
-        
+        data = request.get_json(silent=True) or {}
+        new_password = str(data.get("password", ""))
+        access_token = str(data.get("access_token") or "")
+        refresh_token = str(data.get("refresh_token") or "")
+
         if len(new_password) < 6:
             return jsonify({
                 "error": "Password must contain at least 6 characters."
             }), 400
-        
+
+        if not access_token or not refresh_token:
+            return jsonify({
+                "error": (
+                    "Invalid or incomplete reset link. Please request a new "
+                    "password reset."
+                )
+            }), 400
+
         try:
-            from supabase_client import create_supabase_auth_client
             supabase = create_supabase_auth_client()
-            
-            if access_token:
-                supabase.auth.set_session(access_token, None)
-            else:
-                return jsonify({
-                    "error": "Invalid reset token. Please request a new password reset."
-                }), 400
-            
+
+            # A recovery redirect supplies both tokens. Supabase requires both
+            # values to create the temporary authenticated recovery session.
+            supabase.auth.set_session(access_token, refresh_token)
+
             supabase.auth.update_user({
                 "password": new_password
             })
-            
+
             supabase.auth.sign_out()
-            
+
             return jsonify({
                 "success": True,
                 "message": "Password updated successfully! Please login with your new password."
@@ -403,8 +414,11 @@ def create_app():
         except Exception as e:
             print("PASSWORD UPDATE ERROR:", repr(e))
             return jsonify({
-                "error": "Failed to update password. Please try again or request a new reset link."
-            }), 500
+                "error": (
+                    "The reset link is invalid or expired. Please request a "
+                    "new reset link."
+                )
+            }), 400
 
     # =========================================================
     # MANUAL RESET - FOR DEVELOPMENT ONLY (REMOVE IN PRODUCTION)

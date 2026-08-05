@@ -1,0 +1,127 @@
+"""
+Tests for Cover Letter validation.
+
+These tests verify that cover letter uploads and usage are properly validated.
+"""
+
+import io
+import pytest
+from conftest import post_job, create_valid_application, create_test_resume, upload_cover_letter
+
+
+def test_cannot_upload_cover_letter_with_invalid_extension(seeker_client):
+    """Test uploading a cover letter with invalid extension."""
+    fake_txt = (io.BytesIO(b'plain text content'), 'cover_letter.txt')
+    res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={'coverLetter': fake_txt},
+        content_type='multipart/form-data'
+    )
+    assert res.status_code == 400
+    assert 'PDF' in res.json['error'] or 'DOCX' in res.json['error']
+
+
+def test_cannot_upload_cover_letter_exceeding_size(seeker_client):
+    """Test uploading a cover letter larger than 10MB."""
+    large_content = b'0' * (11 * 1024 * 1024)
+    fake_pdf = (io.BytesIO(large_content), 'large_cover.pdf')
+    
+    res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={'coverLetter': fake_pdf},
+        content_type='multipart/form-data'
+    )
+    assert res.status_code in [400, 413]
+
+
+def test_cannot_upload_cover_letter_with_no_file(seeker_client):
+    """Test uploading with no file attached."""
+    res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={},
+        content_type='multipart/form-data'
+    )
+    assert res.status_code == 400
+    assert 'file' in res.json['error'].lower()
+
+
+def test_cannot_upload_cover_letter_with_empty_file(seeker_client):
+    """Test uploading an empty file."""
+    fake_file = (io.BytesIO(b''), 'empty_cover.pdf')
+    res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={'coverLetter': fake_file},
+        content_type='multipart/form-data'
+    )
+    assert res.status_code == 400
+    assert 'empty' in res.json['error'].lower() or 'content' in res.json['error'].lower()
+
+
+def test_upload_cover_letter_with_uppercase_extension(seeker_client):
+    """Test uploading with uppercase extension."""
+    fake_pdf = (io.BytesIO(b'%PDF-1.4 cover letter'), 'COVER_LETTER.PDF')
+    res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={'coverLetter': fake_pdf},
+        content_type='multipart/form-data'
+    )
+    assert res.status_code == 201
+    assert 'storedFileName' in res.json
+
+
+def test_upload_cover_letter_with_sanitized_filename(seeker_client):
+    """Test filename sanitization."""
+    malicious_name = '../../etc/passwd_cover.pdf'
+    fake_pdf = (io.BytesIO(b'%PDF-1.4 content'), malicious_name)
+    
+    res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={'coverLetter': fake_pdf},
+        content_type='multipart/form-data'
+    )
+    assert res.status_code == 201
+    assert '../../' not in res.json['originalName']
+
+
+def test_cover_letter_file_accessible_after_upload(seeker_client):
+    """Test cover letter file is accessible after upload."""
+    fake_pdf = (io.BytesIO(b'%PDF-1.4 cover letter content'), 'test_cover.pdf')
+    upload_res = seeker_client.post(
+        '/api/cover-letters/upload',
+        data={'coverLetter': fake_pdf},
+        content_type='multipart/form-data'
+    )
+    stored_name = upload_res.json['storedFileName']
+    
+    res = seeker_client.get(f'/uploads/cover-letters/{stored_name}')
+    assert res.status_code == 200
+    assert b'%PDF' in res.data
+
+
+def test_cover_letter_deleted_with_application(employer_client, seeker_client):
+    """Test cover letter is deleted when application is deleted."""
+    job = post_job(employer_client, title='Cover Delete Test').get_json()
+    
+    # Create application with cover letter
+    resume = create_test_resume(seeker_client)
+    cover_letter = upload_cover_letter(seeker_client)
+    
+    app_res = seeker_client.post('/api/applications', json={
+        'jobId': job['id'],
+        'job': job['title'],
+        'company': job['company'],
+        'resumeId': resume['id'],
+        'coverLetterFile': cover_letter['storedFileName'],
+        'coverLetterOriginalName': cover_letter['originalName'],
+        'coverLetterText': None
+    })
+    assert app_res.status_code == 201
+    application = app_res.json['application']
+    
+    # Mark as rejected and delete
+    employer_client.put(f'/api/applications/{application["id"]}', json={'status': 'Rejected'})
+    employer_client.delete(f'/api/applications/{application["id"]}')
+    
+    # Verify cover letter file is gone
+    res = seeker_client.get(f'/uploads/cover-letters/{cover_letter["storedFileName"]}')
+    assert res.status_code == 404
