@@ -26,7 +26,14 @@ from job import JobStorage
 from bookmark import BookmarkStorage
 from auth_service import AuthService, JOB_SEEKER_ROLE
 from login_required import seeker_required
-from supabase_client import create_supabase_auth_client
+from supabase_client import (
+    ACCOUNT_NOT_FOUND_MESSAGE,
+    EMAIL_RATE_LIMIT_MESSAGE,
+    auth_account_exists,
+    create_supabase_auth_client,
+    is_email_rate_limit_error,
+    password_policy_error,
+)
 
 job_store = JobStorage()
 
@@ -240,10 +247,20 @@ def create_app():
             return jsonify({"error": "Full name is required."}), 400
         if not email or "@" not in email:
             return jsonify({"error": "A valid email is required."}), 400
-        if len(password) < 6:
+        password_error = password_policy_error(password)
+        if password_error:
+            return jsonify({"error": password_error}), 400
+
+        try:
+            if auth_account_exists(email):
+                return jsonify({
+                    "error": "This email is already registered. Please sign in."
+                }), 409
+        except Exception as exc:
+            print("ACCOUNT LOOKUP ERROR:", repr(exc))
             return jsonify({
-                "error": "Password must contain at least 6 characters."
-            }), 400
+                "error": "Unable to verify the account right now. Please try again."
+            }), 503
 
         user, error = auth_service.register_user(
             email=email,
@@ -251,6 +268,8 @@ def create_app():
             full_name=full_name,
         )
         if error:
+            if is_email_rate_limit_error(error):
+                return jsonify({"error": EMAIL_RATE_LIMIT_MESSAGE}), 429
             return jsonify({"error": error}), 400
 
         return jsonify({
@@ -274,8 +293,19 @@ def create_app():
                 "error": "Email and password are required."
             }), 400
 
+        try:
+            if not auth_account_exists(email):
+                return jsonify({"error": ACCOUNT_NOT_FOUND_MESSAGE}), 404
+        except Exception as exc:
+            print("ACCOUNT LOOKUP ERROR:", repr(exc))
+            return jsonify({
+                "error": "Unable to verify the account right now. Please try again."
+            }), 503
+
         user, error = auth_service.login_user(email, password)
         if error:
+            if error == "Invalid email or password.":
+                error = "Incorrect password. Please try again."
             return jsonify({"error": error}), 401
 
         session.clear()
@@ -341,6 +371,9 @@ def create_app():
             return jsonify({"error": "A valid email is required."}), 400
 
         try:
+            if not auth_account_exists(email):
+                return jsonify({"error": ACCOUNT_NOT_FOUND_MESSAGE}), 404
+
             # Creating the client also loads the project's .env file.
             auth_client = create_supabase_auth_client()
 
@@ -358,20 +391,16 @@ def create_app():
 
             return jsonify({
                 "success": True,
-                "message": (
-                    "If this email is registered, you will receive a reset "
-                    "link shortly."
-                ),
+                "message": "Reset link sent! Please check your email.",
             }), 200
 
         except Exception as e:
-            # Do not reveal whether an account exists, but keep the real error
-            # in the server log so redirect allow-list problems are visible.
             print("PASSWORD RESET EMAIL ERROR:", repr(e))
+            if is_email_rate_limit_error(e):
+                return jsonify({"error": EMAIL_RATE_LIMIT_MESSAGE}), 429
             return jsonify({
-                "success": True,
-                "message": "If this email is registered, you will receive a reset link shortly."
-            }), 200
+                "error": "Unable to send the reset link. Please try again."
+            }), 500
 
     @app.route("/api/auth/update-password", methods=["POST"])
     def update_password():
@@ -381,10 +410,9 @@ def create_app():
         access_token = str(data.get("access_token") or "")
         refresh_token = str(data.get("refresh_token") or "")
 
-        if len(new_password) < 6:
-            return jsonify({
-                "error": "Password must contain at least 6 characters."
-            }), 400
+        password_error = password_policy_error(new_password)
+        if password_error:
+            return jsonify({"error": password_error}), 400
 
         if not access_token or not refresh_token:
             return jsonify({
@@ -434,8 +462,9 @@ def create_app():
             if not email or not new_password:
                 return jsonify({"error": "Email and new password required"}), 400
             
-            if len(new_password) < 6:
-                return jsonify({"error": "Password must be at least 6 characters"}), 400
+            password_error = password_policy_error(new_password)
+            if password_error:
+                return jsonify({"error": password_error}), 400
             
             from supabase_client import get_supabase_admin_client
             admin = get_supabase_admin_client()

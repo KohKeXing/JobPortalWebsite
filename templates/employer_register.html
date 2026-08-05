@@ -144,9 +144,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                             </svg>
                         </div>
-                        <input type="password" id="password" required minlength="6"
+                        <input type="password" id="password" required minlength="8"
                                class="w-full pl-10 pr-12 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none input-focus transition-all"
-                               placeholder="Min. 6 characters">
+                               placeholder="Create a strong password">
                         <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
                             <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -154,7 +154,12 @@
                             </svg>
                         </button>
                     </div>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1">Minimum 6 characters</p>
+                    <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-medium">
+                        <p id="length-check" class="text-red-500">❌ At least 8 characters</p>
+                        <p id="uppercase-check" class="text-red-500">❌ One uppercase letter</p>
+                        <p id="lowercase-check" class="text-red-500">❌ One lowercase letter</p>
+                        <p id="special-check" class="text-red-500">❌ One special character</p>
+                    </div>
                 </div>
 
                 <button type="submit" 
@@ -211,13 +216,40 @@
             }
         }
 
+        const passwordInput = document.getElementById('password');
+
+        function getMissingPasswordRules(password) {
+            const missing = [];
+            if (password.length < 8) missing.push('at least 8 characters');
+            if (!/[A-Z]/.test(password)) missing.push('one uppercase letter');
+            if (!/[a-z]/.test(password)) missing.push('one lowercase letter');
+            if (!/[^A-Za-z0-9\s]/.test(password)) missing.push('one special character');
+            return missing;
+        }
+
+        function setPasswordRule(id, passed, label) {
+            const element = document.getElementById(id);
+            element.className = passed ? 'text-emerald-600' : 'text-red-500';
+            element.textContent = `${passed ? '✅' : '❌'} ${label}`;
+        }
+
+        function updatePasswordRequirements() {
+            const password = passwordInput.value;
+            setPasswordRule('length-check', password.length >= 8, 'At least 8 characters');
+            setPasswordRule('uppercase-check', /[A-Z]/.test(password), 'One uppercase letter');
+            setPasswordRule('lowercase-check', /[a-z]/.test(password), 'One lowercase letter');
+            setPasswordRule('special-check', /[^A-Za-z0-9\s]/.test(password), 'One special character');
+        }
+
+        passwordInput.addEventListener('input', updatePasswordRequirements);
+
         document.getElementById('employerRegisterForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const company_name = document.getElementById('company_name').value.trim();
             const employer_id = document.getElementById('employer_id').value.trim().toLowerCase();
             const email = document.getElementById('email').value.trim().toLowerCase();
-            const password = document.getElementById('password').value;
+            const password = passwordInput.value;
             const errorDiv = document.getElementById('error');
             const errorText = document.getElementById('error-text');
             const successDiv = document.getElementById('success');
@@ -251,9 +283,10 @@
                 return;
             }
 
-            if (password.length < 6) {
+            const missingPasswordRules = getMissingPasswordRules(password);
+            if (missingPasswordRules.length) {
                 errorDiv.classList.remove('hidden');
-                errorText.textContent = 'Password must be at least 6 characters';
+                errorText.textContent = `Password must include: ${missingPasswordRules.join(', ')}.`;
                 return;
             }
 

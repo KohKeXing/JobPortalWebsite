@@ -11,6 +11,7 @@ from supabase_client import (
 
 
 JOB_SEEKER_ROLE = "job_seeker"
+EMAIL_NOT_CONFIRMED_MESSAGE = "Please confirm your email before signing in."
 
 
 class AuthService:
@@ -131,6 +132,9 @@ class AuthService:
 
         except Exception as exc:
             print("SUPABASE LOGIN ERROR:", repr(exc))
+            message = str(exc).lower()
+            if "email not confirmed" in message:
+                return None, EMAIL_NOT_CONFIRMED_MESSAGE
             return None, "Invalid email or password."
 
     def get_profile(self, user_id: str):

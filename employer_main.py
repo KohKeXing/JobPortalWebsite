@@ -1,5 +1,6 @@
 from io import BytesIO
 from flask import Flask, jsonify, render_template, request, send_file, session, redirect, url_for, make_response
+import os
 import uuid
 import re
 import bcrypt
@@ -21,7 +22,15 @@ REQUIRED_JOB_FIELDS = ["title", "company", "location", "salary", "type", "descri
 
 # Import encryption for decryption
 from file_encryption import decrypt_bytes
-from supabase_client import get_supabase_admin_client, create_supabase_auth_client
+from supabase_client import (
+    ACCOUNT_NOT_FOUND_MESSAGE,
+    EMAIL_RATE_LIMIT_MESSAGE,
+    auth_account_exists,
+    create_supabase_auth_client,
+    get_supabase_admin_client,
+    is_email_rate_limit_error,
+    password_policy_error,
+)
 
 # ---------------------------------------------------------
 # Instantiate storage
@@ -133,13 +142,25 @@ def create_app():
             return jsonify({"error": "Employer ID can only contain lowercase letters (a-z)"}), 400
         if not email or "@" not in email:
             return jsonify({"error": "A valid email is required"}), 400
-        if len(password) < 6:
-            return jsonify({"error": "Password must contain at least 6 characters"}), 400
+        password_error = password_policy_error(password)
+        if password_error:
+            return jsonify({"error": password_error}), 400
 
         # Check if employer_id already exists
         existing = get_employer_from_db(employer_id)
         if existing:
             return jsonify({"error": "Employer ID already exists"}), 409
+
+        try:
+            if auth_account_exists(email):
+                return jsonify({
+                    "error": "This email is already registered. Please sign in."
+                }), 409
+        except Exception as exc:
+            print("ACCOUNT LOOKUP ERROR:", repr(exc))
+            return jsonify({
+                "error": "Unable to verify the account right now. Please try again."
+            }), 503
 
         try:
             admin = get_supabase_admin_client()
@@ -180,7 +201,9 @@ def create_app():
 
         except Exception as e:
             print(f"EMPLOYER REGISTER ERROR: {repr(e)}")
-            return jsonify({"error": str(e)}), 500
+            if is_email_rate_limit_error(e):
+                return jsonify({"error": EMAIL_RATE_LIMIT_MESSAGE}), 429
+            return jsonify({"error": "Unable to create the account. Please try again."}), 500
 
     @app.route("/api/employer/verify", methods=["POST"])
     def verify_employer_endpoint():
@@ -208,59 +231,66 @@ def create_app():
     @app.route("/api/auth/forgot-password", methods=["POST"])
     def forgot_password():
         """Send password reset email - shared with seeker"""
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         email = str(data.get("email", "")).strip().lower()
-        
-        if not email:
-            return jsonify({"error": "Email is required"}), 400
-        
+
+        if not email or "@" not in email:
+            return jsonify({"error": "A valid email is required."}), 400
+
         try:
-            from supabase_client import create_supabase_auth_client
+            if not auth_account_exists(email):
+                return jsonify({"error": ACCOUNT_NOT_FOUND_MESSAGE}), 404
+
             auth_client = create_supabase_auth_client()
-            auth_client.auth.reset_password_for_email(email)
-            
-            print(f"✅ Reset email sent to {email}")
+            reset_redirect_url = (
+                os.environ.get("PASSWORD_RESET_REDIRECT_URL", "").strip()
+                or url_for("reset_password_page", _external=True)
+            )
+            auth_client.auth.reset_password_for_email(
+                email,
+                {"redirect_to": reset_redirect_url},
+            )
+
             return jsonify({
                 "success": True,
-                "message": "Password reset email sent! Please check your inbox."
+                "message": "Reset link sent! Please check your email."
             }), 200
-            
+
         except Exception as e:
             print(f"PASSWORD RESET ERROR: {repr(e)}")
+            if is_email_rate_limit_error(e):
+                return jsonify({"error": EMAIL_RATE_LIMIT_MESSAGE}), 429
             return jsonify({
-                "success": True,
-                "message": "If this email is registered, you will receive a reset link shortly."
-            }), 200
+                "error": "Unable to send the reset link. Please try again."
+            }), 500
 
     @app.route("/api/auth/update-password", methods=["POST"])
     def update_password():
         """Update password after reset - shared with seeker"""
-        data = request.get_json() or {}
-        new_password = data.get("password", "")
-        access_token = data.get("access_token")
-        
-        if len(new_password) < 6:
+        data = request.get_json(silent=True) or {}
+        new_password = str(data.get("password", ""))
+        access_token = str(data.get("access_token") or "")
+        refresh_token = str(data.get("refresh_token") or "")
+
+        password_error = password_policy_error(new_password)
+        if password_error:
+            return jsonify({"error": password_error}), 400
+
+        if not access_token or not refresh_token:
             return jsonify({
-                "error": "Password must contain at least 6 characters."
+                "error": "Invalid reset link. Please request a new reset link."
             }), 400
-        
+
         try:
-            from supabase_client import create_supabase_auth_client
             supabase = create_supabase_auth_client()
-            
-            if access_token:
-                supabase.auth.set_session(access_token, None)
-            else:
-                return jsonify({
-                    "error": "Invalid reset token. Please request a new password reset."
-                }), 400
-            
+            supabase.auth.set_session(access_token, refresh_token)
+
             supabase.auth.update_user({
                 "password": new_password
             })
-            
+
             supabase.auth.sign_out()
-            
+
             return jsonify({
                 "success": True,
                 "message": "Password updated successfully! Please login with your new password."
@@ -268,8 +298,8 @@ def create_app():
         except Exception as e:
             print("PASSWORD UPDATE ERROR:", repr(e))
             return jsonify({
-                "error": "Failed to update password. Please try again or request a new reset link."
-            }), 500
+                "error": "The reset link is invalid or expired. Please request a new reset link."
+            }), 400
 
     @app.route("/api/employer/logout", methods=["POST"])
     def employer_logout():
