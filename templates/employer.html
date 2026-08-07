@@ -43,10 +43,10 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="text-right hidden sm:block">
-                        <div class="text-[13px] font-semibold text-slate-900 leading-tight" id="employer-name-display">Hiring Team</div>
-                        <div class="text-[11px] text-slate-400 leading-tight" id="employer-company-display">PixelCraft Studio</div>
+                        <div class="text-[13px] font-semibold text-slate-900 leading-tight" id="employer-name-display">{{ company_name | default('Employer', true) }}</div>
+                        <div class="text-[11px] text-slate-400 leading-tight" id="employer-company-display">{{ company_email | default('', true) }}</div>
                     </div>
-                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] border border-slate-200" id="employer-initials">HT</div>
+                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] border border-slate-200" id="employer-initials">{{ company_initials | default('EM', true) }}</div>
                     <!-- Logout Button -->
                     <button onclick="logoutEmployer()" class="text-xs font-bold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 bg-red-50/30 hover:bg-red-50/50">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,8 +203,8 @@
                     <input type="text" id="job-form-title" required pattern="[A-Za-z ]+" title="Job title can only contain letters and spaces" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1.5">Company *</label>
-                    <input type="text" id="job-form-company" placeholder="e.g. Synthetix Solutions" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    <label class="block font-semibold text-slate-700 mb-1.5">Company (your account)</label>
+                    <input type="text" id="job-form-company" value="{{ company_name | default('', true) }}" readonly class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed">
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -361,24 +361,6 @@
             renderApplicantFilterOptions();
             renderApplicants();
             renderStats();
-            
-            // Display employer name in header
-            const employerId = localStorage.getItem('employer_id') || 'pixelcraft';
-            const displayName = document.getElementById('employer-name-display');
-            const companyDisplay = document.getElementById('employer-company-display');
-            const initials = document.getElementById('employer-initials');
-            
-            if (displayName) {
-                const formatted = employerId.charAt(0).toUpperCase() + employerId.slice(1);
-                displayName.textContent = 'Hiring Team';
-            }
-            if (companyDisplay) {
-                const formatted = employerId.charAt(0).toUpperCase() + employerId.slice(1);
-                companyDisplay.textContent = formatted + ' Studio';
-            }
-            if (initials) {
-                initials.textContent = employerId.slice(0, 2).toUpperCase();
-            }
         });
 
         // ==================== LOGOUT FUNCTION ====================
@@ -523,7 +505,8 @@
                 submitBtn.textContent = 'Post Job';
                 document.getElementById('job-form-id').value = '';
                 document.getElementById('job-form-title').value = '';
-                document.getElementById('job-form-company').value = '';
+                const companyInput = document.getElementById('job-form-company');
+                companyInput.value = companyInput.defaultValue;
                 document.getElementById('job-form-location').value = '';
                 document.getElementById('job-form-salary').value = '';
                 document.getElementById('job-form-type').value = 'Full-time';
