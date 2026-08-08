@@ -24,6 +24,7 @@ import uuid
 import datetime
 import html
 import re
+import zipfile
 from io import BytesIO
 from pathlib import Path
 
@@ -120,6 +121,21 @@ CONTENT_TYPES = {
         "wordprocessingml.document"
     ),
 }
+ALLOWED_UPLOAD_MIME_TYPES = {
+    ".pdf": {
+        "application/pdf",
+        "application/x-pdf",
+        "application/octet-stream",
+    },
+    ".docx": {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/zip",
+        "application/x-zip-compressed",
+        "application/octet-stream",
+    },
+}
+MAX_DOCX_EXPANDED_BYTES = 50 * 1024 * 1024
+MAX_DOCX_ARCHIVE_FILES = 1000
 RESUME_COLUMNS = (
     "id,name,type,file_name,stored_file_name,file_format,storage_bucket,"
     "storage_path,layout,data,last_modified,owner_key"
@@ -163,6 +179,11 @@ def _api_resume(row):
 
 def _validate_pdf(content, max_pages):
     """Validate that an uploaded PDF is readable and within the page limit."""
+    if not content.startswith(b"%PDF-"):
+        raise ValueError(
+            "The selected file is not a genuine PDF document."
+        )
+
     try:
         reader = PdfReader(BytesIO(content))
 
@@ -197,6 +218,54 @@ def _validate_pdf(content, max_pages):
         ) from exc
 
 
+def _validate_docx(content):
+    """Validate the ZIP structure required by a genuine DOCX document."""
+    if not content.startswith((b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")):
+        raise ValueError(
+            "The selected file is not a genuine DOCX document."
+        )
+
+    try:
+        with zipfile.ZipFile(BytesIO(content)) as archive:
+            entries = archive.infolist()
+            names = {entry.filename for entry in entries}
+
+            if len(entries) > MAX_DOCX_ARCHIVE_FILES:
+                raise ValueError(
+                    "The DOCX file contains too many internal files."
+                )
+
+            expanded_size = sum(entry.file_size for entry in entries)
+            if expanded_size > MAX_DOCX_EXPANDED_BYTES:
+                raise ValueError(
+                    "The expanded DOCX content must not exceed 50 MB."
+                )
+
+            if any(entry.flag_bits & 0x1 for entry in entries):
+                raise ValueError(
+                    "Password-protected DOCX files are not allowed."
+                )
+
+            required_entries = {"[Content_Types].xml", "word/document.xml"}
+            if not required_entries.issubset(names):
+                raise ValueError(
+                    "The selected file is not a valid Microsoft Word DOCX document."
+                )
+
+            broken_entry = archive.testzip()
+            if broken_entry:
+                raise ValueError(
+                    "The DOCX file is corrupted or incomplete."
+                )
+
+    except ValueError:
+        raise
+    except (zipfile.BadZipFile, OSError) as exc:
+        raise ValueError(
+            "The uploaded DOCX file is corrupted or invalid."
+        ) from exc
+
+
 def _read_upload(
     file_storage,
     allowed_extensions,
@@ -207,6 +276,25 @@ def _read_upload(
 
     if extension not in allowed_extensions:
         raise ValueError("Only PDF and DOCX files are supported.")
+
+    if len(original_name) > 255:
+        raise ValueError("The uploaded filename must not exceed 255 characters.")
+
+    reported_mime = str(
+        getattr(file_storage, "mimetype", "")
+        or getattr(file_storage, "content_type", "")
+        or ""
+    ).split(";", 1)[0].strip().lower()
+
+    if reported_mime.startswith("image/"):
+        raise ValueError("Image files are not allowed. Upload a PDF or DOCX document.")
+    if (
+        reported_mime
+        and reported_mime not in ALLOWED_UPLOAD_MIME_TYPES[extension]
+    ):
+        raise ValueError(
+            "The file type does not match its PDF or DOCX extension."
+        )
 
     safe_name = secure_filename(original_name)
     if not safe_name:
@@ -225,9 +313,11 @@ def _read_upload(
     if len(content) > MAX_UPLOAD_BYTES:
         raise ValueError("The uploaded file must not exceed 10 MB.")
 
-    # Page limits apply only to PDF files. DOCX files still upload normally.
-    if extension == ".pdf" and max_pages is not None:
-        _validate_pdf(content, max_pages)
+    if extension == ".pdf":
+        if max_pages is not None:
+            _validate_pdf(content, max_pages)
+    else:
+        _validate_docx(content)
 
     # Reset the stream in case another part of the application needs it.
     file_storage.stream.seek(0)

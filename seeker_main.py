@@ -1,5 +1,8 @@
+import base64
+import binascii
 import json
 import os
+import re
 import urllib.request
 import urllib.error
 import datetime
@@ -117,6 +120,213 @@ MATCH_RESPONSE_SCHEMA = {
     },
     "required": ["matchScore", "analysis"]
 }
+
+
+PROFILE_AVATAR_MAX_BYTES = 2 * 1024 * 1024
+PROFILE_AVATAR_PREFIXES = (
+    "data:image/png;base64,",
+    "data:image/jpeg;base64,",
+    "data:image/webp;base64,",
+)
+CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+# Mobile/personal phone formats supported by the country selector in dashboard.html.
+# Patterns are applied to national digits after an optional domestic leading zero
+# has been removed.
+PROFILE_PHONE_RULES = {
+    "+60": {
+        "pattern": re.compile(r"^1\d{8,9}$"),
+        "strip_zero": True,
+        "message": "Malaysia numbers must contain 10 or 11 digits including the leading 0.",
+    },
+    "+1": {
+        "pattern": re.compile(r"^[2-9]\d{2}[2-9]\d{6}$"),
+        "strip_zero": False,
+        "message": "United States numbers must contain exactly 10 valid digits.",
+    },
+    "+44": {
+        "pattern": re.compile(r"^7\d{9}$"),
+        "strip_zero": True,
+        "message": "United Kingdom mobile numbers must contain 11 digits including the leading 0.",
+    },
+    "+65": {
+        "pattern": re.compile(r"^[689]\d{7}$"),
+        "strip_zero": False,
+        "message": "Singapore numbers must contain exactly 8 valid digits.",
+    },
+    "+61": {
+        "pattern": re.compile(r"^4\d{8}$"),
+        "strip_zero": True,
+        "message": "Australian mobile numbers must contain 10 digits including the leading 0.",
+    },
+    "+91": {
+        "pattern": re.compile(r"^[6-9]\d{9}$"),
+        "strip_zero": False,
+        "message": "Indian mobile numbers must contain exactly 10 valid digits.",
+    },
+    "+62": {
+        "pattern": re.compile(r"^8\d{8,11}$"),
+        "strip_zero": True,
+        "message": "Indonesian mobile numbers must contain 10 to 13 digits including the leading 0.",
+    },
+    "+81": {
+        "pattern": re.compile(r"^(?:70|80|90)\d{8}$"),
+        "strip_zero": True,
+        "message": "Japanese mobile numbers must contain 11 digits including the leading 0.",
+    },
+    "+86": {
+        "pattern": re.compile(r"^1[3-9]\d{9}$"),
+        "strip_zero": False,
+        "message": "Chinese mobile numbers must contain exactly 11 valid digits.",
+    },
+}
+
+
+def _normalise_spaces(value):
+    return " ".join(str(value or "").strip().split())
+
+
+def _valid_person_name(value):
+    return (
+        sum(character.isalpha() for character in value) >= 2
+        and all(character.isalpha() or character == " " for character in value)
+    )
+
+
+def _normalise_profile_phone(raw_phone, country_code):
+    rule = PROFILE_PHONE_RULES.get(country_code)
+    if not rule:
+        return None, "Please select a supported phone country."
+
+    raw_phone = str(raw_phone or "").strip()
+    digits = re.sub(r"\D", "", raw_phone)
+    country_digits = country_code.lstrip("+")
+
+    # Accept either a national number or a full number pasted into the field.
+    if raw_phone.startswith("+") and digits.startswith(country_digits):
+        digits = digits[len(country_digits):]
+    if rule["strip_zero"] and digits.startswith("0"):
+        digits = digits[1:]
+
+    if not digits or not rule["pattern"].fullmatch(digits):
+        return None, rule["message"]
+    return f"{country_code} {digits}", None
+
+
+def _validate_profile_avatar(avatar):
+    if avatar is None:
+        return None
+    if not isinstance(avatar, str) or not avatar.startswith(PROFILE_AVATAR_PREFIXES):
+        return "Profile photo must be a PNG, JPG or WEBP image."
+
+    try:
+        image_bytes = base64.b64decode(avatar.split(",", 1)[1], validate=True)
+    except (IndexError, ValueError, binascii.Error):
+        return "Profile photo data is invalid. Please choose the image again."
+
+    if len(image_bytes) > PROFILE_AVATAR_MAX_BYTES:
+        return "Profile photo must not exceed 2 MB."
+
+    is_png = image_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+    is_jpeg = image_bytes.startswith(b"\xff\xd8\xff")
+    is_webp = (
+        len(image_bytes) >= 12
+        and image_bytes.startswith(b"RIFF")
+        and image_bytes[8:12] == b"WEBP"
+    )
+    if not (is_png or is_jpeg or is_webp):
+        return "Profile photo content is not a valid PNG, JPG or WEBP image."
+    return None
+
+
+def _validate_profile_payload(data):
+    errors = {}
+    cleaned = {}
+
+    full_name = _normalise_spaces(data.get("full_name"))
+    if not full_name:
+        errors["full_name"] = "Full name is required."
+    elif not 2 <= len(full_name) <= 80:
+        errors["full_name"] = "Full name must contain between 2 and 80 characters."
+    elif not _valid_person_name(full_name):
+        errors["full_name"] = "Full name can contain letters and spaces only."
+    else:
+        cleaned["full_name"] = full_name
+
+    headline = _normalise_spaces(data.get("headline"))
+    if not headline:
+        errors["headline"] = "Professional headline is required."
+    elif not 3 <= len(headline) <= 120:
+        errors["headline"] = "Professional headline must contain between 3 and 120 characters."
+    elif CONTROL_CHAR_PATTERN.search(headline) or "<" in headline or ">" in headline:
+        errors["headline"] = "Professional headline contains unsupported characters."
+    else:
+        cleaned["headline"] = headline
+
+    formatted_phone, phone_error = _normalise_profile_phone(
+        data.get("phone"), str(data.get("phone_country", "")).strip()
+    )
+    if phone_error:
+        errors["phone"] = phone_error
+    else:
+        cleaned["phone"] = formatted_phone
+
+    bio = str(data.get("bio", "")).strip()
+    if not bio:
+        errors["bio"] = "Professional bio is required."
+    elif not 20 <= len(bio) <= 1000:
+        errors["bio"] = "Professional bio must contain between 20 and 1,000 characters."
+    elif CONTROL_CHAR_PATTERN.search(bio) or "<" in bio or ">" in bio:
+        errors["bio"] = "Professional bio contains unsupported characters."
+    else:
+        cleaned["bio"] = bio
+
+    skills = data.get("skills")
+    cleaned_skills = []
+    seen_skills = set()
+    if not isinstance(skills, list):
+        errors["skills"] = "Skills must be provided as a list."
+    else:
+        for raw_skill in skills:
+            if not isinstance(raw_skill, str):
+                errors["skills"] = "Every skill must be text."
+                break
+            skill = _normalise_spaces(raw_skill)
+            if not skill:
+                continue
+            if len(skill) > 40:
+                errors["skills"] = "Each skill must not exceed 40 characters."
+                break
+            if (
+                CONTROL_CHAR_PATTERN.search(skill)
+                or "<" in skill
+                or ">" in skill
+                or not any(character.isalnum() for character in skill)
+            ):
+                errors["skills"] = f'Unsupported skill value: "{skill}".'
+                break
+            key = skill.casefold()
+            if key not in seen_skills:
+                seen_skills.add(key)
+                cleaned_skills.append(skill)
+
+        if "skills" not in errors:
+            if not cleaned_skills:
+                errors["skills"] = "Enter at least one core skill."
+            elif len(cleaned_skills) > 20:
+                errors["skills"] = "Enter no more than 20 core skills."
+            else:
+                cleaned["skills"] = cleaned_skills
+
+    if "avatar" in data:
+        avatar = data.get("avatar")
+        avatar_error = _validate_profile_avatar(avatar)
+        if avatar_error:
+            errors["avatar"] = avatar_error
+        else:
+            cleaned["avatar"] = avatar
+
+    return cleaned, errors
 
 def call_gemini(prompt, system_instruction=None, response_schema=None):
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -532,29 +742,23 @@ def create_app():
     def update_profile():
         data = request.get_json(silent=True) or {}
 
-        full_name = str(data.get("full_name", "")).strip()
-        if not full_name:
-            return jsonify({"error": "Full name is required."}), 400
-
-        skills = data.get("skills", [])
-        if not isinstance(skills, list):
-            return jsonify({"error": "Skills must be a list."}), 400
+        cleaned_profile, field_errors = _validate_profile_payload(data)
+        if field_errors:
+            return jsonify({
+                "error": "Please correct the highlighted profile fields.",
+                "field_errors": field_errors,
+            }), 400
 
         profile = auth_service.update_profile(
             session["user_id"],
-            {
-                "full_name": full_name,
-                "headline": str(data.get("headline", "")).strip(),
-                "phone": str(data.get("phone", "")).strip(),
-                "bio": str(data.get("bio", "")).strip(),
-                "skills": skills,
-                "avatar": data.get("avatar"),
-            },
+            cleaned_profile,
         )
         if not profile:
             return jsonify({"error": "Profile update failed."}), 500
 
-        session["full_name"] = profile.get("full_name", full_name)
+        session["full_name"] = profile.get(
+            "full_name", cleaned_profile["full_name"]
+        )
         profile["email"] = session.get("email", "")
         return jsonify({"success": True, "profile": profile})
 
@@ -572,7 +776,7 @@ def create_app():
     def dashboard():
         """Dashboard - redirect to login if not authenticated"""
         if session.get("user_id") and session.get("role") == JOB_SEEKER_ROLE:
-            return render_template("seeker.html")
+            return render_template("dashboard.html")
         return redirect(url_for("login_page"))
 
     @app.route("/resumes")

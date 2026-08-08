@@ -672,8 +672,8 @@
     </div>
 
     <!-- Floating Notice Toast Container -->
-    <div id="toast-notice" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
-        <span class="text-blue-400" id="toast-icon">✓</span>
+    <div id="toast-notice" role="status" aria-live="polite" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
+        <span class="text-emerald-400 text-sm leading-none" id="toast-icon" aria-hidden="true">✓</span>
         <span id="toast-message">Success!</span>
     </div>
 
@@ -928,7 +928,7 @@
             const MAX_FILE_SIZE = 10 * 1024 * 1024;
             if (file.size > MAX_FILE_SIZE) {
                 event.target.value = '';
-                showFloatingNotice('The file must not exceed 10 MB.');
+                showFloatingNotice('The file must not exceed 10 MB.', 'error');
                 return;
             }
 
@@ -984,7 +984,7 @@
             } catch (err) {
                 clearInterval(interval);
                 progressContainer.classList.add('hidden');
-                showFloatingNotice(err.message || "Upload failed. Please try again.");
+                showFloatingNotice(err.message || "Upload failed. Please try again.", 'error');
             }
         }
 
@@ -1102,7 +1102,7 @@
                     defaultFormat: 'pdf'
                 });
                 if (!outputFormat) {
-                    showFloatingNotice('AI resume was not saved.');
+                    showFloatingNotice('AI resume was not saved.', 'warning');
                     return;
                 }
                 const record = await persistBuilderResume(
@@ -1119,7 +1119,8 @@
             } catch (saveErr) {
                 showFloatingNotice(
                     saveErr.message ||
-                    "Generated the resume, but couldn't save it to the server."
+                    "Generated the resume, but couldn't save it to the server.",
+                    'error'
                 );
             } finally {
                 btn.innerHTML = originalHTML;
@@ -1132,7 +1133,7 @@
             const descArea = document.getElementById('form-exp-desc');
             const bulletText = descArea.value.trim();
             if (!bulletText) {
-                showFloatingNotice("Please type some duties/bullets first to polish!");
+                showFloatingNotice("Please type some duties/bullets first to polish!", 'warning');
                 return;
             }
 
@@ -1179,7 +1180,7 @@
         async function downloadResume(resumeId) {
             let resume = resumesList.find(r => r.id === resumeId);
             if (!resume) {
-                showFloatingNotice("Resume not found.");
+                showFloatingNotice("Resume not found.", 'error');
                 return;
             }
 
@@ -1204,7 +1205,7 @@
                     resume = record;
                     renderResumesHubList();
                 } catch (err) {
-                    showFloatingNotice(err.message || "Couldn't generate this resume file.");
+                    showFloatingNotice(err.message || "Couldn't generate this resume file.", 'error');
                     return;
                 }
             }
@@ -1213,7 +1214,8 @@
                 showFloatingNotice(
                     resume.type === 'upload'
                         ? "This old upload has no stored file. Please upload it again."
-                        : "Save this resume as PDF or DOCX first."
+                        : "Save this resume as PDF or DOCX first.",
+                    'warning'
                 );
                 return;
             }
@@ -1224,7 +1226,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            showFloatingNotice(`Downloading ${resume.fileName || resume.name}...`);
+            showFloatingNotice(`Downloading ${resume.fileName || resume.name}...`, 'info');
         }
 
         // Opens the actual uploaded or generated file in a new tab.
@@ -1233,11 +1235,11 @@
         function viewUploadedResume(resumeId) {
             const resume = resumesList.find(r => r.id === resumeId);
             if (!resume) {
-                showFloatingNotice("Resume not found.");
+                showFloatingNotice("Resume not found.", 'error');
                 return;
             }
             if (!resume.storedFileName) {
-                showFloatingNotice("No document file exists yet. Save it as PDF or DOCX first.");
+                showFloatingNotice("No document file exists yet. Save it as PDF or DOCX first.", 'warning');
                 return;
             }
             window.open(`/uploads/${encodeURIComponent(resume.storedFileName)}`, '_blank');
@@ -1580,7 +1582,7 @@
                 renderResumesHubList();
                 showFloatingNotice(`Deleted resume "${name}" permanently.`);
             } else {
-                showFloatingNotice("Couldn't delete this resume on the server. Please try again.");
+                showFloatingNotice("Couldn't delete this resume on the server. Please try again.", 'error');
             }
             closeDeleteConfirmModal();
         }
@@ -1642,7 +1644,7 @@
                 btn.innerHTML = `✏️ Update Experience Item`;
                 btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded-lg transition mt-1";
             }
-            showFloatingNotice("Loaded work experience item into form. You can modify it and click 'Update Experience'!");
+            showFloatingNotice("Loaded work experience item into form. You can modify it and click 'Update Experience'!", 'info');
         }
 
         function addExperienceFromBuilderForm() {
@@ -1653,7 +1655,7 @@
             const desc = document.getElementById('form-exp-desc').value.trim();
 
             if (!role || !company || !start) {
-                showFloatingNotice("Role, company, and start date are required!");
+                showFloatingNotice("Role, company, and start date are required!", 'warning');
                 return;
             }
 
@@ -1745,7 +1747,7 @@
             const end = document.getElementById('form-edu-end').value.trim();
 
             if (!degree || !field || !school || !start || !end) {
-                showFloatingNotice("Please fill in all education fields!");
+                showFloatingNotice("Please fill in all education fields!", 'warning');
                 return;
             }
 
@@ -1794,7 +1796,7 @@
             const desc = document.getElementById('form-proj-desc').value.trim();
 
             if (!name || !desc) {
-                showFloatingNotice("Project name and description are required!");
+                showFloatingNotice("Project name and description are required!", 'warning');
                 return;
             }
 
@@ -2070,7 +2072,7 @@
                 defaultFormat: selectedActiveResume.fileFormat || 'pdf'
             });
             if (!outputFormat) {
-                showFloatingNotice("Resume changes were not saved.");
+                showFloatingNotice("Resume changes were not saved.", 'warning');
                 return;
             }
 
@@ -2109,7 +2111,8 @@
                 showResumesSubView('list');
             } catch (err) {
                 showFloatingNotice(
-                    err.message || "Couldn't save this resume to the server. Please try again."
+                    err.message || "Couldn't save this resume to the server. Please try again.",
+                    'error'
                 );
             } finally {
                 if (saveBtn) {
@@ -2540,11 +2543,25 @@
 
         // Toast Floater Helper
         let toastTimeout = null;
-        function showFloatingNotice(text) {
+        function showFloatingNotice(text, type = 'success') {
             const toast = document.getElementById('toast-notice');
             const message = document.getElementById('toast-message');
+            const icon = document.getElementById('toast-icon');
+
+            const variants = {
+                success: { symbol: '✓', color: 'text-emerald-400', label: 'Success' },
+                info: { symbol: 'i', color: 'text-blue-400', label: 'Information' },
+                warning: { symbol: '⚠', color: 'text-amber-400', label: 'Warning' },
+                error: { symbol: '✕', color: 'text-rose-400', label: 'Error' }
+            };
+            const variant = variants[type] || variants.info;
 
             message.textContent = text;
+            icon.textContent = variant.symbol;
+            icon.className = `${variant.color} text-sm leading-none shrink-0`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+            toast.setAttribute('aria-label', `${variant.label}: ${text}`);
             toast.classList.remove('translate-y-20', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
 

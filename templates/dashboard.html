@@ -362,47 +362,52 @@
                     <div class="flex gap-3">
                         <button type="button" onclick="removeAvatarPhoto()" id="remove-avatar-btn" class="hidden text-rose-500 hover:text-rose-700 font-bold transition">Remove</button>
                     </div>
-                    <span class="text-[10px] text-slate-400">Click the camera icon to upload a photo (PNG, JPG or WEBP).</span>
+                    <span class="text-[10px] text-slate-400">PNG, JPG or WEBP only. Maximum file size: 2 MB.</span>
+                    <p id="edit-avatar-error" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
                 </div>
             </div>
+            <div id="profile-form-error" class="hidden rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 font-semibold" role="alert"></div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Full Name</label>
+                <label for="edit-name" class="block font-bold text-slate-700 mb-1.5">Full Name <span class="text-rose-500">*</span></label>
                 <input
-    type="text"
-    id="edit-name"
-    required
-    pattern="[A-Za-zÀ-ÖØ-öø-ÿ' -]+"
-    title="Name can only contain letters, spaces, apostrophes and hyphens"
-    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
->
+                    type="text"
+                    id="edit-name"
+                    required
+                    minlength="2"
+                    maxlength="80"
+                    autocomplete="name"
+                    aria-describedby="edit-name-error"
+                    oninput="handleNameInput()"
+                    onblur="validateProfileField('full_name')"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <p id="edit-name-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
             </div>
             <div>
-    <label class="block font-bold text-slate-700 mb-1.5">
-        Professional Headline
-    </label>
-
-    <textarea
-        id="edit-headline"
-        rows="3"
-        class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
-        placeholder="e.g. Full-Stack Software Engineer specializing in React & Node.js"
-    ></textarea>
-</div>
+                <label for="edit-headline" class="block font-bold text-slate-700 mb-1.5">Professional Headline <span class="text-rose-500">*</span></label>
+                <textarea id="edit-headline" rows="3" required minlength="3" maxlength="120" aria-describedby="edit-headline-error edit-headline-count" oninput="updateProfileCounters(); setProfileFieldError('headline', '')" onblur="validateProfileField('headline')" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none" placeholder="e.g. Full-Stack Software Engineer specializing in React & Node.js"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-2">
+                    <p id="edit-headline-error" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
+                    <span id="edit-headline-count" class="ml-auto text-[10px] text-slate-400">0/120</span>
+                </div>
+            </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1.5">Email Address</label>
+                    <label for="edit-email" class="block font-bold text-slate-700 mb-1.5">Email Address</label>
                     <input
-    type="email"
-    id="edit-email"
-    required
-    title="Please enter a valid email address"
-    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
->
+                        type="email"
+                        id="edit-email"
+                        required
+                        readonly
+                        autocomplete="email"
+                        aria-describedby="edit-email-help edit-email-error"
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed focus:outline-none">
+                    <p id="edit-email-help" class="mt-1 text-[10px] text-slate-400">Account email cannot be changed here.</p>
+                    <p id="edit-email-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1.5">Phone Number</label>
+                    <label for="edit-phone" class="block font-bold text-slate-700 mb-1.5">Phone Number <span class="text-rose-500">*</span></label>
                     <div class="flex gap-2">
-                        <select id="edit-phone-country" class="px-2 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-28 text-slate-700 font-medium shrink-0">
+                        <select id="edit-phone-country" aria-label="Phone country" onchange="updatePhoneRules()" class="px-2 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-28 text-slate-700 font-medium shrink-0">
                             <option value="+60">🇲🇾 +60</option>
                             <option value="+1">🇺🇸 +1</option>
                             <option value="+44">🇬🇧 +44</option>
@@ -413,18 +418,25 @@
                             <option value="+81">🇯🇵 +81</option>
                             <option value="+86">🇨🇳 +86</option>
                         </select>
-                        <input type="text" id="edit-phone" class="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="12-345 6789" oninput="this.value = this.value.replace(/[^0-9\s\-()]/g, '')">
+                        <input type="tel" id="edit-phone" required inputmode="numeric" autocomplete="tel-national" maxlength="11" aria-describedby="edit-phone-help edit-phone-error" class="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="0175816201" oninput="handlePhoneInput()" onblur="validateProfileField('phone')">
                     </div>
+                    <p id="edit-phone-help" class="mt-1 text-[10px] text-slate-400"></p>
+                    <p id="edit-phone-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
                 </div>
             </div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Professional Bio</label>
-                <textarea id="edit-bio" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
+                <label for="edit-bio" class="block font-bold text-slate-700 mb-1.5">Professional Bio <span class="text-rose-500">*</span></label>
+                <textarea id="edit-bio" rows="4" required minlength="20" maxlength="1000" aria-describedby="edit-bio-error edit-bio-count" oninput="updateProfileCounters(); setProfileFieldError('bio', '')" onblur="validateProfileField('bio')" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-2">
+                    <p id="edit-bio-error" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
+                    <span id="edit-bio-count" class="ml-auto text-[10px] text-slate-400">0/1000</span>
+                </div>
             </div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Core Skills (separated by commas)</label>
-                <input type="text" id="edit-skills" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                <span class="text-[10px] text-slate-400">E.g., React, TypeScript, Tailwind CSS, Vite</span>
+                <label for="edit-skills" class="block font-bold text-slate-700 mb-1.5">Core Skills (separated by commas) <span class="text-rose-500">*</span></label>
+                <input type="text" id="edit-skills" required maxlength="819" aria-describedby="edit-skills-help edit-skills-error" oninput="handleSkillsInput()" onblur="validateProfileField('skills')" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <span id="edit-skills-help" class="text-[10px] text-slate-400">Enter 1–20 skills. Each skill can contain up to 40 characters.</span>
+                <p id="edit-skills-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
             </div>
         </div>
         <!-- Footer actions -->
@@ -432,7 +444,7 @@
             <button onclick="closeProfileModal()" class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-100 font-semibold text-slate-600 transition">
                 Cancel
             </button>
-            <button onclick="saveProfileData()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md shadow-blue-100">
+            <button id="profile-save-btn" onclick="saveProfileData()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold transition shadow-md shadow-blue-100">
                 Save Changes
             </button>
         </div>
@@ -457,7 +469,7 @@
         let selectedJob = null;
         let isEmployerPersona = false;
 
-        // Seeker profile state (synced with LocalStorage)
+        // Seeker profile state (Supabase is authoritative; LocalStorage is a UI cache)
         let profileState = {
             name: "Alex Rivera",
             headline: "Full-Stack Software Engineer specializing in React & Node.js",
@@ -469,12 +481,12 @@
         };
 
         // 2. BOOTSTRAP INITIALIZATION
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             loadLocalStorageData();
-            fetchJobs().then(() => {
-                syncProfileUI();
-                syncDashboardUI();
-            });
+            await loadProfileFromServer();
+            await fetchJobs();
+            syncProfileUI();
+            syncDashboardUI();
         });
 
         // 3. PERSISTENCE ENGINE
@@ -505,6 +517,29 @@
 
         function saveProfileState() {
             localStorage.setItem('jobportal_profile', JSON.stringify(profileState));
+        }
+
+        async function loadProfileFromServer() {
+            try {
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load profile.');
+                }
+
+                profileState = {
+                    name: data.full_name || profileState.name,
+                    headline: data.headline || '',
+                    email: data.email || profileState.email,
+                    phone: data.phone || '',
+                    bio: data.bio || '',
+                    skills: Array.isArray(data.skills) ? data.skills : [],
+                    avatar: data.avatar || null
+                };
+                saveProfileState();
+            } catch (error) {
+                console.warn('Failed to load profile from server; using the cached profile.', error);
+            }
         }
 
         function saveAppliedState() {
@@ -671,6 +706,15 @@
         }
 
         // 7. PROFILE EDITOR MODAL CONTROLLER
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
         function syncProfileUI() {
             // Header display
             document.getElementById('user-display-name').textContent = profileState.name;
@@ -688,7 +732,7 @@
             // Render skills
             const box = document.getElementById('profile-skills-box');
             box.innerHTML = profileState.skills.map(s => `
-                <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">${s}</span>
+                <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">${escapeHtml(s)}</span>
             `).join('');
         }
 
@@ -704,8 +748,207 @@
         }
 
         let pendingAvatarDataUrl = undefined; // undefined = no change staged this session
+        let profileFormInitialState = '';
+
+        const PHONE_RULES = {
+            '+60': { pattern: /^1\d{8,9}$/, stripZero: true, maxDigits: 11, placeholder: '0175816201', help: 'Malaysia: maximum 11 digits. Numbers only.', error: 'Malaysia numbers must contain 10 or 11 digits including the leading 0.' },
+            '+1': { pattern: /^[2-9]\d{2}[2-9]\d{6}$/, stripZero: false, maxDigits: 10, placeholder: '4155552671', help: 'United States: exactly 10 digits. Numbers only.', error: 'United States numbers must contain exactly 10 valid digits.' },
+            '+44': { pattern: /^7\d{9}$/, stripZero: true, maxDigits: 11, placeholder: '07911123456', help: 'United Kingdom: exactly 11 digits. Numbers only.', error: 'United Kingdom mobile numbers must contain 11 digits including the leading 0.' },
+            '+65': { pattern: /^[689]\d{7}$/, stripZero: false, maxDigits: 8, placeholder: '81234567', help: 'Singapore: exactly 8 digits. Numbers only.', error: 'Singapore numbers must contain exactly 8 valid digits.' },
+            '+61': { pattern: /^4\d{8}$/, stripZero: true, maxDigits: 10, placeholder: '0412345678', help: 'Australia: exactly 10 digits. Numbers only.', error: 'Australian mobile numbers must contain 10 digits including the leading 0.' },
+            '+91': { pattern: /^[6-9]\d{9}$/, stripZero: false, maxDigits: 10, placeholder: '9876543210', help: 'India: exactly 10 digits. Numbers only.', error: 'Indian mobile numbers must contain exactly 10 valid digits.' },
+            '+62': { pattern: /^8\d{8,11}$/, stripZero: true, maxDigits: 13, placeholder: '081234567890', help: 'Indonesia: maximum 13 digits. Numbers only.', error: 'Indonesian mobile numbers must contain 10 to 13 digits including the leading 0.' },
+            '+81': { pattern: /^(?:70|80|90)\d{8}$/, stripZero: true, maxDigits: 11, placeholder: '09012345678', help: 'Japan: exactly 11 digits. Numbers only.', error: 'Japanese mobile numbers must contain 11 digits including the leading 0.' },
+            '+86': { pattern: /^1[3-9]\d{9}$/, stripZero: false, maxDigits: 11, placeholder: '13800138000', help: 'China: exactly 11 digits. Numbers only.', error: 'Chinese mobile numbers must contain exactly 11 valid digits.' }
+        };
+
+        const PROFILE_FIELD_IDS = {
+            full_name: 'edit-name',
+            headline: 'edit-headline',
+            phone: 'edit-phone',
+            bio: 'edit-bio',
+            skills: 'edit-skills',
+            avatar: 'edit-avatar-input',
+            email: 'edit-email'
+        };
+
+        function captureProfileFormState() {
+            return JSON.stringify({
+                name: document.getElementById('edit-name').value,
+                headline: document.getElementById('edit-headline').value,
+                email: document.getElementById('edit-email').value,
+                country: document.getElementById('edit-phone-country').value,
+                phone: document.getElementById('edit-phone').value,
+                bio: document.getElementById('edit-bio').value,
+                skills: document.getElementById('edit-skills').value,
+                avatar: pendingAvatarDataUrl === undefined ? profileState.avatar : pendingAvatarDataUrl
+            });
+        }
+
+        function setProfileFieldError(field, message) {
+            const input = document.getElementById(PROFILE_FIELD_IDS[field]);
+            const suffix = field === 'full_name' ? 'name' : field;
+            const error = document.getElementById(`edit-${suffix}-error`);
+            if (input) {
+                input.classList.toggle('border-rose-400', Boolean(message));
+                input.setAttribute('aria-invalid', message ? 'true' : 'false');
+            }
+            if (error) {
+                error.textContent = message || '';
+                error.classList.toggle('hidden', !message);
+            }
+        }
+
+        function clearProfileErrors() {
+            Object.keys(PROFILE_FIELD_IDS).forEach(field => setProfileFieldError(field, ''));
+            const summary = document.getElementById('profile-form-error');
+            summary.textContent = '';
+            summary.classList.add('hidden');
+        }
+
+        function showProfileFormError(message) {
+            const summary = document.getElementById('profile-form-error');
+            summary.textContent = message;
+            summary.classList.remove('hidden');
+        }
+
+        function handleNameInput() {
+            const input = document.getElementById('edit-name');
+            const originalValue = input.value;
+            input.value = originalValue
+                .replace(/[^\p{L} ]/gu, '')
+                .replace(/ {2,}/g, ' ')
+                .slice(0, 80);
+
+            if (originalValue !== input.value) {
+                setProfileFieldError('full_name', 'Full name can contain letters and spaces only.');
+            } else {
+                setProfileFieldError('full_name', '');
+            }
+        }
+
+        function handleSkillsInput() {
+            const input = document.getElementById('edit-skills');
+            const originalValue = input.value;
+            input.value = originalValue.replace(/[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+            if (originalValue !== input.value) {
+                setProfileFieldError('skills', 'Angle brackets and control characters are not allowed.');
+            } else {
+                setProfileFieldError('skills', '');
+            }
+        }
+
+        function validateProfileField(field) {
+            if (field === 'full_name') {
+                const name = document.getElementById('edit-name').value.trim();
+                const validName = /^[\p{L} ]+$/u.test(name);
+                const message = !name
+                    ? 'Full name is required.'
+                    : name.length < 2
+                        ? 'Full name must contain at least 2 letters.'
+                        : !validName
+                            ? 'Full name can contain letters and spaces only.'
+                            : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'headline') {
+                const value = document.getElementById('edit-headline').value.trim();
+                const message = value.length < 3
+                    ? 'Professional headline must contain at least 3 characters.'
+                    : /[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value)
+                        ? 'Professional headline contains unsupported characters.'
+                        : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'phone') {
+                const countryCode = document.getElementById('edit-phone-country').value;
+                const rule = PHONE_RULES[countryCode];
+                const digits = phoneNationalDigits(document.getElementById('edit-phone').value, countryCode);
+                const message = rule.pattern.test(digits) ? '' : rule.error;
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'bio') {
+                const value = document.getElementById('edit-bio').value.trim();
+                const message = value.length < 20
+                    ? 'Professional bio must contain at least 20 characters.'
+                    : /[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value)
+                        ? 'Professional bio contains unsupported characters.'
+                        : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'skills') {
+                const skills = document.getElementById('edit-skills').value
+                    .split(',').map(skill => skill.trim()).filter(Boolean);
+                const invalid = skills.find(skill => skill.length > 40 || !/[\p{L}\p{N}]/u.test(skill));
+                const message = skills.length < 1
+                    ? 'Enter at least one core skill.'
+                    : skills.length > 20
+                        ? 'Enter no more than 20 core skills.'
+                        : invalid
+                            ? 'Each skill needs letters or numbers and must not exceed 40 characters.'
+                            : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            return true;
+        }
+
+        function updateProfileCounters() {
+            document.getElementById('edit-headline-count').textContent = `${document.getElementById('edit-headline').value.length}/120`;
+            document.getElementById('edit-bio-count').textContent = `${document.getElementById('edit-bio').value.length}/1000`;
+        }
+
+        function updatePhoneRules() {
+            const countryCode = document.getElementById('edit-phone-country').value;
+            const rule = PHONE_RULES[countryCode];
+            const input = document.getElementById('edit-phone');
+            input.placeholder = rule.placeholder;
+            input.maxLength = rule.maxDigits;
+            input.value = input.value.replace(/\D/g, '').slice(0, rule.maxDigits);
+            document.getElementById('edit-phone-help').textContent = rule.help;
+            setProfileFieldError('phone', '');
+        }
+
+        function handlePhoneInput() {
+            const input = document.getElementById('edit-phone');
+            const rule = PHONE_RULES[document.getElementById('edit-phone-country').value];
+            const originalValue = input.value;
+            const digitsOnly = originalValue.replace(/\D/g, '');
+            input.value = digitsOnly.slice(0, rule.maxDigits);
+
+            if (/\D/.test(originalValue)) {
+                setProfileFieldError('phone', 'Phone number can contain numbers only.');
+            } else if (digitsOnly.length > rule.maxDigits) {
+                setProfileFieldError('phone', `Maximum ${rule.maxDigits} digits allowed for this country.`);
+            } else {
+                setProfileFieldError('phone', '');
+            }
+        }
+
+        function phoneNationalDigits(phoneValue, countryCode) {
+            const rule = PHONE_RULES[countryCode];
+            let digits = phoneValue.replace(/\D/g, '');
+            const countryDigits = countryCode.slice(1);
+            if (phoneValue.trim().startsWith('+') && digits.startsWith(countryDigits)) {
+                digits = digits.slice(countryDigits.length);
+            }
+            if (rule.stripZero && digits.startsWith('0')) {
+                digits = digits.slice(1);
+            }
+            return digits;
+        }
 
         function openProfileModal() {
+            clearProfileErrors();
             document.getElementById('edit-name').value = profileState.name;
             document.getElementById('edit-headline').value = profileState.headline;
             document.getElementById('edit-email').value = profileState.email;
@@ -724,15 +967,18 @@
             }
             document.getElementById('edit-phone-country').value = matchedCountry;
             document.getElementById('edit-phone').value = numberPart;
+            updatePhoneRules();
 
             document.getElementById('edit-bio').value = profileState.bio;
             document.getElementById('edit-skills').value = profileState.skills.join(', ');
+            updateProfileCounters();
 
             // Reset avatar staging area and show the current photo (if any)
             pendingAvatarDataUrl = undefined;
             const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
             renderAvatar(document.getElementById('edit-avatar-preview'), initials);
             document.getElementById('remove-avatar-btn').classList.toggle('hidden', !profileState.avatar);
+            profileFormInitialState = captureProfileFormState();
 
             const back = document.getElementById('modal-backdrop');
             const panel = document.getElementById('modal-panel');
@@ -754,12 +1000,33 @@
         function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
+            setProfileFieldError('avatar', '');
+
+            if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                event.target.value = '';
+                setProfileFieldError('avatar', 'Choose a PNG, JPG or WEBP image.');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                event.target.value = '';
+                setProfileFieldError('avatar', 'Profile photo must not exceed 2 MB.');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = () => {
-                pendingAvatarDataUrl = reader.result;
-                const preview = document.getElementById('edit-avatar-preview');
-                preview.innerHTML = `<img src="${reader.result}" class="h-full w-full object-cover" alt="Profile photo">`;
-                document.getElementById('remove-avatar-btn').classList.remove('hidden');
+                const image = new Image();
+                image.onload = () => {
+                    pendingAvatarDataUrl = reader.result;
+                    const preview = document.getElementById('edit-avatar-preview');
+                    preview.innerHTML = `<img src="${reader.result}" class="h-full w-full object-cover" alt="Profile photo">`;
+                    document.getElementById('remove-avatar-btn').classList.remove('hidden');
+                };
+                image.onerror = () => {
+                    event.target.value = '';
+                    setProfileFieldError('avatar', 'The selected file is not a valid image.');
+                };
+                image.src = reader.result;
             };
             reader.readAsDataURL(file);
         }
@@ -768,7 +1035,9 @@
             pendingAvatarDataUrl = null;
             document.getElementById('edit-avatar-input').value = '';
             const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
-            renderAvatar(document.getElementById('edit-avatar-preview'), initials);
+            const preview = document.getElementById('edit-avatar-preview');
+            preview.innerHTML = '';
+            preview.textContent = initials;
             document.getElementById('remove-avatar-btn').classList.add('hidden');
         }
 
@@ -786,110 +1055,145 @@
             }, 300);
         }
 
-        function saveProfileData() {
-    const name = document.getElementById('edit-name').value.trim();
-    const email = document.getElementById('edit-email').value.trim();
+        async function saveProfileData() {
+            clearProfileErrors();
 
-    // Name cannot be empty
-    if (!name) {
-        showFloatingNotice("Please enter your name.");
-        return;
-    }
+            const name = document.getElementById('edit-name').value.trim().replace(/\s+/g, ' ');
+            const headline = document.getElementById('edit-headline').value.trim().replace(/\s+/g, ' ');
+            const email = document.getElementById('edit-email').value.trim();
+            const phoneInput = document.getElementById('edit-phone').value.trim();
+            const countryCode = document.getElementById('edit-phone-country').value;
+            const phoneRule = PHONE_RULES[countryCode];
+            const nationalDigits = phoneNationalDigits(phoneInput, countryCode);
+            const bio = document.getElementById('edit-bio').value.trim();
 
-    // Name cannot contain numbers
-    if (/\d/.test(name)) {
-        showFloatingNotice("Name cannot contain numbers.");
-        return;
-    }
+            const skills = [];
+            const seenSkills = new Set();
+            document.getElementById('edit-skills').value
+                .split(',')
+                .map(skill => skill.trim().replace(/\s+/g, ' '))
+                .filter(Boolean)
+                .forEach(skill => {
+                    const key = skill.toLocaleLowerCase();
+                    if (!seenSkills.has(key)) {
+                        seenSkills.add(key);
+                        skills.push(skill);
+                    }
+                });
 
-    // Name only allows letters, spaces, apostrophes and hyphens
-    if (!/^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(name)) {
-        showFloatingNotice(
-            "Name can only contain letters, spaces, apostrophes and hyphens."
-        );
-        return;
-    }
+            let valid = true;
+            const namePattern = /^[\p{L} ]+$/u;
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // Email cannot be empty
-    if (!email) {
-        showFloatingNotice("Please enter your email address.");
-        return;
-    }
+            if (name.length < 2 || name.length > 80) {
+                setProfileFieldError('full_name', 'Full name must contain between 2 and 80 characters.');
+                valid = false;
+            } else if (!namePattern.test(name) || (name.match(/\p{L}/gu) || []).length < 2) {
+                setProfileFieldError('full_name', 'Full name can contain letters and spaces only.');
+                valid = false;
+            }
 
-    // Email must have a valid format, including @
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (headline.length < 3 || headline.length > 120) {
+                setProfileFieldError('headline', 'Professional headline must contain between 3 and 120 characters.');
+                valid = false;
+            } else if (/[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(headline)) {
+                setProfileFieldError('headline', 'Professional headline contains unsupported characters.');
+                valid = false;
+            }
 
-    if (!emailPattern.test(email)) {
-        showFloatingNotice(
-            "Please enter a valid email address, for example name@example.com."
-        );
-        return;
-    }
+            if (!emailPattern.test(email)) {
+                setProfileFieldError('email', 'The account email address has an invalid format.');
+                valid = false;
+            }
 
-    profileState.name = name;
-    const headline =
-    document.getElementById('edit-headline').value.trim();
+            if (!nationalDigits || !phoneRule.pattern.test(nationalDigits)) {
+                setProfileFieldError('phone', phoneRule.error);
+                valid = false;
+            }
 
-const headlinePattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s&(),.'/-]+$/;
+            if (bio.length < 20 || bio.length > 1000) {
+                setProfileFieldError('bio', 'Professional bio must contain between 20 and 1,000 characters.');
+                valid = false;
+            } else if (/[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(bio)) {
+                setProfileFieldError('bio', 'Professional bio contains unsupported characters.');
+                valid = false;
+            }
 
-if (headline && !headlinePattern.test(headline)) {
-    showFloatingNotice(
-        "Professional headline can only contain letters and common punctuation."
-    );
-    return;
-}
+            if (skills.length < 1 || skills.length > 20) {
+                setProfileFieldError('skills', 'Enter between 1 and 20 core skills.');
+                valid = false;
+            } else {
+                const invalidSkill = skills.find(skill =>
+                    skill.length > 40 || /[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(skill) || !/[\p{L}\p{N}]/u.test(skill)
+                );
+                if (invalidSkill) {
+                    setProfileFieldError('skills', 'Each skill needs letters or numbers and must not exceed 40 characters.');
+                    valid = false;
+                }
+            }
 
-profileState.headline = headline;
-    profileState.email = email;
+            if (!valid) {
+                showProfileFormError('Please correct the highlighted fields before saving.');
+                document.querySelector('#modal-panel [aria-invalid="true"]')?.focus();
+                return;
+            }
 
-    const countryCode =
-        document.getElementById('edit-phone-country').value;
-    const phoneNum =
-        document.getElementById('edit-phone').value.trim();
+            if (captureProfileFormState() === profileFormInitialState) {
+                showFloatingNotice('No profile changes to save.');
+                return;
+            }
 
-    profileState.phone = phoneNum
-        ? `${countryCode} ${phoneNum}`
-        : "";
+            const payload = {
+                full_name: name,
+                headline,
+                phone: phoneInput,
+                phone_country: countryCode,
+                bio,
+                skills,
+                avatar: pendingAvatarDataUrl === undefined ? profileState.avatar : pendingAvatarDataUrl
+            };
 
-    profileState.bio =
-        document.getElementById('edit-bio').value.trim();
+            const saveButton = document.getElementById('profile-save-btn');
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
 
-    const rawSkills =
-    document.getElementById('edit-skills').value;
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
 
-const skills = rawSkills
-    .split(',')
-    .map(skill => skill.trim())
-    .filter(skill => skill.length > 0);
+                if (!response.ok) {
+                    Object.entries(result.field_errors || {}).forEach(([field, message]) => {
+                        setProfileFieldError(field, message);
+                    });
+                    throw new Error(result.error || 'Profile update failed.');
+                }
 
-// Allow letters, spaces and common programming symbols
-const skillPattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s.+#/-]+$/;
+                const saved = result.profile || {};
+                profileState = {
+                    name: saved.full_name || name,
+                    headline: saved.headline || headline,
+                    email: saved.email || email,
+                    phone: saved.phone || `${countryCode} ${nationalDigits}`,
+                    bio: saved.bio || bio,
+                    skills: Array.isArray(saved.skills) ? saved.skills : skills,
+                    avatar: saved.avatar ?? payload.avatar
+                };
 
-const invalidSkill = skills.find(
-    skill => !skillPattern.test(skill)
-);
-
-if (invalidSkill) {
-    showFloatingNotice(
-        "Each skill can only contain letters and symbols like +, #, ., / and -."
-    );
-    return;
-}
-
-profileState.skills = skills;
-
-    if (pendingAvatarDataUrl !== undefined) {
-        profileState.avatar = pendingAvatarDataUrl;
-    }
-
-    saveProfileState();
-    syncProfileUI();
-    closeProfileModal();
-
-    showFloatingNotice(
-        "Seeker profile successfully updated and saved!"
-    );
-}
+                saveProfileState();
+                syncProfileUI();
+                closeProfileModal();
+                showFloatingNotice('Profile updated successfully.');
+            } catch (error) {
+                showProfileFormError(error.message || 'Profile update failed. Please try again.');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save Changes';
+            }
+        }
 
         // 8. DRAWER CONTROLLER
         function openJobDetails(jobId) {
@@ -1104,7 +1408,7 @@ profileState.skills = skills;
                 document.getElementById('tailor-ai-bio').textContent = suggestedBio;
                 
                 document.getElementById('tailor-ai-skills').innerHTML = suggestedSkills.map(s => `
-                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-blue-200/50">${s}</span>
+                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-blue-200/50">${escapeHtml(s)}</span>
                 `).join('');
 
                 openTailorModal();
