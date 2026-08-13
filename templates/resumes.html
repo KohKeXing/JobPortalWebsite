@@ -60,13 +60,33 @@
 
                 <!-- User profile block -->
                 <div class="flex items-center gap-3">
+                    <div class="relative" id="seeker-notification-container">
+                        <button type="button" id="seeker-notification-button" onclick="toggleSeekerNotificationPanel()" aria-label="Job seeker notifications" aria-expanded="false" class="relative h-9 w-9 rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="seeker-notification-badge" class="hidden absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-[18px] text-white">0</span>
+                        </button>
+                        <div id="seeker-notification-panel" class="hidden absolute right-0 top-12 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                <div><p class="text-[13px] font-bold text-slate-900">Notifications</p><p class="text-[11px] text-slate-400" id="seeker-notification-summary">You are all caught up.</p></div>
+                                <button type="button" onclick="markAllSeekerNotificationsRead()" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800">Mark all read</button>
+                            </div>
+                            <div id="seeker-notification-list" class="max-h-96 overflow-y-auto"></div>
+                            <div id="seeker-notification-empty" class="hidden px-5 py-10 text-center text-[12px] text-slate-400">No notifications yet.</div>
+                        </div>
+                    </div>
                     <div class="text-right hidden sm:block">
                         <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
                         <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
                     </div>
-                    <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase" id="user-avatar-initials">
+                    <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden" id="user-avatar-initials">
                         AL
                     </div>
+                    <button onclick="logoutUser()" class="text-xs font-bold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 bg-red-50/30 hover:bg-red-50/50">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -708,7 +728,8 @@
             email: "alex.rivera@example.com",
             phone: "+60 12-342 9011",
             bio: "Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.",
-            skills: ["React", "TypeScript", "Tailwind CSS", "Vite", "Node.js", "REST APIs"]
+            skills: ["React", "TypeScript", "Tailwind CSS", "Vite", "Node.js", "REST APIs"],
+            avatar: null
         };
 
         let selectedActiveResume = null;
@@ -739,10 +760,10 @@
                 email: profile.email || '',
                 phone: profile.phone || '',
                 bio: profile.bio || '',
-                skills: Array.isArray(profile.skills) ? profile.skills : []
+                skills: Array.isArray(profile.skills) ? profile.skills : [],
+                avatar: profile.avatar || null
             };
-            const displayNameEl = document.getElementById('user-display-name');
-            if (displayNameEl) displayNameEl.innerText = profileState.name;
+            syncHeaderProfile();
 
             const savedLayoutChoice = localStorage.getItem('jobportal_saved_template_choice') || 'modern';
             setTemplateLayoutChoice(savedLayoutChoice);
@@ -752,9 +773,52 @@
             }
         }
 
+        function profileInitials() {
+            return String(profileState.name || '')
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .map(name => name[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase() || 'JS';
+        }
+
+        function renderHeaderAvatar() {
+            const avatar = document.getElementById('user-avatar-initials');
+            if (!avatar) return;
+            avatar.className = 'h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden';
+            avatar.replaceChildren();
+            if (profileState.avatar) {
+                const image = document.createElement('img');
+                image.src = profileState.avatar;
+                image.alt = 'Profile photo';
+                image.className = 'h-full w-full object-cover';
+                avatar.appendChild(image);
+            } else {
+                avatar.textContent = profileInitials();
+            }
+        }
+
+        function syncHeaderProfile() {
+            const displayName = document.getElementById('user-display-name');
+            const displayRole = document.getElementById('user-display-role');
+            if (displayName) displayName.textContent = profileState.name || 'Job Seeker';
+            if (displayRole) displayRole.textContent = 'Candidate';
+            renderHeaderAvatar();
+        }
+
         async function logoutUser() {
-            await fetch('/api/auth/logout', {method: 'POST'});
-            window.location.href = '/login';
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+            } finally {
+                window.location.replace('/login?t=' + Date.now());
+            }
         }
 
         // Resume metadata and generated/uploaded files are stored through Flask
@@ -2524,8 +2588,7 @@
                 if (strong) strong.textContent = profileState.name;
                 if (role) role.textContent = "Candidate";
                 if (avatar) {
-                    avatar.textContent = profileState.name.split(' ').map(n => n[0]).join('').slice(0,2);
-                    avatar.className = "h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase";
+                    renderHeaderAvatar();
                 }
                 if (banner) {
                     banner.innerHTML = `
@@ -2571,6 +2634,22 @@
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 3500);
         }
+    </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', initialiseSeekerNotifications);
+        let seekerNotifications = [];
+        const seekerNotificationReadKey = 'jobportal_notification_read_ids';
+        async function initialiseSeekerNotifications(){await fetchSeekerNotifications();window.setInterval(fetchSeekerNotifications,30000);document.addEventListener('click',event=>{const container=document.getElementById('seeker-notification-container');if(container&&!container.contains(event.target))closeSeekerNotificationPanel();});}
+        function seekerNotificationReadIds(){try{return new Set(JSON.parse(localStorage.getItem(seekerNotificationReadKey)||'[]').map(String));}catch(_){return new Set();}}
+        function saveSeekerNotificationReadIds(ids){localStorage.setItem(seekerNotificationReadKey,JSON.stringify([...ids].slice(-500)));}
+        function seekerNotificationTime(value,includeTime=false){const date=new Date(value);if(!value||Number.isNaN(date.getTime()))return'';return new Intl.DateTimeFormat('en-MY',includeTime?{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}:{day:'numeric',month:'short',year:'numeric'}).format(date);}
+        function buildSeekerNotifications(applications){const items=[];(Array.isArray(applications)?applications:[]).forEach(application=>{const id=String(application.id||application.jobId||'application');const job=application.job||application.position||'Job application';const company=application.company||'Employer';const appliedDate=application.date||application.created_at||'';items.push({id:`${id}:submitted`,title:'Application submitted',message:`${job} at ${company}`,date:appliedDate,tone:'slate',icon:'✓'});const status=String(application.status||'Pending');if(status.toLowerCase()!=='pending'){const tone=['offer','accepted','hired'].includes(status.toLowerCase())?'emerald':['rejected','withdrawn'].includes(status.toLowerCase())?'rose':status.toLowerCase()==='interview'?'blue':'amber';items.push({id:`${id}:status:${status.toLowerCase()}`,title:`Application ${status}`,message:`${job} at ${company}`,date:application.updatedAt||application.updated_at||appliedDate,tone,icon:status.toLowerCase()==='interview'?'I':'•'});}const interview=application.interview;if(interview?.interviewAt){const when=seekerNotificationTime(interview.interviewAt,true);const meeting=interview.locationOrLink?` · ${interview.locationOrLink}`:'';items.push({id:`${id}:interview:${interview.interviewAt}:${interview.locationOrLink||''}`,title:'Interview scheduled',message:`${job} · ${when}${meeting}`,date:interview.interviewAt,tone:'blue',icon:'I'});}});return[...new Map(items.map(item=>[item.id,item])).values()].sort((a,b)=>(new Date(b.date).getTime()||0)-(new Date(a.date).getTime()||0)).slice(0,30);}
+        async function fetchSeekerNotifications(){try{const response=await fetch('/api/applications',{cache:'no-store'});if(!response.ok)return;seekerNotifications=buildSeekerNotifications(await response.json());renderSeekerNotifications();}catch(error){console.warn('Failed to load notifications',error);}}
+        function toggleSeekerNotificationPanel(){const panel=document.getElementById('seeker-notification-panel');const button=document.getElementById('seeker-notification-button');panel.classList.toggle('hidden');button.setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));}
+        function closeSeekerNotificationPanel(){document.getElementById('seeker-notification-panel')?.classList.add('hidden');document.getElementById('seeker-notification-button')?.setAttribute('aria-expanded','false');}
+        function renderSeekerNotifications(){const list=document.getElementById('seeker-notification-list');const empty=document.getElementById('seeker-notification-empty');const badge=document.getElementById('seeker-notification-badge');const summary=document.getElementById('seeker-notification-summary');if(!list||!empty||!badge||!summary)return;const readIds=seekerNotificationReadIds();const unread=seekerNotifications.filter(item=>!readIds.has(item.id)).length;badge.textContent=unread>9?'9+':String(unread);badge.classList.toggle('hidden',unread===0);summary.textContent=unread?`${unread} unread notification${unread===1?'':'s'}`:'You are all caught up.';list.replaceChildren();empty.classList.toggle('hidden',seekerNotifications.length>0);seekerNotifications.forEach(item=>{const unreadItem=!readIds.has(item.id);const button=document.createElement('button');button.type='button';button.className=`block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${unreadItem?'bg-blue-50/60':'bg-white'}`;const row=document.createElement('div');row.className='flex items-start gap-3';const icon=document.createElement('span');const tones={slate:'bg-slate-100 text-slate-600',blue:'bg-blue-50 text-blue-600',emerald:'bg-emerald-50 text-emerald-600',rose:'bg-rose-50 text-rose-600',amber:'bg-amber-50 text-amber-600'};icon.className=`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${tones[item.tone]||tones.slate}`;icon.textContent=item.icon;const copy=document.createElement('span');copy.className='min-w-0 flex-1';const title=document.createElement('span');title.className='block text-[12px] font-bold text-slate-800';title.textContent=item.title;const message=document.createElement('span');message.className='mt-0.5 block text-[11px] leading-5 text-slate-500';message.textContent=item.message;const time=document.createElement('span');time.className='mt-1 block text-[10px] font-medium text-slate-400';time.textContent=seekerNotificationTime(item.date,item.title==='Interview scheduled');copy.append(title,message,time);row.append(icon,copy);if(unreadItem){const dot=document.createElement('span');dot.className='mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500';row.appendChild(dot);}button.appendChild(row);button.addEventListener('click',()=>openSeekerNotification(item.id));list.appendChild(button);});}
+        function openSeekerNotification(id){const readIds=seekerNotificationReadIds();readIds.add(id);saveSeekerNotificationReadIds(readIds);renderSeekerNotifications();window.location.href='/dashboard';}
+        function markAllSeekerNotificationsRead(){const readIds=seekerNotificationReadIds();seekerNotifications.forEach(item=>readIds.add(item.id));saveSeekerNotificationReadIds(readIds);renderSeekerNotifications();}
     </script>
 </body>
 </html>

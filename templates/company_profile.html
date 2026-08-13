@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Profile | JobPortal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        };
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between gap-4">
+                <a href="{{ '/employer/dashboard' if can_edit else '/' }}" class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    </span>
+                    <span class="text-[15px] font-bold tracking-tight">JobPortal</span>
+                    {% if can_edit %}
+                    <span class="hidden text-slate-300 sm:inline">/</span>
+                    <span class="hidden text-[13px] font-semibold text-slate-500 sm:inline">Employer Console</span>
+                    {% endif %}
+                </a>
+                <div class="flex shrink-0 items-center gap-2">
+                    {% if can_edit %}
+                    <button type="button" id="edit-company-button" onclick="showCompanyEditor()" class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">Edit Company Page</button>
+                    {% else %}
+                    <span class="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">Public Company Page</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if can_edit %}
+            <nav class="flex h-11 items-end gap-7 overflow-x-auto" aria-label="Employer console navigation">
+                <a href="/employer/dashboard" class="flex h-11 shrink-0 items-center gap-2 border-b-2 border-transparent px-1 text-[13px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    Job Postings
+                </a>
+                <a href="/companies/{{ employer_id }}" aria-current="page" class="flex h-11 shrink-0 items-center gap-2 border-b-2 border-blue-600 px-1 text-[13px] font-bold text-blue-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0-14h4m-4 4h4m-4 4h4m-4 6v-4h4v4"></path></svg>
+                    Company Background
+                </a>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="pb-16">
+        <section class="bg-gradient-to-br from-[#0b192f] via-[#0f2a4a] to-[#0a192f] text-white">
+            <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+                <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                    <div class="flex min-w-0 items-center gap-5">
+                        <div class="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white text-xl font-extrabold text-blue-700 shadow-xl">
+                            <img id="company-logo" class="hidden h-full w-full object-cover" alt="Company logo">
+                            <span id="company-logo-fallback">EM</span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="mb-2 flex flex-wrap items-center gap-2">
+                                <span id="company-id" class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-blue-100">—</span>
+                                <span id="company-industry-badge" class="hidden rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-slate-200"></span>
+                            </div>
+                            <h1 id="company-name" class="truncate text-3xl font-extrabold tracking-tight sm:text-4xl">Loading company...</h1>
+                            <p id="company-location-summary" class="mt-2 text-sm text-slate-300">Company profile</p>
+                        </div>
+                    </div>
+                    <a id="company-website-button" href="#" target="_blank" rel="noopener noreferrer" class="hidden shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-blue-50">
+                        Visit Website
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3h7v7m0-7L10 14M5 7v12h12v-5"></path></svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="mx-auto -mt-4 grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
+            <div class="space-y-6">
+                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                    <div class="mb-4 flex items-center gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <svg class="h-4.5 w-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0-14h4m-4 4h4m-4 4h4m-4 6v-4h4v4"></path></svg>
+                        </span>
+                        <h2 class="text-lg font-bold">About the Company</h2>
+                    </div>
+                    <p id="company-background" class="whitespace-pre-line text-sm leading-7 text-slate-600">No company background has been added yet.</p>
+                </article>
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                    <div class="mb-4 flex items-center gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                            <svg class="h-4.5 w-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                        <h2 class="text-lg font-bold">Benefits &amp; Culture</h2>
+                    </div>
+                    <p id="company-benefits" class="whitespace-pre-line text-sm leading-7 text-slate-600">No benefits or culture information has been added yet.</p>
+                </article>
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                    <div class="mb-5 flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">Company Gallery</h2>
+                            <p class="mt-1 text-xs text-slate-400">Workplace, team, events, and company culture.</p>
+                        </div>
+                        {% if can_edit %}
+                        <label class="cursor-pointer rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100">
+                            Add Photos
+                            <input id="gallery-upload-input" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" onchange="uploadGalleryImages(this.files)">
+                        </label>
+                        {% endif %}
+                    </div>
+                    <div id="company-gallery" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+                    <div id="gallery-empty" class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400">No gallery photos have been added yet.</div>
+                </article>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="mb-5 text-sm font-bold uppercase tracking-wide text-slate-700">Company Overview</h2>
+                    <dl class="space-y-5">
+                        <div><dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Industry</dt><dd id="company-industry" class="mt-1 text-sm font-semibold text-slate-700">Not provided</dd></div>
+                        <div><dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Company Size</dt><dd id="company-size" class="mt-1 text-sm font-semibold text-slate-700">Not provided</dd></div>
+                        <div><dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Founded</dt><dd id="company-founded" class="mt-1 text-sm font-semibold text-slate-700">Not provided</dd></div>
+                        <div><dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Location</dt><dd id="company-location" class="mt-1 text-sm font-semibold text-slate-700">Not provided</dd></div>
+                    </dl>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="mb-2 text-sm font-bold text-slate-700">Contact Company</h2>
+                    <p class="mb-4 text-xs leading-5 text-slate-400">Use the registered company email for job-related enquiries.</p>
+                    <a id="company-email" href="#" class="break-all text-sm font-semibold text-blue-600 hover:text-blue-800">Not provided</a>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    {% if can_edit %}
+    <div id="company-editor-backdrop" class="fixed inset-0 z-50 hidden bg-slate-900/50 opacity-0 transition-opacity" onclick="hideCompanyEditor()"></div>
+    <form id="company-editor" onsubmit="saveCompanyPage(event)" novalidate class="fixed inset-x-4 bottom-[4%] top-[4%] z-50 mx-auto hidden max-w-2xl scale-[0.98] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white opacity-0 shadow-2xl transition-all" role="dialog" aria-modal="true" aria-labelledby="company-editor-title">
+        <div class="flex items-center justify-between border-b border-slate-200 p-5">
+            <div><h2 id="company-editor-title" class="text-base font-bold">Edit Company Page</h2><p class="mt-0.5 text-xs text-slate-400">This information is visible to job seekers.</p></div>
+            <button type="button" onclick="hideCompanyEditor()" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Close editor"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="flex-1 space-y-5 overflow-y-auto p-5 text-[13px]">
+            <div>
+                <label for="edit-background" class="mb-1.5 block font-semibold text-slate-700">Company Background</label>
+                <textarea id="edit-background" rows="7" maxlength="3000" aria-describedby="edit-background-count edit-background-error" placeholder="Tell job seekers about the company, mission, products, and working environment..." class="w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-3 text-[11px]">
+                    <p id="edit-background-error" class="hidden font-medium text-rose-600" aria-live="polite"></p>
+                    <p id="edit-background-count" class="ml-auto shrink-0 text-slate-400">0 / 3,000 characters</p>
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="edit-industry" class="mb-1.5 block font-semibold text-slate-700">Industry</label>
+                    <input id="edit-industry" maxlength="100" aria-describedby="edit-industry-error" placeholder="e.g. Technology" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <p id="edit-industry-error" class="mt-1 hidden text-[11px] font-medium text-rose-600" aria-live="polite"></p>
+                </div>
+                <div>
+                    <label for="edit-size" class="mb-1.5 block font-semibold text-slate-700">Company Size</label>
+                    <select id="edit-size" aria-describedby="edit-size-error" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"><option value="">Select size</option><option value="1-10 employees">1–10 employees</option><option value="11-50 employees">11–50 employees</option><option value="51-200 employees">51–200 employees</option><option value="201-500 employees">201–500 employees</option><option value="501-1000 employees">501–1,000 employees</option><option value="1001-5000 employees">1,001–5,000 employees</option><option value="5001+ employees">5,001+ employees</option></select>
+                    <p id="edit-size-error" class="mt-1 hidden text-[11px] font-medium text-rose-600" aria-live="polite"></p>
+                </div>
+                <div>
+                    <label for="edit-location" class="mb-1.5 block font-semibold text-slate-700">Headquarters / Location</label>
+                    <input id="edit-location" maxlength="150" aria-describedby="edit-location-error" placeholder="e.g. Kuala Lumpur, Malaysia" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <p id="edit-location-error" class="mt-1 hidden text-[11px] font-medium text-rose-600" aria-live="polite"></p>
+                </div>
+                <div>
+                    <label for="edit-founded" class="mb-1.5 block font-semibold text-slate-700">Founded Year</label>
+                    <input id="edit-founded" type="text" inputmode="numeric" maxlength="4" autocomplete="off" aria-describedby="edit-founded-error" placeholder="e.g. 2015" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <p id="edit-founded-error" class="mt-1 hidden text-[11px] font-medium text-rose-600" aria-live="polite"></p>
+                </div>
+            </div>
+            <div>
+                <label for="edit-website" class="mb-1.5 block font-semibold text-slate-700">Company Website</label>
+                <input id="edit-website" type="text" inputmode="url" maxlength="300" autocomplete="url" spellcheck="false" aria-describedby="edit-website-error" placeholder="https://www.company.com" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                <p id="edit-website-error" class="mt-1 hidden text-[11px] font-medium text-rose-600" aria-live="polite"></p>
+            </div>
+            <div>
+                <label for="edit-benefits" class="mb-1.5 block font-semibold text-slate-700">Benefits &amp; Culture</label>
+                <textarea id="edit-benefits" rows="5" maxlength="2000" aria-describedby="edit-benefits-count edit-benefits-error" placeholder="Describe employee benefits, team culture, flexible work, learning opportunities, and more..." class="w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-3 text-[11px]">
+                    <p id="edit-benefits-error" class="hidden font-medium text-rose-600" aria-live="polite"></p>
+                    <p id="edit-benefits-count" class="ml-auto shrink-0 text-slate-400">0 / 2,000 characters</p>
+                </div>
+            </div>
+            <p id="company-editor-error" class="hidden rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600"></p>
+        </div>
+        <div class="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 p-5">
+            <p id="company-editor-status" class="text-[11px] font-medium text-slate-400" aria-live="polite">Enter company information to update your public page.</p>
+            <div class="flex shrink-0 gap-2"><button type="button" onclick="hideCompanyEditor()" class="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-white">Cancel</button><button id="save-company-button" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300">Save Company Page</button></div>
+        </div>
+    </form>
+    {% endif %}
+
+    <div id="toast" class="fixed bottom-6 right-6 z-[60] translate-y-20 rounded-lg bg-slate-900 px-4 py-3 text-[13px] font-semibold text-white opacity-0 shadow-lg transition-all"><span id="toast-message"></span></div>
+
+    <script>
+        const employerId = {{ employer_id | tojson }};
+        const canEdit = {{ can_edit | tojson }};
+        let companyProfile = null;
+        let companyEditorInitialState = '';
+        let companyEditorSaving = false;
+        const CURRENT_YEAR = new Date().getFullYear();
+
+        const COMPANY_SIZE_VALUES = new Set([
+            '',
+            '1-10 employees',
+            '11-50 employees',
+            '51-200 employees',
+            '201-500 employees',
+            '501-1000 employees',
+            '1001-5000 employees',
+            '5001+ employees'
+        ]);
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCompanyProfile();
+            if (canEdit) setupCompanyEditorValidation();
+        });
+
+        function initials(name) {
+            const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (!words.length) return 'EM';
+            return (words.length > 1 ? words[0][0] + words[1][0] : words[0].slice(0, 2)).toUpperCase();
+        }
+
+        function validHttpUrl(value) {
+            const text = String(value || '').trim();
+            if (!/^https?:\/\//i.test(text)) return '';
+            try {
+                const url = new URL(text);
+                return ['http:', 'https:'].includes(url.protocol) && url.hostname
+                    ? url.href
+                    : '';
+            } catch (_) { return ''; }
+        }
+
+        async function loadCompanyProfile() {
+            try {
+                const response = await fetch(`/api/companies/${encodeURIComponent(employerId)}`);
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to load company profile.');
+                companyProfile = data;
+                renderCompanyProfile();
+            } catch (error) {
+                document.getElementById('company-name').textContent = 'Company profile unavailable';
+                document.getElementById('company-background').textContent = error.message;
+            }
+        }
+
+        function renderCompanyProfile() {
+            const profile = companyProfile || {};
+            const name = profile.company_name || 'Employer';
+            document.title = `${name} | JobPortal`;
+            document.getElementById('company-name').textContent = name;
+            document.getElementById('company-id').textContent = profile.employer_id || employerId;
+            document.getElementById('company-location-summary').textContent = profile.location || 'Company profile';
+            document.getElementById('company-background').textContent = profile.company_background || 'No company background has been added yet.';
+            document.getElementById('company-benefits').textContent = profile.benefits || 'No benefits or culture information has been added yet.';
+            document.getElementById('company-industry').textContent = profile.industry || 'Not provided';
+            document.getElementById('company-size').textContent = profile.company_size || 'Not provided';
+            document.getElementById('company-founded').textContent = profile.founded_year || 'Not provided';
+            document.getElementById('company-location').textContent = profile.location || 'Not provided';
+
+            const badge = document.getElementById('company-industry-badge');
+            badge.textContent = profile.industry || '';
+            badge.classList.toggle('hidden', !profile.industry);
+
+            const logo = document.getElementById('company-logo');
+            const fallback = document.getElementById('company-logo-fallback');
+            fallback.textContent = initials(name);
+            if (profile.logo_url) {
+                logo.src = profile.logo_url;
+                logo.classList.remove('hidden');
+                fallback.classList.add('hidden');
+            } else {
+                logo.removeAttribute('src');
+                logo.classList.add('hidden');
+                fallback.classList.remove('hidden');
+            }
+
+            const websiteButton = document.getElementById('company-website-button');
+            const website = validHttpUrl(profile.website || '');
+            websiteButton.classList.toggle('hidden', !website);
+            websiteButton.classList.toggle('inline-flex', Boolean(website));
+            if (website) websiteButton.href = website;
+
+            const email = document.getElementById('company-email');
+            email.textContent = profile.company_email || 'Not provided';
+            email.href = profile.company_email ? `mailto:${profile.company_email}` : '#';
+            renderGallery();
+        }
+
+        function renderGallery() {
+            const gallery = Array.isArray(companyProfile?.gallery) ? companyProfile.gallery : [];
+            const container = document.getElementById('company-gallery');
+            const empty = document.getElementById('gallery-empty');
+            container.innerHTML = '';
+            empty.classList.toggle('hidden', gallery.length > 0);
+
+            gallery.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100';
+                const image = document.createElement('img');
+                image.src = item.url;
+                image.alt = `Company gallery photo ${index + 1}`;
+                image.className = 'h-full w-full object-cover transition duration-300 group-hover:scale-105';
+                card.appendChild(image);
+
+                if (canEdit) {
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.textContent = 'Remove';
+                    remove.className = 'absolute right-2 top-2 rounded-lg bg-slate-900/80 px-2.5 py-1.5 text-[11px] font-bold text-white opacity-0 transition group-hover:opacity-100';
+                    remove.addEventListener('click', () => deleteGalleryImage(item.url));
+                    card.appendChild(remove);
+                }
+                container.appendChild(card);
+            });
+        }
+
+        function getCompanyEditorPayload() {
+            return {
+                company_background: document.getElementById('edit-background').value.trim(),
+                industry: document.getElementById('edit-industry').value.trim(),
+                company_size: document.getElementById('edit-size').value,
+                location: document.getElementById('edit-location').value.trim(),
+                founded_year: document.getElementById('edit-founded').value.trim(),
+                website: document.getElementById('edit-website').value.trim(),
+                benefits: document.getElementById('edit-benefits').value.trim()
+            };
+        }
+
+        function setupCompanyEditorValidation() {
+            const fieldIds = [
+                'edit-background',
+                'edit-industry',
+                'edit-size',
+                'edit-location',
+                'edit-founded',
+                'edit-website',
+                'edit-benefits'
+            ];
+
+            fieldIds.forEach(id => {
+                const field = document.getElementById(id);
+                const validateOnChange = () => {
+                    if (id === 'edit-founded') {
+                        field.value = field.value.replace(/\D/g, '').slice(0, 4);
+                    }
+                    document.getElementById('company-editor-error').classList.add('hidden');
+                    validateCompanyEditor(false);
+                };
+                field.addEventListener('input', validateOnChange);
+                field.addEventListener('change', validateOnChange);
+                field.addEventListener('blur', validateOnChange);
+            });
+
+            validateCompanyEditor(false);
+        }
+
+        function updateEditorCounter(inputId, counterId, maximum) {
+            const length = document.getElementById(inputId).value.length;
+            const counter = document.getElementById(counterId);
+            counter.textContent = `${length.toLocaleString()} / ${maximum.toLocaleString()} characters`;
+            counter.classList.remove('text-slate-400', 'text-amber-600', 'text-rose-600');
+            if (length > maximum) {
+                counter.classList.add('text-rose-600');
+            } else if (length >= maximum * 0.9) {
+                counter.classList.add('text-amber-600');
+            } else {
+                counter.classList.add('text-slate-400');
+            }
+        }
+
+        function setEditorFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const error = document.getElementById(`${fieldId}-error`);
+            const invalid = Boolean(message);
+            field.setAttribute('aria-invalid', String(invalid));
+            field.classList.toggle('border-rose-400', invalid);
+            field.classList.toggle('bg-rose-50', invalid);
+            error.textContent = message || '';
+            error.classList.toggle('hidden', !invalid);
+        }
+
+        function validateCompanyEditor(showSummary) {
+            if (!canEdit) return true;
+
+            const payload = getCompanyEditorPayload();
+            const errors = {
+                'edit-background': payload.company_background.length > 3000
+                    ? 'Company background must be 3,000 characters or fewer.'
+                    : '',
+                'edit-industry': payload.industry.length > 100
+                    ? 'Industry must be 100 characters or fewer.'
+                    : '',
+                'edit-size': COMPANY_SIZE_VALUES.has(payload.company_size)
+                    ? ''
+                    : 'Please select a valid company size.',
+                'edit-location': payload.location.length > 150
+                    ? 'Location must be 150 characters or fewer.'
+                    : '',
+                'edit-founded': '',
+                'edit-website': '',
+                'edit-benefits': payload.benefits.length > 2000
+                    ? 'Benefits and culture must be 2,000 characters or fewer.'
+                    : ''
+            };
+
+            if (payload.founded_year) {
+                const foundedYear = Number(payload.founded_year);
+                if (!/^\d{4}$/.test(payload.founded_year) || !Number.isInteger(foundedYear)) {
+                    errors['edit-founded'] = 'Enter a valid four-digit year.';
+                } else if (foundedYear < 1800) {
+                    errors['edit-founded'] = 'Founded year cannot be earlier than 1800.';
+                } else if (foundedYear > CURRENT_YEAR) {
+                    errors['edit-founded'] = `Founded year cannot be later than ${CURRENT_YEAR}.`;
+                }
+            }
+
+            if (payload.website && !validHttpUrl(payload.website)) {
+                errors['edit-website'] = 'Enter a complete website URL starting with http:// or https://.';
+            }
+
+            Object.entries(errors).forEach(([fieldId, message]) => {
+                setEditorFieldError(fieldId, message);
+            });
+            updateEditorCounter('edit-background', 'edit-background-count', 3000);
+            updateEditorCounter('edit-benefits', 'edit-benefits-count', 2000);
+
+            const firstInvalidId = Object.keys(errors).find(fieldId => errors[fieldId]);
+            const valid = !firstInvalidId;
+            const changed = JSON.stringify(payload) !== companyEditorInitialState;
+            const saveButton = document.getElementById('save-company-button');
+            const status = document.getElementById('company-editor-status');
+
+            saveButton.disabled = companyEditorSaving || !valid || !changed;
+            status.classList.remove('text-slate-400', 'text-rose-600', 'text-emerald-600');
+            if (!valid) {
+                status.textContent = 'Correct the highlighted field before saving.';
+                status.classList.add('text-rose-600');
+            } else if (!changed) {
+                status.textContent = 'No unsaved changes.';
+                status.classList.add('text-slate-400');
+            } else {
+                status.textContent = 'All changes look good and are ready to save.';
+                status.classList.add('text-emerald-600');
+            }
+
+            if (showSummary && firstInvalidId) {
+                const errorBox = document.getElementById('company-editor-error');
+                errorBox.textContent = 'Please correct the highlighted field before saving.';
+                errorBox.classList.remove('hidden');
+                document.getElementById(firstInvalidId).focus();
+            }
+            return valid;
+        }
+
+        function showCompanyEditor() {
+            if (!canEdit || !companyProfile) return;
+            document.getElementById('edit-background').value = companyProfile.company_background || '';
+            document.getElementById('edit-industry').value = companyProfile.industry || '';
+            document.getElementById('edit-size').value = companyProfile.company_size || '';
+            document.getElementById('edit-location').value = companyProfile.location || '';
+            document.getElementById('edit-founded').value = companyProfile.founded_year || '';
+            document.getElementById('edit-website').value = companyProfile.website || '';
+            document.getElementById('edit-benefits').value = companyProfile.benefits || '';
+            document.getElementById('company-editor-error').classList.add('hidden');
+            companyEditorInitialState = JSON.stringify(getCompanyEditorPayload());
+            companyEditorSaving = false;
+            validateCompanyEditor(false);
+            const backdrop = document.getElementById('company-editor-backdrop');
+            const editor = document.getElementById('company-editor');
+            backdrop.classList.remove('hidden');
+            editor.classList.remove('hidden');
+            editor.classList.add('flex');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                editor.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        function hideCompanyEditor() {
+            if (!canEdit) return;
+            const backdrop = document.getElementById('company-editor-backdrop');
+            const editor = document.getElementById('company-editor');
+            backdrop.classList.add('opacity-0');
+            editor.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                editor.classList.add('hidden');
+                editor.classList.remove('flex');
+            }, 200);
+        }
+
+        async function saveCompanyPage(event) {
+            event.preventDefault();
+            if (!validateCompanyEditor(true)) return;
+
+            const button = document.getElementById('save-company-button');
+            const errorBox = document.getElementById('company-editor-error');
+            const payload = getCompanyEditorPayload();
+            companyEditorSaving = true;
+            validateCompanyEditor(false);
+            button.textContent = 'Saving...';
+            errorBox.classList.add('hidden');
+            try {
+                const response = await fetch('/api/employer/company-profile', {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.status === 401) { window.location.href = '/employer/login'; return; }
+                if (!response.ok) {
+                    throw new Error(data.error || `Unable to save company page (HTTP ${response.status}).`);
+                }
+                companyProfile = data.profile;
+                companyEditorInitialState = JSON.stringify(payload);
+                renderCompanyProfile();
+                hideCompanyEditor();
+                showToast(data.message || 'Company page updated successfully.');
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.classList.remove('hidden');
+            } finally {
+                companyEditorSaving = false;
+                button.textContent = 'Save Company Page';
+                validateCompanyEditor(false);
+            }
+        }
+
+        async function uploadGalleryImages(fileList) {
+            const files = Array.from(fileList || []);
+            if (!files.length) return;
+            const form = new FormData();
+            files.forEach(file => form.append('images', file));
+            showToast('Uploading gallery photos...');
+            try {
+                const response = await fetch('/api/employer/company-gallery', { method: 'POST', body: form });
+                const data = await response.json().catch(() => ({}));
+                if (response.status === 401) { window.location.href = '/employer/login'; return; }
+                if (!response.ok) throw new Error(data.error || 'Unable to upload gallery photos.');
+                companyProfile = data.profile;
+                renderCompanyProfile();
+                showToast(data.message || 'Gallery updated successfully.');
+            } catch (error) {
+                showToast(error.message);
+            } finally {
+                document.getElementById('gallery-upload-input').value = '';
+            }
+        }
+
+        async function deleteGalleryImage(url) {
+            if (!canEdit || !window.confirm('Remove this gallery photo?')) return;
+            try {
+                const response = await fetch('/api/employer/company-gallery', {
+                    method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to remove gallery photo.');
+                companyProfile = data.profile;
+                renderCompanyProfile();
+                showToast(data.message || 'Gallery photo removed.');
+            } catch (error) { showToast(error.message); }
+        }
+
+        let toastTimer = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3200);
+        }
+    </script>
+</body>
+</html>

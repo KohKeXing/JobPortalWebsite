@@ -3,6 +3,7 @@ import binascii
 import json
 import os
 import re
+import urllib.parse
 import urllib.request
 import urllib.error
 import datetime
@@ -34,6 +35,7 @@ from supabase_client import (
     EMAIL_RATE_LIMIT_MESSAGE,
     auth_account_exists,
     create_supabase_auth_client,
+    get_supabase_admin_client,
     is_email_rate_limit_error,
     password_policy_error,
 )
@@ -67,7 +69,7 @@ RESUME_RESPONSE_SCHEMA = {
                     "role": {"type": "STRING"},
                     "startDate": {"type": "STRING"},
                     "endDate": {"type": "STRING"},
-                    "description": {"type": "STRING", "description": "Polished, multi-line bullet-pointed description with each bullet starting on a new line with the '• ' character."}
+                    "description": {"type": "STRING", "description": "Polished, multi-line bullet-pointed description with each bullet starting on a new line with the 'â€¢ ' character."}
                 },
                 "required": ["id", "company", "role", "startDate", "endDate", "description"]
             }
@@ -400,16 +402,304 @@ def create_app():
         """Use the authenticated user ID as the bookmark owner."""
         return session["user_id"]
 
+    def _normalise_identity(value):
+        return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+    def _safe_public_http_url(value):
+        """Return only public HTTP(S) URLs that are safe to place in links."""
+        candidate = str(value or "").strip()
+        if re.match(r"^https?://", candidate, flags=re.IGNORECASE):
+            return candidate
+        return ""
+
+    def _normalise_public_website_url(value):
+        """Build a usable HTTP(S) company link, adding HTTPS when omitted."""
+        candidate = str(value or "").strip()
+        if not candidate:
+            return ""
+
+        if candidate.startswith("//"):
+            candidate = f"https:{candidate}"
+        elif not re.match(r"^https?://", candidate, flags=re.IGNORECASE):
+            candidate = f"https://{candidate.lstrip('/')}"
+
+        try:
+            parsed = urllib.parse.urlparse(candidate)
+            hostname = str(parsed.hostname or "").strip().lower()
+            if (
+                parsed.scheme.lower() not in {"http", "https"}
+                or not parsed.netloc
+                or not hostname
+                or "." not in hostname
+                or re.search(r"\s", hostname)
+                or parsed.username
+                or parsed.password
+            ):
+                return ""
+            # Accessing .port also validates malformed values such as
+            # "example.com:not-a-port".
+            parsed.port
+        except (TypeError, ValueError):
+            return ""
+
+        return parsed.geturl()
+
+    def _public_company_profile(employer_id):
+        """Load and normalise one read-only company profile for job seekers."""
+        public_id = str(employer_id or "").strip().upper()
+        if not re.fullmatch(r"EMP\d{3,}", public_id):
+            return None
+
+        response = (
+            get_supabase_admin_client()
+            .table("employers")
+            .select(
+                "employer_id,company_name,company_email,logo_url,"
+                "company_background,industry,company_size,location,website,"
+                "founded_year,benefits,gallery"
+            )
+            .eq("employer_id", public_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        if not rows:
+            return None
+
+        company = dict(rows[0])
+        gallery_value = company.get("gallery") or []
+        if isinstance(gallery_value, str):
+            try:
+                gallery_value = json.loads(gallery_value)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                gallery_value = []
+
+        gallery_urls = []
+        if isinstance(gallery_value, list):
+            for item in gallery_value:
+                raw_url = (
+                    item.get("url")
+                    if isinstance(item, dict)
+                    else item
+                )
+                safe_url = _safe_public_http_url(raw_url)
+                if safe_url and safe_url not in gallery_urls:
+                    gallery_urls.append(safe_url)
+
+        company["gallery"] = gallery_urls
+        company["logo_url"] = _safe_public_http_url(company.get("logo_url"))
+        company["website_url"] = _normalise_public_website_url(
+            company.get("website")
+        )
+        company["company_name"] = (
+            str(company.get("company_name") or "Employer").strip()
+        )
+        words = re.findall(r"[A-Za-z0-9]+", company["company_name"])
+        company["initials"] = (
+            "".join(word[0] for word in words[:2]).upper()
+            if words
+            else "CO"
+        )
+        return company
+
+    def _legacy_application_matches_current_seeker(application):
+        """Safely recognise an old application that predates owner_key."""
+        resume_id = application.get("resumeId")
+        if not resume_id:
+            return False
+        try:
+            resume = resume_store.get_resume(resume_id) or {}
+            data = resume.get("data") if isinstance(resume.get("data"), dict) else {}
+            personal_info = (
+                data.get("personalInfo")
+                if isinstance(data.get("personalInfo"), dict)
+                else {}
+            )
+            resume_email = str(personal_info.get("email") or "").strip().lower()
+            seeker_email = str(session.get("email") or "").strip().lower()
+            if resume_email and seeker_email and resume_email == seeker_email:
+                return True
+            resume_name = _normalise_identity(personal_info.get("name"))
+            seeker_name = _normalise_identity(session.get("full_name"))
+            if resume_name and seeker_name and resume_name == seeker_name:
+                return True
+            # Uploaded resumes may not have structured personalInfo. Accept a
+            # conservative filename/title prefix such as Alex_Rivera_Resume.
+            resume_label = _normalise_identity(
+                resume.get("name") or resume.get("fileName")
+            )
+            return bool(
+                len(seeker_name) >= 5
+                and resume_label
+                and resume_label.startswith(seeker_name)
+            )
+        except Exception:
+            return False
+
+    def _current_seeker_applications():
+        owner_key = session["user_id"]
+        applications = app_tracker.get_applications_for_owner(owner_key)
+        known_ids = {str(item.get("id")) for item in applications}
+
+        # One-time compatibility for records created by the previous seeker
+        # code, which did not send owner_key. Only claim a record when its
+        # submitted resume name or email matches the signed-in profile.
+        for legacy in app_tracker.get_applications():
+            if legacy.get("ownerKey") or str(legacy.get("id")) in known_ids:
+                continue
+            if not _legacy_application_matches_current_seeker(legacy):
+                continue
+            if app_tracker.claim_legacy_application(
+                legacy.get("id"), owner_key
+            ):
+                legacy["ownerKey"] = owner_key
+                applications.append(legacy)
+                known_ids.add(str(legacy.get("id")))
+        return applications
+
+    def _add_candidate_interviews(applications):
+        safe_applications = [dict(item) for item in (applications or [])]
+        application_ids = [
+            str(item.get("id")) for item in safe_applications if item.get("id")
+        ]
+        if not application_ids:
+            return safe_applications
+        try:
+            response = (
+                get_supabase_admin_client()
+                .table("employer_interviews")
+                .select(
+                    "application_id,interview_at,interview_type,"
+                    "location_or_link,status"
+                )
+                .in_("application_id", application_ids)
+                .execute()
+            )
+            interviews = {
+                str(row.get("application_id")): {
+                    "interviewAt": row.get("interview_at"),
+                    "interviewType": row.get("interview_type") or "online",
+                    "locationOrLink": row.get("location_or_link") or "",
+                    "status": row.get("status") or "scheduled",
+                }
+                for row in (response.data or [])
+            }
+        except Exception:
+            app.logger.warning(
+                "Interview details are unavailable; run the recruitment migration",
+                exc_info=True,
+            )
+            interviews = {}
+        for application in safe_applications:
+            application["interview"] = interviews.get(
+                str(application.get("id"))
+            )
+        return safe_applications
+
+    def _public_jobs():
+        jobs = [dict(job) for job in (job_store.get_jobs() or [])]
+        if not jobs:
+            return []
+        job_ids = [str(job.get("id")) for job in jobs if job.get("id")]
+        controls = {}
+        employer_profiles = []
+        try:
+            admin = get_supabase_admin_client()
+            control_response = (
+                admin.table("employer_job_controls")
+                .select(
+                    "job_id,employer_user_id,lifecycle_status,"
+                    "application_deadline,updated_at"
+                )
+                .in_("job_id", job_ids)
+                .execute()
+            )
+            for row in (control_response.data or []):
+                controls[str(row.get("job_id"))] = row
+            profile_response = (
+                admin.table("employers")
+                .select("user_id,employer_id,company_name,logo_url")
+                .execute()
+            )
+            employer_profiles = profile_response.data or []
+        except Exception:
+            # Legacy jobs remain public until the one-time recruitment SQL is
+            # installed. The application trigger is still the final guard.
+            app.logger.warning(
+                "Job lifecycle/company enrichment is unavailable",
+                exc_info=True,
+            )
+
+        profiles_by_user = {
+            str(row.get("user_id")): row
+            for row in employer_profiles
+            if row.get("user_id")
+        }
+        profiles_by_company = {
+            _normalise_identity(row.get("company_name")): row
+            for row in employer_profiles
+            if row.get("company_name")
+        }
+        today = datetime.date.today()
+        visible_jobs = []
+        for job in jobs:
+            control = controls.get(str(job.get("id")))
+            lifecycle = str(
+                (control or {}).get("lifecycle_status") or "published"
+            ).lower()
+            deadline_value = (control or {}).get("application_deadline")
+            try:
+                deadline = (
+                    datetime.date.fromisoformat(str(deadline_value)[:10])
+                    if deadline_value
+                    else None
+                )
+            except ValueError:
+                deadline = None
+            if lifecycle != "published" or (deadline and deadline < today):
+                continue
+
+            owner_key = str(
+                (control or {}).get("employer_user_id")
+                or job.get("employerId")
+                or job.get("employer_id")
+                or job.get("ownerKey")
+                or job.get("owner_key")
+                or ""
+            )
+            employer = (
+                profiles_by_user.get(owner_key)
+                or profiles_by_company.get(
+                    _normalise_identity(job.get("company"))
+                )
+                or {}
+            )
+            employer_public_id = str(employer.get("employer_id") or "")
+            job["lifecycleStatus"] = "published"
+            job["applicationDeadline"] = (
+                deadline.isoformat() if deadline else ""
+            )
+            job["companyLogoUrl"] = employer.get("logo_url") or ""
+            job["employerPublicId"] = employer_public_id
+            job["companyProfileUrl"] = (
+                f"/view-company/{employer_public_id}"
+                if employer_public_id
+                else ""
+            )
+            visible_jobs.append(job)
+        return visible_jobs
+
     # =========================================================
     # AUTHENTICATION PAGES
     # =========================================================
     @app.route("/login")
     def login_page():
+        """Show login to guests; send authenticated seekers to Explore Jobs."""
         if (
             session.get("user_id")
             and session.get("role") == JOB_SEEKER_ROLE
         ):
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("index"))
         return render_template("login.html")
 
     @app.route("/register")
@@ -418,7 +708,7 @@ def create_app():
             session.get("user_id")
             and session.get("role") == JOB_SEEKER_ROLE
         ):
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("index"))
         return render_template("register.html")
 
     @app.route("/forgot-password")
@@ -528,7 +818,7 @@ def create_app():
 
         return jsonify({
             "success": True,
-            "redirect": "/dashboard",
+            "redirect": "/",
             "user": {
                 "id": session["user_id"],
                 "email": session["email"],
@@ -767,7 +1057,7 @@ def create_app():
     # =========================================================
     @app.route("/")
     def index():
-        """Root route - redirect to dashboard if logged in, else login"""
+        """Render the seeker home when logged in, otherwise show login."""
         if session.get("user_id") and session.get("role") == JOB_SEEKER_ROLE:
             return render_template("seeker.html")
         return redirect(url_for("login_page"))
@@ -778,6 +1068,40 @@ def create_app():
         if session.get("user_id") and session.get("role") == JOB_SEEKER_ROLE:
             return render_template("dashboard.html")
         return redirect(url_for("login_page"))
+
+    @app.route("/view-company/<employer_id>")
+    def view_company(employer_id):
+        """Public, read-only company background page for job seekers."""
+        try:
+            company = _public_company_profile(employer_id)
+        except Exception:
+            app.logger.exception(
+                "Unable to load public company profile %s", employer_id
+            )
+            return render_template(
+                "view_company.html",
+                company=None,
+                requested_employer_id=str(employer_id or "").upper(),
+                load_error=(
+                    "The company page could not be loaded right now. "
+                    "Please try again shortly."
+                ),
+            ), 503
+
+        if not company:
+            return render_template(
+                "view_company.html",
+                company=None,
+                requested_employer_id=str(employer_id or "").upper(),
+                load_error="This company profile was not found.",
+            ), 404
+
+        return render_template(
+            "view_company.html",
+            company=company,
+            requested_employer_id=company["employer_id"],
+            load_error="",
+        )
 
     @app.route("/resumes")
     @seeker_required
@@ -790,7 +1114,9 @@ def create_app():
     @app.route("/api/applications", methods=["GET"])
     @seeker_required
     def get_applications():
-        return jsonify(app_tracker.get_applications())
+        return jsonify(
+            _add_candidate_interviews(_current_seeker_applications())
+        )
 
     @app.route("/api/applications", methods=["POST"])
     @seeker_required
@@ -819,7 +1145,18 @@ def create_app():
         if not cover_letter_text and not cover_letter_file:
             return jsonify({"error": "A cover letter (written or uploaded) is required to apply."}), 400
 
-        existing = app_tracker.get_applications()
+        available_job = next(
+            (job for job in _public_jobs() if str(job.get("id")) == str(job_id)),
+            None,
+        )
+        if not available_job:
+            return jsonify({
+                "error": "This job is no longer accepting applications."
+            }), 409
+        job_title = available_job.get("title") or job_title
+        company = available_job.get("company") or company
+
+        existing = app_tracker.get_applications_for_owner(session["user_id"])
         if any(a["jobId"] == job_id for a in existing):
             return jsonify({"error": "You have already applied to this job."}), 409
 
@@ -829,6 +1166,7 @@ def create_app():
             cover_letter_text=cover_letter_text,
             cover_letter_file=cover_letter_file,
             cover_letter_original_name=cover_letter_original_name,
+            owner_key=session["user_id"],
         )
         return jsonify({"success": True, "application": new_app}), 201
 
@@ -850,8 +1188,12 @@ def create_app():
     @seeker_required
     def add_bookmark(job_id):
         try:
-            if job_store.get_job(job_id) is None:
-                return jsonify({"error": "Job not found."}), 404
+            if not any(
+                str(job.get("id")) == str(job_id) for job in _public_jobs()
+            ):
+                return jsonify({
+                    "error": "This job is no longer available."
+                }), 409
 
             created = bookmark_store.add_bookmark(
                 get_bookmark_owner_key(),
@@ -1041,7 +1383,13 @@ def create_app():
 
     @app.route("/api/jobs")
     def api_jobs():
-        return jsonify(job_store.get_jobs())
+        return jsonify(_public_jobs())
+
+    @app.route("/api/jobs/recommendations")
+    def api_job_recommendations():
+        return jsonify([
+            {**job, "matchScore": 0} for job in _public_jobs()
+        ])
 
     @app.route("/api/resume/auto-generate", methods=["POST"])
     def api_auto_generate():
@@ -1062,7 +1410,7 @@ def create_app():
             for item in profile.get("experience", []):
                 fallback_experience.append({
                     **item,
-                    "description": item.get("description") or "• Led key initiatives and delivered business-critical requirements.\n• Collaborated with cross-functional teams to implement scalable updates."
+                    "description": item.get("description") or "â€¢ Led key initiatives and delivered business-critical requirements.\nâ€¢ Collaborated with cross-functional teams to implement scalable updates."
                 })
                 
             fallback_projects = []
@@ -1128,7 +1476,7 @@ def create_app():
             
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            fallback = f"• Spearheaded critical {sec_type} initiatives with strict adherence to industry standards.\n• Elevated key deliverables by implementing modern solution paradigms."
+            fallback = f"â€¢ Spearheaded critical {sec_type} initiatives with strict adherence to industry standards.\nâ€¢ Elevated key deliverables by implementing modern solution paradigms."
             return jsonify({"improvedText": fallback})
             
         prompt = f"""
@@ -1173,7 +1521,7 @@ def create_app():
             co_name = job_listing.get("company", "Company")
             reqs = job_listing.get("requirements", [])
             tech_rec = f", {', '.join(reqs[:2])}" if reqs else ""
-            analysis = f"Evaluated resume compatibility against **{co_name} - {co_title}**.\n\n### Strengths:\n• Profile details match general keywords in {co_title}.\n• Experience references core collaborative processes.\n\n### Recommendation:\n• Inject more quantitative achievements.\n• Explicitly mention tech stacks like {tech_rec if tech_rec else 'required systems'}."
+            analysis = f"Evaluated resume compatibility against **{co_name} - {co_title}**.\n\n### Strengths:\nâ€¢ Profile details match general keywords in {co_title}.\nâ€¢ Experience references core collaborative processes.\n\n### Recommendation:\nâ€¢ Inject more quantitative achievements.\nâ€¢ Explicitly mention tech stacks like {tech_rec if tech_rec else 'required systems'}."
             
             return jsonify({
                 "matchScore": score,
@@ -1193,7 +1541,7 @@ def create_app():
         Return structured JSON matching this schema:
         {{
           "matchScore": number (integer from 0 to 100),
-          "analysis": "Markdown string containing: \\n### Alignment Strengths\\n• ...\\n### Skill Gaps / Areas to Improve\\n• ...\\n### Specific recommendations to customize this resume for this job."
+          "analysis": "Markdown string containing: \\n### Alignment Strengths\\nâ€¢ ...\\n### Skill Gaps / Areas to Improve\\nâ€¢ ...\\n### Specific recommendations to customize this resume for this job."
         }}
         """
         

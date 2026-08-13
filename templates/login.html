@@ -235,7 +235,9 @@
                 }
 
                 sessionStorage.removeItem('pendingConfirmationEmail');
-                window.location.href = data.redirect || '/dashboard';
+                // The seeker landing page is served by Flask at `/`.
+                // Dashboard remains available from the "My Dashboard" tab.
+                window.location.replace(data.redirect || '/');
             } catch (error) {
                 errorDiv.classList.remove('hidden');
                 errorText.textContent = error.message;

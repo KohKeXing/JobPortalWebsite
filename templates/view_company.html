@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if company %}{{ company.company_name }}{% else %}Company Profile{% endif %} | JobPortal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --navy: #0b1f3a;
+            --text: #0f172a;
+            --muted: #64748b;
+            --line: #dbe4ef;
+            --surface: #ffffff;
+            --background: #f6f8fc;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; background: var(--background); color: var(--text); font-family: Inter, Arial, sans-serif; }
+        a { color: inherit; }
+        .container { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+        .site-header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
+        .header-row { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; font-size: 15px; font-weight: 800; }
+        .brand-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--blue); color: white; }
+        .back-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: #475569; background: #fff; font-size: 13px; font-weight: 700; }
+        .back-link:hover { border-color: #bfdbfe; color: var(--blue); background: #eff6ff; }
+        .hero { position: relative; overflow: hidden; background: linear-gradient(125deg, #0a1830 0%, #123965 62%, #174d87 100%); color: white; }
+        .hero::after { content: ""; position: absolute; width: 360px; height: 360px; right: -100px; top: -190px; border-radius: 50%; background: rgba(96,165,250,.16); }
+        .hero-row { position: relative; z-index: 1; min-height: 264px; padding: 48px 0 60px; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+        .identity { min-width: 0; display: flex; align-items: center; gap: 24px; }
+        .logo { width: 112px; height: 112px; flex: 0 0 112px; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.38); border-radius: 24px; background: white; color: var(--blue); box-shadow: 0 18px 36px rgba(0,0,0,.2); font-size: 28px; font-weight: 800; }
+        .logo img { width: 100%; height: 100%; object-fit: cover; }
+        .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 11px; }
+        .badge { padding: 5px 10px; border: 1px solid rgba(255,255,255,.19); border-radius: 999px; background: rgba(255,255,255,.1); color: #dbeafe; font-size: 11px; font-weight: 700; }
+        h1 { margin: 0; font-size: clamp(31px, 5vw, 48px); line-height: 1.1; letter-spacing: -.035em; }
+        .hero-summary { margin: 12px 0 0; color: #cbd5e1; font-size: 14px; }
+        .website-button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 9px; padding: 12px 16px; border-radius: 12px; background: white; color: #0f172a; text-decoration: none; font-size: 13px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+        .website-button:hover { background: #eff6ff; }
+        .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; margin-top: -28px; padding-bottom: 64px; position: relative; z-index: 2; }
+        .content-column, .side-column { display: flex; flex-direction: column; gap: 22px; }
+        .card { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 5px 18px rgba(15,23,42,.045); }
+        .content-card { padding: 28px 30px; }
+        .side-card { padding: 25px; }
+        .section-title { margin: 0 0 16px; display: flex; align-items: center; gap: 12px; font-size: 18px; }
+        .section-icon { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 10px; background: #eff6ff; color: var(--blue); }
+        .section-icon.green { background: #ecfdf5; color: #059669; }
+        .body-copy { margin: 0; color: #526177; font-size: 14px; line-height: 1.8; white-space: pre-line; }
+        .eyebrow { margin: 0 0 20px; font-size: 13px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+        .overview { display: grid; gap: 19px; margin: 0; }
+        .overview div { padding-bottom: 17px; border-bottom: 1px solid #edf1f6; }
+        .overview div:last-child { padding-bottom: 0; border-bottom: 0; }
+        dt { color: #94a3b8; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+        dd { margin: 6px 0 0; color: #334155; font-size: 14px; font-weight: 700; }
+        .contact-copy { margin: -5px 0 16px; color: #94a3b8; font-size: 12px; line-height: 1.6; }
+        .email { color: var(--blue); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+        .gallery-heading { margin-bottom: 20px; }
+        .gallery-heading h2 { margin: 0; font-size: 18px; }
+        .gallery-heading p { margin: 6px 0 0; color: #94a3b8; font-size: 12px; }
+        .gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .gallery-item { min-height: 170px; overflow: hidden; border-radius: 13px; background: #e2e8f0; }
+        .gallery-item img { display: block; width: 100%; height: 100%; min-height: 170px; object-fit: cover; transition: transform .25s ease; }
+        .gallery-item:hover img { transform: scale(1.035); }
+        .empty-gallery { padding: 38px 20px; border: 1px dashed #cbd5e1; border-radius: 13px; background: #f8fafc; color: #94a3b8; text-align: center; font-size: 13px; }
+        .error-wrap { min-height: calc(100vh - 69px); display: grid; place-items: center; padding: 40px 0; }
+        .error-card { max-width: 560px; padding: 44px; text-align: center; }
+        .error-icon { width: 54px; height: 54px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 16px; background: #eff6ff; color: var(--blue); }
+        .error-card h1 { font-size: 24px; }
+        .error-card p { color: var(--muted); line-height: 1.7; }
+        @media (max-width: 850px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .side-column { display: grid; grid-template-columns: 1fr 1fr; }
+            .hero-row { align-items: flex-start; flex-direction: column; }
+        }
+        @media (max-width: 620px) {
+            .container { width: min(100% - 28px, 1160px); }
+            .hero-row { padding: 36px 0 52px; }
+            .identity { align-items: flex-start; gap: 16px; }
+            .logo { width: 82px; height: 82px; flex-basis: 82px; border-radius: 18px; font-size: 22px; }
+            .content-card, .side-card { padding: 22px; }
+            .side-column { display: flex; }
+            .gallery { grid-template-columns: 1fr; }
+            .back-link span { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-row">
+            <a class="brand" href="{{ url_for('index') }}">
+                <span class="brand-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M4 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="M2 12h20M10 12v2h4v-2"/></svg>
+                </span>
+                JobPortal
+            </a>
+            <a class="back-link" href="{{ url_for('index') }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Back to job listings</span>
+            </a>
+        </div>
+    </header>
+
+    {% if company %}
+    <main>
+        <section class="hero">
+            <div class="container hero-row">
+                <div class="identity">
+                    <div class="logo">
+                        {% if company.logo_url %}
+                        <img src="{{ company.logo_url }}" alt="{{ company.company_name }} logo">
+                        {% else %}
+                        <span>{{ company.initials }}</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if company.industry %}
+                        <div class="badges">
+                            <span class="badge">{{ company.industry }}</span>
+                        </div>
+                        {% endif %}
+                        <h1>{{ company.company_name }}</h1>
+                        <p class="hero-summary">{{ company.location or 'Company profile' }}</p>
+                    </div>
+                </div>
+                {% if company.website_url %}
+                <a class="website-button" href="{{ company.website_url }}" aria-label="Visit {{ company.company_name }} website">
+                    Visit Website
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+                </a>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="container main-grid">
+            <div class="content-column">
+                <article class="card content-card">
+                    <h2 class="section-title">
+                        <span class="section-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M3 21h18M9 7h2m2 0h2m-6 4h2m2 0h2m-5 10v-4h4v4"/></svg>
+                        </span>
+                        About the Company
+                    </h2>
+                    <p class="body-copy">{{ company.company_background or 'No company background has been added yet.' }}</p>
+                </article>
+
+                <article class="card content-card">
+                    <h2 class="section-title">
+                        <span class="section-icon green">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+                        </span>
+                        Benefits &amp; Culture
+                    </h2>
+                    <p class="body-copy">{{ company.benefits or 'No benefits or culture information has been added yet.' }}</p>
+                </article>
+
+                <article class="card content-card">
+                    <div class="gallery-heading">
+                        <h2>Company Gallery</h2>
+                        <p>Workplace, team, events, and company culture.</p>
+                    </div>
+                    {% if company.gallery %}
+                    <div class="gallery">
+                        {% for photo_url in company.gallery %}
+                        <div class="gallery-item"><img src="{{ photo_url }}" alt="{{ company.company_name }} gallery photo" loading="lazy"></div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-gallery">No gallery photos have been added yet.</div>
+                    {% endif %}
+                </article>
+            </div>
+
+            <aside class="side-column">
+                <section class="card side-card">
+                    <h2 class="eyebrow">Company Overview</h2>
+                    <dl class="overview">
+                        <div><dt>Industry</dt><dd>{{ company.industry or 'Not provided' }}</dd></div>
+                        <div><dt>Company Size</dt><dd>{{ company.company_size or 'Not provided' }}</dd></div>
+                        <div><dt>Founded</dt><dd>{{ company.founded_year or 'Not provided' }}</dd></div>
+                        <div><dt>Location</dt><dd>{{ company.location or 'Not provided' }}</dd></div>
+                    </dl>
+                </section>
+                <section class="card side-card">
+                    <h2 class="eyebrow">Contact Company</h2>
+                    <p class="contact-copy">Use the registered company email for job-related enquiries.</p>
+                    {% if company.company_email %}
+                    <a class="email" href="mailto:{{ company.company_email }}">{{ company.company_email }}</a>
+                    {% else %}
+                    <span class="contact-copy">Not provided</span>
+                    {% endif %}
+                </section>
+            </aside>
+        </section>
+    </main>
+    {% else %}
+    <main class="error-wrap">
+        <section class="card error-card">
+            <div class="error-icon">
+                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5m0 3h.01"/></svg>
+            </div>
+            <h1>Company page unavailable</h1>
+            <p>{{ load_error }}</p>
+            <a class="back-link" href="{{ url_for('index') }}">Back to job listings</a>
+        </section>
+    </main>
+    {% endif %}
+</body>
+</html>
