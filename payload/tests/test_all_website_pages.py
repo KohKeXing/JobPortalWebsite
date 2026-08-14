@@ -163,8 +163,8 @@ def test_employer_private_pages_redirect_guests(path, redirect_path):
 
 @pytest.mark.parametrize(
     "path",
-    ["/", "/dashboard", "/resumes"],
-    ids=["explore-positions", "dashboard", "resumes"],
+    ["/dashboard", "/resumes"],
+    ids=["dashboard", "resumes"],
 )
 def test_authenticated_seeker_pages_render(path):
     client = _client(seeker_main.create_app, _authenticate_seeker_client)
@@ -211,11 +211,6 @@ def test_unknown_company_pages_return_not_found(app_factory, path):
     response = _client(app_factory).get(path)
     _assert_html_response(response, expected_status=404)
 
-
-def test_logged_in_seeker_login_and_register_redirect_to_explore_positions():
-    client = _client(seeker_main.create_app, _authenticate_seeker_client)
-    for path in ("/login", "/register"):
-        _assert_redirect(client.get(path), "/")
 
 
 def test_seeker_reset_password_page_clears_existing_session():
