@@ -69,7 +69,7 @@ RESUME_RESPONSE_SCHEMA = {
                     "role": {"type": "STRING"},
                     "startDate": {"type": "STRING"},
                     "endDate": {"type": "STRING"},
-                    "description": {"type": "STRING", "description": "Polished, multi-line bullet-pointed description with each bullet starting on a new line with the 'â€¢ ' character."}
+                    "description": {"type": "STRING", "description": "Polished, multi-line bullet-pointed description with each bullet starting on a new line with the 'Ã¢â‚¬Â¢ ' character."}
                 },
                 "required": ["id", "company", "role", "startDate", "endDate", "description"]
             }
@@ -694,12 +694,7 @@ def create_app():
     # =========================================================
     @app.route("/login")
     def login_page():
-        """Show login to guests; send authenticated seekers to Explore Jobs."""
-        if (
-            session.get("user_id")
-            and session.get("role") == JOB_SEEKER_ROLE
-        ):
-            return redirect(url_for("index"))
+        """Always show the login page when the login URL is requested."""
         return render_template("login.html")
 
     @app.route("/register")
@@ -708,7 +703,7 @@ def create_app():
             session.get("user_id")
             and session.get("role") == JOB_SEEKER_ROLE
         ):
-            return redirect(url_for("index"))
+            return redirect(url_for("seeker_page"))
         return render_template("register.html")
 
     @app.route("/forgot-password")
@@ -818,7 +813,7 @@ def create_app():
 
         return jsonify({
             "success": True,
-            "redirect": "/",
+            "redirect": url_for("seeker_page"),
             "user": {
                 "id": session["user_id"],
                 "email": session["email"],
@@ -1057,10 +1052,14 @@ def create_app():
     # =========================================================
     @app.route("/")
     def index():
-        """Render the seeker home when logged in, otherwise show login."""
-        if session.get("user_id") and session.get("role") == JOB_SEEKER_ROLE:
-            return render_template("seeker.html")
+        """Make the site root open the login page first."""
         return redirect(url_for("login_page"))
+
+    @app.route("/seeker")
+    @seeker_required
+    def seeker_page():
+        """Protected Explore Positions landing page for job seekers."""
+        return render_template("seeker.html")
 
     @app.route("/dashboard")
     def dashboard():
@@ -1410,7 +1409,7 @@ def create_app():
             for item in profile.get("experience", []):
                 fallback_experience.append({
                     **item,
-                    "description": item.get("description") or "â€¢ Led key initiatives and delivered business-critical requirements.\nâ€¢ Collaborated with cross-functional teams to implement scalable updates."
+                    "description": item.get("description") or "Ã¢â‚¬Â¢ Led key initiatives and delivered business-critical requirements.\nÃ¢â‚¬Â¢ Collaborated with cross-functional teams to implement scalable updates."
                 })
                 
             fallback_projects = []
@@ -1476,7 +1475,7 @@ def create_app():
             
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            fallback = f"â€¢ Spearheaded critical {sec_type} initiatives with strict adherence to industry standards.\nâ€¢ Elevated key deliverables by implementing modern solution paradigms."
+            fallback = f"Ã¢â‚¬Â¢ Spearheaded critical {sec_type} initiatives with strict adherence to industry standards.\nÃ¢â‚¬Â¢ Elevated key deliverables by implementing modern solution paradigms."
             return jsonify({"improvedText": fallback})
             
         prompt = f"""
@@ -1521,7 +1520,7 @@ def create_app():
             co_name = job_listing.get("company", "Company")
             reqs = job_listing.get("requirements", [])
             tech_rec = f", {', '.join(reqs[:2])}" if reqs else ""
-            analysis = f"Evaluated resume compatibility against **{co_name} - {co_title}**.\n\n### Strengths:\nâ€¢ Profile details match general keywords in {co_title}.\nâ€¢ Experience references core collaborative processes.\n\n### Recommendation:\nâ€¢ Inject more quantitative achievements.\nâ€¢ Explicitly mention tech stacks like {tech_rec if tech_rec else 'required systems'}."
+            analysis = f"Evaluated resume compatibility against **{co_name} - {co_title}**.\n\n### Strengths:\nÃ¢â‚¬Â¢ Profile details match general keywords in {co_title}.\nÃ¢â‚¬Â¢ Experience references core collaborative processes.\n\n### Recommendation:\nÃ¢â‚¬Â¢ Inject more quantitative achievements.\nÃ¢â‚¬Â¢ Explicitly mention tech stacks like {tech_rec if tech_rec else 'required systems'}."
             
             return jsonify({
                 "matchScore": score,
@@ -1541,7 +1540,7 @@ def create_app():
         Return structured JSON matching this schema:
         {{
           "matchScore": number (integer from 0 to 100),
-          "analysis": "Markdown string containing: \\n### Alignment Strengths\\nâ€¢ ...\\n### Skill Gaps / Areas to Improve\\nâ€¢ ...\\n### Specific recommendations to customize this resume for this job."
+          "analysis": "Markdown string containing: \\n### Alignment Strengths\\nÃ¢â‚¬Â¢ ...\\n### Skill Gaps / Areas to Improve\\nÃ¢â‚¬Â¢ ...\\n### Specific recommendations to customize this resume for this job."
         }}
         """
         

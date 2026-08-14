@@ -1,19 +1,5 @@
-"""
-Shared fixtures for the plain pytest acceptance tests.
+"""Shared fixtures for the job portal acceptance tests."""
 
-These talk to the REAL Flask apps (seeker_main.py and employer_main.py)
-through their test clients -- no mocking of the storage layer, so a
-passing test means the actual backend code (including real Supabase
-Database + Storage calls) works, not just that a mock was set up
-correctly.
-
-NOTE: storage is now Supabase (Postgres + Storage bucket), not a local
-data/ folder. Instead of wiping a directory, each test's reset_storage
-fixture snapshots what already exists before the test runs, and deletes
-only the rows/files that test itself created -- so the shared Supabase
-project doesn't accumulate test junk between runs, and tests don't step
-on each other's or your real data.
-"""
 import io
 import os
 import zipfile
@@ -74,7 +60,10 @@ def authenticate_seeker_client(client):
         flask_session["user_id"] = TEST_SEEKER_USER_ID
         flask_session["email"] = "acceptance.seeker@example.com"
         flask_session["full_name"] = "Acceptance Job Seeker"
-        flask_session["role"] = "job_seeker"
+        # Use the application's canonical value instead of duplicating the
+        # role string here.  This keeps the acceptance session identical to a
+        # real successful login even if AuthService changes the stored label.
+        flask_session["role"] = seeker_main.JOB_SEEKER_ROLE
     return client
 
 

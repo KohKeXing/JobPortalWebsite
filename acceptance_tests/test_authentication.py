@@ -44,7 +44,7 @@ class TestJobSeekerAuthentication:
         })
 
         assert response.status_code == 200
-        assert response.get_json()["redirect"] == "/dashboard"
+        assert response.get_json()["redirect"] == "/seeker"
         current_user = seeker_context.client.get("/api/auth/me")
         assert current_user.status_code == 200
         assert current_user.get_json()["user"]["email"] == SEEKER_EMAIL

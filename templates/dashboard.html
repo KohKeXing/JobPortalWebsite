@@ -75,11 +75,11 @@
                         </div>
                     </div>
                     <div class="text-right hidden sm:block">
-                        <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
+                        <div class="text-xs font-bold text-slate-900" id="user-display-name">Job Seeker</div>
                         <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
                     </div>
                     <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden" id="user-avatar-initials">
-                        AL
+                        JS
                     </div>
                 </div>
             </div>
@@ -127,12 +127,12 @@
                 <!-- Seeker visual avatar -->
                 <div class="flex flex-col items-center gap-3 pt-4 pb-2 border-b border-slate-100">
                     <div class="h-20 w-20 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-2xl border-2 border-blue-200 overflow-hidden uppercase" id="profile-avatar-initials">
-                        AL
+                        JS
                     </div>
                     <div class="text-center">
-                        <h4 class="text-lg font-extrabold text-slate-900" id="profile-name">Alex Rivera</h4>
+                        <h4 class="text-lg font-extrabold text-slate-900" id="profile-name">Job Seeker</h4>
                         <p class="text-xs text-slate-500 font-medium px-4 mt-1" id="profile-headline">
-                            Full-Stack Software Engineer specializing in React & Node.js
+                            Complete your profile headline
                         </p>
                     </div>
                 </div>
@@ -143,13 +143,13 @@
                         <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                         </svg>
-                        <span id="profile-email">alex.rivera@example.com</span>
+                        <span id="profile-email">No email available</span>
                     </div>
                     <div class="flex items-center gap-2.5">
                         <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                         </svg>
-                        <span id="profile-phone">+60 12-342 9011</span>
+                        <span id="profile-phone">No phone number</span>
                     </div>
                 </div>
 
@@ -157,7 +157,7 @@
                 <div class="flex flex-col gap-2 border-b border-slate-100 pb-4">
                     <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Bio</span>
                     <p class="text-xs text-slate-600 leading-relaxed" id="profile-bio">
-                        Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.
+                        Complete your profile bio.
                     </p>
                 </div>
 
@@ -345,6 +345,75 @@
         </div>
     </div>
 
+    <!-- ==================== APPLICATION PROCESS DETAILS MODAL ==================== -->
+    <div id="application-detail-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeApplicationDetail()"></div>
+    <div id="application-detail-panel" role="dialog" aria-modal="true" aria-labelledby="application-detail-title" class="fixed inset-x-4 top-[7%] bottom-[7%] max-w-2xl mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-200/80 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-5 py-5 text-white flex items-center justify-between gap-4 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div id="application-detail-avatar" class="h-11 w-11 overflow-hidden rounded-2xl bg-white/20 flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase">JP</div>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-blue-100">Application Process Details</p>
+                    <h3 id="application-detail-title" class="text-base font-extrabold tracking-tight truncate">Job application</h3>
+                    <p id="application-detail-company" class="text-xs font-medium text-blue-100 truncate">Company</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeApplicationDetail()" aria-label="Close application details" class="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5 bg-slate-50/40 flex flex-col gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Current Status</p>
+                    <span id="application-detail-status" class="mt-1 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold">Pending</span>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Applied</p>
+                    <p id="application-detail-applied-at" class="mt-1 text-xs font-semibold text-slate-800">Not recorded</p>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Last Updated</p>
+                    <p id="application-detail-updated-at" class="mt-1 text-xs font-semibold text-slate-800">Not recorded</p>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Processing Time</p>
+                    <p id="application-detail-processing-time" class="mt-1 text-xs font-semibold text-slate-800">Not available</p>
+                </div>
+            </div>
+
+            <section class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <h4 class="text-xs font-extrabold text-slate-800">Application Progress</h4>
+                        <p class="mt-0.5 text-[10px] text-slate-400">The latest status received from the employer.</p>
+                    </div>
+                    <span class="text-lg">⏱️</span>
+                </div>
+                <div id="application-detail-timeline" class="flex flex-col gap-2"></div>
+            </section>
+
+            <section class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <div class="mb-3">
+                    <h4 class="text-xs font-extrabold text-slate-800">Submitted Documents</h4>
+                    <p class="mt-0.5 text-[10px] text-slate-400">Resume and cover letter used for this application.</p>
+                </div>
+                <div id="application-detail-documents" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </section>
+
+            <div id="application-detail-interview" class="hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm"></div>
+
+            <section class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Application Notes</h4>
+                <p id="application-detail-notes" class="mt-2 text-xs leading-relaxed text-slate-600">No additional details.</p>
+            </section>
+        </div>
+
+        <div class="p-4 border-t border-slate-100 bg-white flex justify-end shrink-0">
+            <button type="button" onclick="closeApplicationDetail()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition text-xs">Close</button>
+        </div>
+    </div>
+
     <!-- ==================== PROFILE EDITOR MODAL ==================== -->
     <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeProfileModal()"></div>
     <div id="modal-panel" class="fixed inset-x-4 top-[10%] bottom-[10%] max-w-lg mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-100 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden">
@@ -481,22 +550,22 @@
         let dashboardTab = 'apps';  // 'apps' or 'bookmarks'
         
         let selectedJob = null;
+        let currentApplicationId = null;
         let isEmployerPersona = false;
 
-        // Seeker profile state (Supabase is authoritative; LocalStorage is a UI cache)
+        // Supabase/API is the only persistent profile source.
         let profileState = {
-            name: "Alex Rivera",
-            headline: "Full-Stack Software Engineer specializing in React & Node.js",
-            email: "alex.rivera@example.com",
-            phone: "+60 12-342 9011",
-            bio: "Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.",
-            skills: ["React", "TypeScript", "Tailwind CSS", "Vite", "Node.js", "REST APIs"],
+            name: "",
+            headline: "",
+            email: "",
+            phone: "",
+            bio: "",
+            skills: [],
             avatar: null
         };
 
         // 2. BOOTSTRAP INITIALIZATION
         window.addEventListener('DOMContentLoaded', async () => {
-            loadLocalStorageData();
             await loadProfileFromServer();
             await loadApplicationsFromServer();
             await fetchJobs();
@@ -522,34 +591,34 @@
             }
         }
 
-        // 3. PERSISTENCE ENGINE
-        function loadLocalStorageData() {
-            const savedProfile = localStorage.getItem('jobportal_profile');
-            if (savedProfile) {
-                try {
-                    profileState = JSON.parse(savedProfile);
-                } catch (e) {
-                    console.error("Failed to parse saved profile state", e);
-                }
+        // 3. SUPABASE/API PERSISTENCE
+        async function saveProfileState() {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: profileState.name,
+                    headline: profileState.headline,
+                    phone: profileState.phone,
+                    bio: profileState.bio,
+                    skills: profileState.skills,
+                    avatar: profileState.avatar
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not save profile.');
             }
-
-            const savedApplied = localStorage.getItem('jobportal_applied');
-            if (savedApplied) {
-                try {
-                    appliedJobs = JSON.parse(savedApplied);
-                } catch (e) {}
-            }
-
-            const savedBookmarks = localStorage.getItem('jobportal_bookmarks');
-            if (savedBookmarks) {
-                try {
-                    bookmarkedJobs = JSON.parse(savedBookmarks);
-                } catch (e) {}
-            }
-        }
-
-        function saveProfileState() {
-            localStorage.setItem('jobportal_profile', JSON.stringify(profileState));
+            const saved = result.profile || {};
+            profileState = {
+                name: saved.full_name || profileState.name,
+                headline: saved.headline || '',
+                email: saved.email || profileState.email,
+                phone: saved.phone || '',
+                bio: saved.bio || '',
+                skills: Array.isArray(saved.skills) ? saved.skills : [],
+                avatar: saved.avatar ?? profileState.avatar
+            };
         }
 
         async function loadProfileFromServer() {
@@ -569,9 +638,8 @@
                     skills: Array.isArray(data.skills) ? data.skills : [],
                     avatar: data.avatar || null
                 };
-                saveProfileState();
             } catch (error) {
-                console.warn('Failed to load profile from server; using the cached profile.', error);
+                console.warn('Failed to load profile from server.', error);
             }
         }
 
@@ -585,9 +653,9 @@
                 appliedJobs = Array.isArray(data)
                     ? data.filter(application => application.id)
                     : [];
-                saveAppliedState();
             } catch (error) {
-                console.warn('Failed to load applications; using cached data.', error);
+                appliedJobs = [];
+                console.warn('Failed to load applications from server.', error);
             }
         }
 
@@ -602,18 +670,10 @@
                 bookmarkedJobs = (Array.isArray(data) ? data : [])
                     .filter(jobId => activeJobIds.has(String(jobId)))
                     .map(jobId => ({ jobId }));
-                saveBookmarksState();
             } catch (error) {
-                console.warn('Failed to load bookmarks; using cached data.', error);
+                bookmarkedJobs = [];
+                console.warn('Failed to load bookmarks from server.', error);
             }
-        }
-
-        function saveAppliedState() {
-            localStorage.setItem('jobportal_applied', JSON.stringify(appliedJobs));
-        }
-
-        function saveBookmarksState() {
-            localStorage.setItem('jobportal_bookmarks', JSON.stringify(bookmarkedJobs));
         }
 
         async function fetchJobs() {
@@ -647,7 +707,7 @@
         // 5. REDIRECTING switchView
         function switchView(viewId) {
             if (viewId === 'explore') {
-                window.location.href = '/';
+                window.location.href = '/seeker';
             } else if (viewId === 'dashboard') {
                 window.location.href = '/dashboard';
             } else if (viewId === 'resumes') {
@@ -758,7 +818,7 @@
         }
 
         function applicationStatusStyle(status) {
-            switch (status) {
+            switch (normaliseApplicationStatus(status)) {
                 case 'Interview':
                     return 'bg-blue-50 text-blue-700 border-blue-100';
                 case 'Offer':
@@ -800,6 +860,288 @@
                 return '<p class="mt-2 text-[10px] font-semibold text-amber-600">Waiting for the employer to add meeting details.</p>';
             }
             return '';
+        }
+
+        function normaliseApplicationStatus(status) {
+            const value = String(status || 'Pending').trim().toLowerCase();
+            if (value === 'interview') return 'Interview';
+            if (['offer', 'accepted', 'hired'].includes(value)) return 'Offer';
+            if (['rejected', 'withdrawn'].includes(value)) return 'Rejected';
+            return 'Pending';
+        }
+
+        function formatApplicationTimestamp(value) {
+            if (!value) return 'Not recorded';
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) return String(value);
+            return parsed.toLocaleString('en-MY', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function applicationDateFields(application) {
+            const appliedAt = application?.createdAt
+                || application?.created_at
+                || application?.date
+                || '';
+            const updatedAt = application?.updatedAt
+                || application?.updated_at
+                || application?.statusUpdatedAt
+                || application?.status_updated_at
+                || '';
+            return { appliedAt, updatedAt };
+        }
+
+        function applicationProcessingTime(application) {
+            const { appliedAt, updatedAt } = applicationDateFields(application);
+            const started = appliedAt ? new Date(appliedAt) : null;
+            if (!started || Number.isNaN(started.getTime())) return 'Not available';
+
+            const status = normaliseApplicationStatus(application?.status);
+            const isFinished = status === 'Offer' || status === 'Rejected';
+            if (isFinished && !updatedAt) return 'Time not recorded';
+
+            const ended = isFinished ? new Date(updatedAt) : new Date();
+            if (Number.isNaN(ended.getTime()) || ended < started) return 'Not available';
+
+            const minutes = Math.max(0, Math.floor((ended - started) / 60000));
+            let duration;
+            if (minutes < 60) {
+                duration = `${minutes} min`;
+            } else if (minutes < 2880) {
+                const hours = Math.floor(minutes / 60);
+                duration = `${hours} hour${hours === 1 ? '' : 's'}`;
+            } else {
+                const days = Math.floor(minutes / 1440);
+                duration = `${days} day${days === 1 ? '' : 's'}`;
+            }
+            return isFinished ? `${duration} total` : `${duration} in process`;
+        }
+
+        function applicationDocumentInfo(application) {
+            const details = String(application?.details || '');
+            const resumeMatch = details.match(/Resume:\s*(.*?)(?:\s*[•|]\s*Cover Letter:|$)/i);
+            const coverMatch = details.match(/Cover Letter:\s*(.+)$/i);
+            const resume = application?.resume || {};
+
+            const resumeName = application?.resumeName
+                || resume.name
+                || resume.fileName
+                || (resumeMatch ? resumeMatch[1].trim() : '')
+                || (application?.resumeId ? 'Submitted resume' : 'Not recorded');
+            const coverName = application?.coverLetterOriginalName
+                || (coverMatch ? coverMatch[1].trim() : '')
+                || (application?.coverLetterText ? 'Written cover letter' : '')
+                || (application?.coverLetterFile ? 'Uploaded cover letter' : '')
+                || 'Not recorded';
+
+            const resumeStoredName = application?.resumeStoredFileName
+                || resume.storedFileName
+                || '';
+            const coverStoredName = application?.coverLetterFile || '';
+
+            return {
+                resumeName,
+                coverName,
+                resumeUrl: resumeStoredName
+                    ? `/uploads/${encodeURIComponent(resumeStoredName)}`
+                    : '',
+                coverUrl: coverStoredName
+                    ? `/uploads/cover-letters/${encodeURIComponent(coverStoredName)}`
+                    : ''
+            };
+        }
+
+        function applicationDocumentCard(title, name, url, icon) {
+            const action = url
+                ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold text-blue-600 hover:text-blue-800">Open file</a>`
+                : '<span class="text-[10px] font-bold text-emerald-600">Submitted</span>';
+            return `
+                <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 flex items-start gap-3">
+                    <div class="h-9 w-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0">${icon}</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">${title}</p>
+                        <p class="mt-1 truncate text-xs font-bold text-slate-800" title="${escapeHtml(name)}">${escapeHtml(name)}</p>
+                        <div class="mt-1">${action}</div>
+                    </div>
+                </div>`;
+        }
+
+        function applicationStageHtml(state, title, description, time) {
+            const styles = {
+                done: ['bg-emerald-500 text-white', 'border-emerald-100 bg-emerald-50/60', '✓'],
+                current: ['bg-blue-600 text-white', 'border-blue-100 bg-blue-50/70', '•'],
+                rejected: ['bg-rose-500 text-white', 'border-rose-100 bg-rose-50/70', '✕'],
+                waiting: ['bg-slate-100 text-slate-400', 'border-slate-100 bg-white', '']
+            };
+            const style = styles[state] || styles.waiting;
+            return `
+                <div class="rounded-xl border ${style[1]} p-3 flex items-start gap-3">
+                    <div class="h-7 w-7 rounded-full ${style[0]} flex items-center justify-center text-[10px] font-extrabold shrink-0">${style[2]}</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <p class="text-xs font-extrabold text-slate-800">${escapeHtml(title)}</p>
+                            <span class="text-[9px] font-semibold text-slate-400">${escapeHtml(time)}</span>
+                        </div>
+                        <p class="mt-0.5 text-[10px] leading-4 text-slate-500">${escapeHtml(description)}</p>
+                    </div>
+                </div>`;
+        }
+
+        function renderApplicationTimeline(application) {
+            const status = normaliseApplicationStatus(application?.status);
+            const { appliedAt, updatedAt } = applicationDateFields(application);
+            const interview = application?.interview;
+            const hasInterview = status === 'Interview'
+                || status === 'Offer'
+                || Boolean(interview?.interviewAt);
+            const isDecision = status === 'Offer' || status === 'Rejected';
+
+            const submitted = applicationStageHtml(
+                'done',
+                'Application Submitted',
+                'Resume and cover letter were submitted successfully.',
+                formatApplicationTimestamp(appliedAt)
+            );
+            const review = applicationStageHtml(
+                status === 'Pending' ? 'current' : 'done',
+                status === 'Pending' ? 'Pending Employer Review' : 'Employer Review',
+                status === 'Pending'
+                    ? 'The employer is currently reviewing your application.'
+                    : 'The employer has processed this application.',
+                status === 'Pending'
+                    ? formatApplicationTimestamp(appliedAt)
+                    : (updatedAt ? formatApplicationTimestamp(updatedAt) : 'Time not recorded')
+            );
+            const interviewState = status === 'Interview'
+                ? 'current'
+                : (hasInterview ? 'done' : 'waiting');
+            const interviewStage = applicationStageHtml(
+                interviewState,
+                'Interview',
+                interview?.interviewAt
+                    ? `${interview.interviewType || 'Interview'} scheduled`
+                    : (hasInterview ? 'Interview stage reached; schedule time was not recorded.' : 'Not reached yet.'),
+                interview?.interviewAt
+                    ? formatApplicationTimestamp(interview.interviewAt)
+                    : 'Waiting'
+            );
+            const decisionState = status === 'Rejected'
+                ? 'rejected'
+                : (status === 'Offer' ? 'done' : 'waiting');
+            const decision = applicationStageHtml(
+                decisionState,
+                status === 'Rejected' ? 'Application Rejected' : (status === 'Offer' ? 'Offer Received' : 'Final Decision'),
+                status === 'Rejected'
+                    ? 'The employer did not proceed with this application.'
+                    : (status === 'Offer' ? 'The employer has made an offer.' : 'Awaiting the employer’s final decision.'),
+                isDecision && updatedAt
+                    ? formatApplicationTimestamp(updatedAt)
+                    : 'Waiting'
+            );
+            return submitted + review + interviewStage + decision;
+        }
+
+        function renderApplicationInterviewDetail(application) {
+            const card = document.getElementById('application-detail-interview');
+            const interview = application?.interview;
+            if (interview?.status === 'scheduled') {
+                const type = String(interview.interviewType || 'online');
+                card.className = 'rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm';
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">📅</div>
+                        <div class="min-w-0">
+                            <h4 class="text-[10px] font-extrabold text-blue-900 uppercase tracking-wider">Interview Details</h4>
+                            <p class="mt-1 text-xs font-bold text-slate-900">${escapeHtml(formatInterviewDate(interview.interviewAt))}</p>
+                            <p class="mt-1 text-[11px] capitalize text-slate-600">${escapeHtml(type)} · ${interviewActionHtml(interview)}</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+            if (normaliseApplicationStatus(application?.status) === 'Interview') {
+                card.className = 'rounded-2xl border border-amber-100 bg-amber-50 p-4 shadow-sm';
+                card.innerHTML = '<p class="text-xs font-semibold text-amber-800">You have reached the interview stage. The employer has not added the interview time or meeting details yet.</p>';
+                return;
+            }
+            card.className = 'hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm';
+            card.innerHTML = '';
+        }
+
+        function openApplicationDetail(applicationId) {
+            currentApplicationId = String(applicationId);
+            const application = appliedJobs.find(
+                item => String(item.id) === currentApplicationId
+            );
+            if (!application) {
+                showFloatingNotice('Application details could not be found.');
+                return;
+            }
+
+            const job = jobListings.find(
+                item => String(item.id) === String(application.jobId)
+            );
+            const title = application.job || job?.title || 'Job application';
+            const company = application.company || job?.company || 'Company';
+            const status = normaliseApplicationStatus(application.status);
+            const { appliedAt, updatedAt } = applicationDateFields(application);
+
+            document.getElementById('application-detail-title').textContent = title;
+            document.getElementById('application-detail-company').textContent = company;
+            document.getElementById('application-detail-applied-at').textContent = formatApplicationTimestamp(appliedAt);
+            document.getElementById('application-detail-updated-at').textContent = updatedAt
+                ? formatApplicationTimestamp(updatedAt)
+                : 'No status update yet';
+            document.getElementById('application-detail-processing-time').textContent = applicationProcessingTime(application);
+
+            const statusBadge = document.getElementById('application-detail-status');
+            statusBadge.textContent = status;
+            statusBadge.className = `mt-1 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${applicationStatusStyle(status)}`;
+
+            const avatar = document.getElementById('application-detail-avatar');
+            avatar.className = `${companyColorClass(job)} h-11 w-11 overflow-hidden rounded-2xl flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase`;
+            avatar.innerHTML = companyLogoContent(
+                job || { company, icon: company.slice(0, 2).toUpperCase() }
+            );
+
+            document.getElementById('application-detail-timeline').innerHTML = renderApplicationTimeline(application);
+
+            const documents = applicationDocumentInfo(application);
+            document.getElementById('application-detail-documents').innerHTML =
+                applicationDocumentCard('Resume', documents.resumeName, documents.resumeUrl, '📄')
+                + applicationDocumentCard('Cover Letter', documents.coverName, documents.coverUrl, '✉️');
+
+            document.getElementById('application-detail-notes').textContent =
+                application.employerNotes
+                || application.statusDetails
+                || application.details
+                || 'No additional details have been provided.';
+            renderApplicationInterviewDetail(application);
+
+            const backdrop = document.getElementById('application-detail-backdrop');
+            const panel = document.getElementById('application-detail-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            window.setTimeout(() => {
+                backdrop.classList.add('opacity-100');
+                panel.classList.add('scale-100', 'opacity-100');
+            }, 20);
+        }
+
+        function closeApplicationDetail() {
+            const backdrop = document.getElementById('application-detail-backdrop');
+            const panel = document.getElementById('application-detail-panel');
+            backdrop.classList.remove('opacity-100');
+            panel.classList.remove('scale-100', 'opacity-100');
+            window.setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+                currentApplicationId = null;
+            }, 300);
         }
 
         function syncDashboardUI() {
@@ -851,9 +1193,7 @@
                                     </span>
                                     <p class="text-[9px] text-slate-400 font-extrabold uppercase mt-1">Applied: ${new Date(app.date).toLocaleDateString()}</p>
                                 </div>
-                                ${activeJob ? `
-                                    <button onclick="openJobDetails('${job.id}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60 font-bold text-xs h-9 px-4 rounded-xl transition flex items-center justify-center gap-1">View Job</button>
-                                ` : '<span class="rounded-lg bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-400">Unavailable</span>'}
+                                <button onclick="openApplicationDetail('${app.id}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60 font-bold text-xs h-9 px-4 rounded-xl transition flex items-center justify-center gap-1">View Details</button>
                             </div>
                         </div>
                     `;
@@ -893,7 +1233,7 @@
                                     </svg>
                                 </button>
                                 <button onclick="openJobDetails('${job.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl transition shadow-md shadow-blue-100 flex items-center justify-center">
-                                    View details
+                                    View Details
                                 </button>
                             </div>
                         </div>
@@ -1380,7 +1720,6 @@
                     avatar: saved.avatar ?? payload.avatar
                 };
 
-                saveProfileState();
                 syncProfileUI();
                 closeProfileModal();
                 showFloatingNotice('Profile updated successfully.');
@@ -1478,7 +1817,6 @@
                 }
                 bookmarkedJobs = (Array.isArray(data.bookmarks) ? data.bookmarks : [])
                     .map(savedJobId => ({ jobId: savedJobId }));
-                saveBookmarksState();
                 syncDashboardUI();
                 showFloatingNotice(
                     wasBookmarked
@@ -1518,7 +1856,7 @@
             if (appliedJobs.some(app => app.jobId === jobId)) return;
             showFloatingNotice('Opening Explore Positions to complete your application.');
             window.setTimeout(() => {
-                window.location.href = '/';
+                window.location.href = '/seeker';
             }, 500);
         }
 
@@ -1645,17 +1983,23 @@
             }, 300);
         }
 
-        function acceptTailoredSuggestions() {
+        async function acceptTailoredSuggestions() {
             if (!customTailorProposal) return;
+            const previousProfile = { ...profileState, skills: [...profileState.skills] };
             profileState.headline = customTailorProposal.headline;
             profileState.bio = customTailorProposal.bio;
             profileState.skills = customTailorProposal.skills;
 
-            saveProfileState();
-            syncProfileUI();
-            closeTailorModal();
-            closeJobDetails();
-            showFloatingNotice("✨ Swapped profile values with co-pilot recommendations!");
+            try {
+                await saveProfileState();
+                syncProfileUI();
+                closeTailorModal();
+                closeJobDetails();
+                showFloatingNotice("✨ Profile recommendations saved successfully!");
+            } catch (error) {
+                profileState = previousProfile;
+                showFloatingNotice(error.message || 'Could not save profile recommendations.');
+            }
         }
 
         // ROLE SWITCHER (Employer vs Seeker)
@@ -1729,10 +2073,10 @@
     <script>
         window.addEventListener('DOMContentLoaded', initialiseSeekerNotifications);
         let seekerNotifications = [];
-        const seekerNotificationReadKey = 'jobportal_notification_read_ids';
+        let seekerNotificationReadIdsMemory = new Set();
         async function initialiseSeekerNotifications(){await fetchSeekerNotifications();window.setInterval(fetchSeekerNotifications,30000);document.addEventListener('click',event=>{const container=document.getElementById('seeker-notification-container');if(container&&!container.contains(event.target))closeSeekerNotificationPanel();});}
-        function seekerNotificationReadIds(){try{return new Set(JSON.parse(localStorage.getItem(seekerNotificationReadKey)||'[]').map(String));}catch(_){return new Set();}}
-        function saveSeekerNotificationReadIds(ids){localStorage.setItem(seekerNotificationReadKey,JSON.stringify([...ids].slice(-500)));}
+        function seekerNotificationReadIds(){return new Set(seekerNotificationReadIdsMemory);}
+        function saveSeekerNotificationReadIds(ids){seekerNotificationReadIdsMemory=new Set([...ids].slice(-500).map(String));}
         function seekerNotificationTime(value,includeTime=false){const date=new Date(value);if(!value||Number.isNaN(date.getTime()))return'';return new Intl.DateTimeFormat('en-MY',includeTime?{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}:{day:'numeric',month:'short',year:'numeric'}).format(date);}
         function buildSeekerNotifications(applications){const items=[];(Array.isArray(applications)?applications:[]).forEach(application=>{const id=String(application.id||application.jobId||'application');const job=application.job||application.position||'Job application';const company=application.company||'Employer';const appliedDate=application.date||application.created_at||'';items.push({id:`${id}:submitted`,title:'Application submitted',message:`${job} at ${company}`,date:appliedDate,tone:'slate',icon:'✓'});const status=String(application.status||'Pending');if(status.toLowerCase()!=='pending'){const tone=['offer','accepted','hired'].includes(status.toLowerCase())?'emerald':['rejected','withdrawn'].includes(status.toLowerCase())?'rose':status.toLowerCase()==='interview'?'blue':'amber';items.push({id:`${id}:status:${status.toLowerCase()}`,title:`Application ${status}`,message:`${job} at ${company}`,date:application.updatedAt||application.updated_at||appliedDate,tone,icon:status.toLowerCase()==='interview'?'I':'•'});}const interview=application.interview;if(interview?.interviewAt){const when=seekerNotificationTime(interview.interviewAt,true);const meeting=interview.locationOrLink?` · ${interview.locationOrLink}`:'';items.push({id:`${id}:interview:${interview.interviewAt}:${interview.locationOrLink||''}`,title:'Interview scheduled',message:`${job} · ${when}${meeting}`,date:interview.interviewAt,tone:'blue',icon:'I'});}});return[...new Map(items.map(item=>[item.id,item])).values()].sort((a,b)=>(new Date(b.date).getTime()||0)-(new Date(a.date).getTime()||0)).slice(0,30);}
         async function fetchSeekerNotifications(){try{const response=await fetch('/api/applications',{cache:'no-store'});if(!response.ok)return;seekerNotifications=buildSeekerNotifications(await response.json());renderSeekerNotifications();}catch(error){console.warn('Failed to load notifications',error);}}

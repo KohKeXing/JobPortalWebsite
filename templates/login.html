@@ -235,9 +235,9 @@
                 }
 
                 sessionStorage.removeItem('pendingConfirmationEmail');
-                // The seeker landing page is served by Flask at `/`.
+                // The protected seeker landing page is served at `/seeker`.
                 // Dashboard remains available from the "My Dashboard" tab.
-                window.location.replace(data.redirect || '/');
+                window.location.replace(data.redirect || '/seeker');
             } catch (error) {
                 errorDiv.classList.remove('hidden');
                 errorText.textContent = error.message;

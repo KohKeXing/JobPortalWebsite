@@ -5,6 +5,7 @@ user-facing Flask page in both applications. They deliberately fail on missing
 templates, broken redirects, unexpected server errors, or removed routes.
 """
 
+import os
 from urllib.parse import urlparse
 
 import pytest
@@ -14,7 +15,6 @@ import seeker_main
 from conftest import (
     _get_test_employer,
     authenticate_employer_client,
-    authenticate_seeker_client,
 )
 
 
@@ -46,6 +46,23 @@ def _client(app_factory, authenticated=None):
     app.testing = True
     client = app.test_client()
     return authenticated(client) if authenticated else client
+
+
+def _authenticate_seeker_client(client):
+    """Create the same Flask session as a successful seeker login.
+
+    Keep this page-test helper local so an older conftest.py elsewhere in the
+    project cannot silently supply a stale role value.
+    """
+    with client.session_transaction() as flask_session:
+        flask_session["user_id"] = os.environ.get(
+            "TEST_SEEKER_USER_ID",
+            "11111111-1111-4111-8111-111111111111",
+        )
+        flask_session["email"] = "acceptance.seeker@example.com"
+        flask_session["full_name"] = "Acceptance Job Seeker"
+        flask_session["role"] = seeker_main.JOB_SEEKER_ROLE
+    return client
 
 
 def _assert_html_response(response, expected_status=200):
@@ -150,7 +167,7 @@ def test_employer_private_pages_redirect_guests(path, redirect_path):
     ids=["explore-positions", "dashboard", "resumes"],
 )
 def test_authenticated_seeker_pages_render(path):
-    client = _client(seeker_main.create_app, authenticate_seeker_client)
+    client = _client(seeker_main.create_app, _authenticate_seeker_client)
     response = client.get(path)
     _assert_html_response(response)
 
@@ -195,14 +212,14 @@ def test_unknown_company_pages_return_not_found(app_factory, path):
     _assert_html_response(response, expected_status=404)
 
 
-def test_logged_in_seeker_login_and_register_redirect_to_dashboard():
-    client = _client(seeker_main.create_app, authenticate_seeker_client)
+def test_logged_in_seeker_login_and_register_redirect_to_explore_positions():
+    client = _client(seeker_main.create_app, _authenticate_seeker_client)
     for path in ("/login", "/register"):
-        _assert_redirect(client.get(path), "/dashboard")
+        _assert_redirect(client.get(path), "/")
 
 
 def test_seeker_reset_password_page_clears_existing_session():
-    client = _client(seeker_main.create_app, authenticate_seeker_client)
+    client = _client(seeker_main.create_app, _authenticate_seeker_client)
     _assert_html_response(client.get("/reset-password"))
     response = client.get("/api/auth/me")
     assert response.status_code == 401
@@ -288,4 +305,3 @@ def test_unknown_paths_return_not_found_in_both_apps():
     for app_factory in (seeker_main.create_app, employer_main.create_app):
         response = _client(app_factory).get("/this-page-does-not-exist")
         assert response.status_code == 404
-
