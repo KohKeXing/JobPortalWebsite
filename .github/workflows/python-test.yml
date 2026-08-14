@@ -1,35 +1,93 @@
 name: Automated Testing
+
 on:
   push:
+    branches:
+      - main
+
   pull_request:
+    branches:
+      - main
+
   schedule:
-    # Runs every day at 00:00 UTC — satisfies the assignment's "nightly
-    # automated builds" requirement, in addition to running on every
-    # push/PR so issues are caught immediately too.
+    # Runs every day at 00:00 UTC.
     - cron: "0 0 * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run Pytest
+
+          if [ -f acceptance_tests/requirements.txt ]; then
+            pip install -r acceptance_tests/requirements.txt
+          fi
+
+          pip install pytest pytest-html reportlab
+
+      - name: Check required Supabase configuration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           RESUME_ENCRYPTION_KEY: ${{ secrets.RESUME_ENCRYPTION_KEY }}
         run: |
-          python -m pytest tests/ -v
+          python - <<'PY'
+          import os
+
+          required = [
+              "SUPABASE_URL",
+              "SUPABASE_PUBLISHABLE_KEY",
+              "SUPABASE_SECRET_KEY",
+              "RESUME_ENCRYPTION_KEY",
+          ]
+
+          missing = [name for name in required if not os.getenv(name)]
+
+          if missing:
+              raise SystemExit(
+                  "Missing GitHub secrets: " + ", ".join(missing)
+              )
+
+          print("All required secrets are configured.")
+          PY
+
+      - name: Run Pytest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          RESUME_ENCRYPTION_KEY: ${{ secrets.RESUME_ENCRYPTION_KEY }}
+        run: |
+          python -m pytest tests/ acceptance_tests/ \
+            -v \
+            --html=report.html \
+            --self-contained-html
+
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-report
+          name: pytest-report-${{ github.run_number }}
           path: report.html
+          if-no-files-found: warn
+          retention-days: 30

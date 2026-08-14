@@ -31,7 +31,7 @@ REQUIRED_JOB_FIELDS = [
 
 JOB_COLUMNS = (
     "id,title,company,location,salary,type,description,tags,featured,"
-    "category,posted,logo_color,icon"
+    "category,posted,logo_color,icon,employer_id"
 )
 
 
@@ -53,11 +53,10 @@ def _api_job(row: dict[str, Any]) -> dict[str, Any]:
         "icon": row.get("icon"),
     }
 
-
 def validate_job_data(data):
     alpha_pattern = re.compile(r"^[A-Za-z ]+$")
     location_pattern = re.compile(r"^[A-Za-z, ]+$")
-    # Changed: Allow letters, spaces, commas, and ampersand
+    # Allow letters, spaces, commas, and ampersands in categories and tags.
     category_tag_pattern = re.compile(r"^[A-Za-z&, ]+$")
     salary_pattern = re.compile(r"^\d+$")
 
@@ -74,8 +73,8 @@ def validate_job_data(data):
 
     if not location_pattern.fullmatch(location):
         raise ValueError(
-            "Location can only contain letters, spaces, and commas."
-        )
+        "Location can only contain letters, spaces, and commas."
+    )
 
     if category and not category_tag_pattern.fullmatch(category):
         raise ValueError(
@@ -92,8 +91,7 @@ def validate_job_data(data):
             raise ValueError(
                 "Tags can only contain letters, spaces, commas, and &."
             )
-
-
+        
 class JobStorage:
     """Shared Supabase persistence used by seeker and employer Flask apps."""
 
@@ -104,27 +102,33 @@ class JobStorage:
     def client(self) -> Any:
         return self._provided_client or get_supabase_client()
 
-    def get_jobs(self) -> list[dict[str, Any]]:
-        response = (
-            self.client.table("jobs")
-            .select(JOB_COLUMNS)
-            .order("posted", desc=True)
-            .execute()
-        )
+    def get_jobs(self, employer_id: str | None = None) -> list[dict[str, Any]]:
+        query = self.client.table("jobs").select(JOB_COLUMNS)
+        if employer_id:
+            query = query.eq("employer_id", employer_id)
+        response = query.order("posted", desc=True).execute()
         return [_api_job(row) for row in (response.data or [])]
 
-    def get_job(self, job_id: str) -> dict[str, Any] | None:
-        response = (
-            self.client.table("jobs")
-            .select(JOB_COLUMNS)
-            .eq("id", job_id)
-            .limit(1)
-            .execute()
-        )
+    def get_job(
+        self,
+        job_id: str,
+        employer_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        query = self.client.table("jobs").select(JOB_COLUMNS).eq("id", job_id)
+        if employer_id:
+            query = query.eq("employer_id", employer_id)
+        response = query.limit(1).execute()
         rows = response.data or []
         return _api_job(rows[0]) if rows else None
 
-    def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
+    def create_job(
+        self,
+        data: dict[str, Any],
+        employer_id: str | None = None,
+    ) -> dict[str, Any]:
+        if not employer_id:
+            raise ValueError("An authenticated employer account is required.")
+
         missing = [field for field in REQUIRED_JOB_FIELDS if not data.get(field)]
         if missing:
             raise ValueError(
@@ -151,16 +155,24 @@ class JobStorage:
                 job_count % len(LOGO_COLOR_ROTATION)
             ],
             "icon": company[:2].upper() if company else "JP",
+            "employer_id": employer_id,
         }
         response = self.client.table("jobs").insert(row).execute()
-        return _api_job(response.data[0])
+        rows = response.data or []
+        if not rows:
+            created_job = self.get_job(row["id"], employer_id)
+            if created_job:
+                return created_job
+            raise RuntimeError("Supabase did not return the created job row.")
+        return _api_job(rows[0])
 
     def update_job(
         self,
         job_id: str,
         data: dict[str, Any],
+        employer_id: str | None = None,
     ) -> dict[str, Any] | None:
-        if self.get_job(job_id) is None:
+        if self.get_job(job_id, employer_id) is None:
             return None
 
         changes: dict[str, Any] = {}
@@ -177,21 +189,26 @@ class JobStorage:
             changes["icon"] = data["company"].strip()[:2].upper()
 
         if not changes:
-            return self.get_job(job_id)
+            return self.get_job(job_id, employer_id)
 
         validate_job_data(changes)
 
-        response = (
-            self.client.table("jobs")
-            .update(changes)
-            .eq("id", job_id)
-            .execute()
-        )
+        query = self.client.table("jobs").update(changes).eq("id", job_id)
+        if employer_id:
+            query = query.eq("employer_id", employer_id)
+        response = query.execute()
         rows = response.data or []
-        return _api_job(rows[0]) if rows else self.get_job(job_id)
+        return _api_job(rows[0]) if rows else self.get_job(job_id, employer_id)
 
-    def delete_job(self, job_id: str) -> bool:
-        if self.get_job(job_id) is None:
+    def delete_job(
+        self,
+        job_id: str,
+        employer_id: str | None = None,
+    ) -> bool:
+        if self.get_job(job_id, employer_id) is None:
             return False
-        self.client.table("jobs").delete().eq("id", job_id).execute()
+        query = self.client.table("jobs").delete().eq("id", job_id)
+        if employer_id:
+            query = query.eq("employer_id", employer_id)
+        query.execute()
         return True

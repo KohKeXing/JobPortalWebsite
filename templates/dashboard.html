@@ -60,12 +60,26 @@
 
                 <!-- User profile block -->
                 <div class="flex items-center gap-3">
+                    <div class="relative" id="seeker-notification-container">
+                        <button type="button" id="seeker-notification-button" onclick="toggleSeekerNotificationPanel()" aria-label="Job seeker notifications" aria-expanded="false" class="relative h-9 w-9 rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="seeker-notification-badge" class="hidden absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-[18px] text-white">0</span>
+                        </button>
+                        <div id="seeker-notification-panel" class="hidden absolute right-0 top-12 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                <div><p class="text-[13px] font-bold text-slate-900">Notifications</p><p class="text-[11px] text-slate-400" id="seeker-notification-summary">You are all caught up.</p></div>
+                                <button type="button" onclick="markAllSeekerNotificationsRead()" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800">Mark all read</button>
+                            </div>
+                            <div id="seeker-notification-list" class="max-h-96 overflow-y-auto"></div>
+                            <div id="seeker-notification-empty" class="hidden px-5 py-10 text-center text-[12px] text-slate-400">No notifications yet.</div>
+                        </div>
+                    </div>
                     <div class="text-right hidden sm:block">
-                        <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
+                        <div class="text-xs font-bold text-slate-900" id="user-display-name">Job Seeker</div>
                         <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
                     </div>
                     <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden" id="user-avatar-initials">
-                        AL
+                        JS
                     </div>
                 </div>
             </div>
@@ -113,12 +127,12 @@
                 <!-- Seeker visual avatar -->
                 <div class="flex flex-col items-center gap-3 pt-4 pb-2 border-b border-slate-100">
                     <div class="h-20 w-20 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-2xl border-2 border-blue-200 overflow-hidden uppercase" id="profile-avatar-initials">
-                        AL
+                        JS
                     </div>
                     <div class="text-center">
-                        <h4 class="text-lg font-extrabold text-slate-900" id="profile-name">Alex Rivera</h4>
+                        <h4 class="text-lg font-extrabold text-slate-900" id="profile-name">Job Seeker</h4>
                         <p class="text-xs text-slate-500 font-medium px-4 mt-1" id="profile-headline">
-                            Full-Stack Software Engineer specializing in React & Node.js
+                            Complete your profile headline
                         </p>
                     </div>
                 </div>
@@ -129,13 +143,13 @@
                         <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                         </svg>
-                        <span id="profile-email">alex.rivera@example.com</span>
+                        <span id="profile-email">No email available</span>
                     </div>
                     <div class="flex items-center gap-2.5">
                         <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                         </svg>
-                        <span id="profile-phone">+60 12-342 9011</span>
+                        <span id="profile-phone">No phone number</span>
                     </div>
                 </div>
 
@@ -143,7 +157,7 @@
                 <div class="flex flex-col gap-2 border-b border-slate-100 pb-4">
                     <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Bio</span>
                     <p class="text-xs text-slate-600 leading-relaxed" id="profile-bio">
-                        Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.
+                        Complete your profile bio.
                     </p>
                 </div>
 
@@ -167,7 +181,7 @@
                         <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">Applications</div>
                     </div>
                     <div class="border border-slate-100 rounded-xl p-3 text-center bg-slate-50/50">
-                        <div class="text-2xl font-extrabold text-orange-500">0</div>
+                        <div class="text-2xl font-extrabold text-orange-500" id="stat-interviews">0</div>
                         <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">Interviews</div>
                     </div>
                 </div>
@@ -240,9 +254,9 @@
         <!-- Header area -->
         <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <div id="drawer-company-logo" class="h-12 w-12 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs">
+                <button type="button" id="drawer-company-logo" onclick="openSelectedCompanyProfile(event)" title="View company background" class="h-12 w-12 overflow-hidden rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                     SS
-                </div>
+                </button>
                 <div>
                     <h2 class="text-base font-extrabold text-slate-900 tracking-tight" id="drawer-job-title">Senior React Engineer</h2>
                     <p class="text-xs font-semibold text-blue-600 mt-0.5" id="drawer-company-name">Synthetix Solutions</p>
@@ -331,6 +345,75 @@
         </div>
     </div>
 
+    <!-- ==================== APPLICATION PROCESS DETAILS MODAL ==================== -->
+    <div id="application-detail-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeApplicationDetail()"></div>
+    <div id="application-detail-panel" role="dialog" aria-modal="true" aria-labelledby="application-detail-title" class="fixed inset-x-4 top-[7%] bottom-[7%] max-w-2xl mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-200/80 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-5 py-5 text-white flex items-center justify-between gap-4 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div id="application-detail-avatar" class="h-11 w-11 overflow-hidden rounded-2xl bg-white/20 flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase">JP</div>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-blue-100">Application Process Details</p>
+                    <h3 id="application-detail-title" class="text-base font-extrabold tracking-tight truncate">Job application</h3>
+                    <p id="application-detail-company" class="text-xs font-medium text-blue-100 truncate">Company</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeApplicationDetail()" aria-label="Close application details" class="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5 bg-slate-50/40 flex flex-col gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Current Status</p>
+                    <span id="application-detail-status" class="mt-1 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold">Pending</span>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Applied</p>
+                    <p id="application-detail-applied-at" class="mt-1 text-xs font-semibold text-slate-800">Not recorded</p>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Last Updated</p>
+                    <p id="application-detail-updated-at" class="mt-1 text-xs font-semibold text-slate-800">Not recorded</p>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Processing Time</p>
+                    <p id="application-detail-processing-time" class="mt-1 text-xs font-semibold text-slate-800">Not available</p>
+                </div>
+            </div>
+
+            <section class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <h4 class="text-xs font-extrabold text-slate-800">Application Progress</h4>
+                        <p class="mt-0.5 text-[10px] text-slate-400">The latest status received from the employer.</p>
+                    </div>
+                    <span class="text-lg">⏱️</span>
+                </div>
+                <div id="application-detail-timeline" class="flex flex-col gap-2"></div>
+            </section>
+
+            <section class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <div class="mb-3">
+                    <h4 class="text-xs font-extrabold text-slate-800">Submitted Documents</h4>
+                    <p class="mt-0.5 text-[10px] text-slate-400">Resume and cover letter used for this application.</p>
+                </div>
+                <div id="application-detail-documents" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </section>
+
+            <div id="application-detail-interview" class="hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm"></div>
+
+            <section class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Application Notes</h4>
+                <p id="application-detail-notes" class="mt-2 text-xs leading-relaxed text-slate-600">No additional details.</p>
+            </section>
+        </div>
+
+        <div class="p-4 border-t border-slate-100 bg-white flex justify-end shrink-0">
+            <button type="button" onclick="closeApplicationDetail()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition text-xs">Close</button>
+        </div>
+    </div>
+
     <!-- ==================== PROFILE EDITOR MODAL ==================== -->
     <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden transition-opacity duration-300 opacity-0" onclick="closeProfileModal()"></div>
     <div id="modal-panel" class="fixed inset-x-4 top-[10%] bottom-[10%] max-w-lg mx-auto bg-white z-50 shadow-2xl rounded-3xl border border-slate-100 flex flex-col scale-95 opacity-0 transition-all duration-300 ease-out hidden">
@@ -362,47 +445,52 @@
                     <div class="flex gap-3">
                         <button type="button" onclick="removeAvatarPhoto()" id="remove-avatar-btn" class="hidden text-rose-500 hover:text-rose-700 font-bold transition">Remove</button>
                     </div>
-                    <span class="text-[10px] text-slate-400">Click the camera icon to upload a photo (PNG, JPG or WEBP).</span>
+                    <span class="text-[10px] text-slate-400">PNG, JPG or WEBP only. Maximum file size: 2 MB.</span>
+                    <p id="edit-avatar-error" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
                 </div>
             </div>
+            <div id="profile-form-error" class="hidden rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 font-semibold" role="alert"></div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Full Name</label>
+                <label for="edit-name" class="block font-bold text-slate-700 mb-1.5">Full Name <span class="text-rose-500">*</span></label>
                 <input
-    type="text"
-    id="edit-name"
-    required
-    pattern="[A-Za-zÀ-ÖØ-öø-ÿ' -]+"
-    title="Name can only contain letters, spaces, apostrophes and hyphens"
-    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
->
+                    type="text"
+                    id="edit-name"
+                    required
+                    minlength="2"
+                    maxlength="80"
+                    autocomplete="name"
+                    aria-describedby="edit-name-error"
+                    oninput="handleNameInput()"
+                    onblur="validateProfileField('full_name')"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <p id="edit-name-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
             </div>
             <div>
-    <label class="block font-bold text-slate-700 mb-1.5">
-        Professional Headline
-    </label>
-
-    <textarea
-        id="edit-headline"
-        rows="3"
-        class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
-        placeholder="e.g. Full-Stack Software Engineer specializing in React & Node.js"
-    ></textarea>
-</div>
+                <label for="edit-headline" class="block font-bold text-slate-700 mb-1.5">Professional Headline <span class="text-rose-500">*</span></label>
+                <textarea id="edit-headline" rows="3" required minlength="3" maxlength="120" aria-describedby="edit-headline-error edit-headline-count" oninput="updateProfileCounters(); setProfileFieldError('headline', '')" onblur="validateProfileField('headline')" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none" placeholder="e.g. Full-Stack Software Engineer specializing in React & Node.js"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-2">
+                    <p id="edit-headline-error" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
+                    <span id="edit-headline-count" class="ml-auto text-[10px] text-slate-400">0/120</span>
+                </div>
+            </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1.5">Email Address</label>
+                    <label for="edit-email" class="block font-bold text-slate-700 mb-1.5">Email Address</label>
                     <input
-    type="email"
-    id="edit-email"
-    required
-    title="Please enter a valid email address"
-    class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
->
+                        type="email"
+                        id="edit-email"
+                        required
+                        readonly
+                        autocomplete="email"
+                        aria-describedby="edit-email-help edit-email-error"
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed focus:outline-none">
+                    <p id="edit-email-help" class="mt-1 text-[10px] text-slate-400">Account email cannot be changed here.</p>
+                    <p id="edit-email-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1.5">Phone Number</label>
+                    <label for="edit-phone" class="block font-bold text-slate-700 mb-1.5">Phone Number <span class="text-rose-500">*</span></label>
                     <div class="flex gap-2">
-                        <select id="edit-phone-country" class="px-2 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-28 text-slate-700 font-medium shrink-0">
+                        <select id="edit-phone-country" aria-label="Phone country" onchange="updatePhoneRules()" class="px-2 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-28 text-slate-700 font-medium shrink-0">
                             <option value="+60">🇲🇾 +60</option>
                             <option value="+1">🇺🇸 +1</option>
                             <option value="+44">🇬🇧 +44</option>
@@ -413,18 +501,25 @@
                             <option value="+81">🇯🇵 +81</option>
                             <option value="+86">🇨🇳 +86</option>
                         </select>
-                        <input type="text" id="edit-phone" class="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="12-345 6789" oninput="this.value = this.value.replace(/[^0-9\s\-()]/g, '')">
+                        <input type="tel" id="edit-phone" required inputmode="numeric" autocomplete="tel-national" maxlength="11" aria-describedby="edit-phone-help edit-phone-error" class="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="0175816201" oninput="handlePhoneInput()" onblur="validateProfileField('phone')">
                     </div>
+                    <p id="edit-phone-help" class="mt-1 text-[10px] text-slate-400"></p>
+                    <p id="edit-phone-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
                 </div>
             </div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Professional Bio</label>
-                <textarea id="edit-bio" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
+                <label for="edit-bio" class="block font-bold text-slate-700 mb-1.5">Professional Bio <span class="text-rose-500">*</span></label>
+                <textarea id="edit-bio" rows="4" required minlength="20" maxlength="1000" aria-describedby="edit-bio-error edit-bio-count" oninput="updateProfileCounters(); setProfileFieldError('bio', '')" onblur="validateProfileField('bio')" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-2">
+                    <p id="edit-bio-error" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
+                    <span id="edit-bio-count" class="ml-auto text-[10px] text-slate-400">0/1000</span>
+                </div>
             </div>
             <div>
-                <label class="block font-bold text-slate-700 mb-1.5">Core Skills (separated by commas)</label>
-                <input type="text" id="edit-skills" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                <span class="text-[10px] text-slate-400">E.g., React, TypeScript, Tailwind CSS, Vite</span>
+                <label for="edit-skills" class="block font-bold text-slate-700 mb-1.5">Core Skills (separated by commas) <span class="text-rose-500">*</span></label>
+                <input type="text" id="edit-skills" required maxlength="819" aria-describedby="edit-skills-help edit-skills-error" oninput="handleSkillsInput()" onblur="validateProfileField('skills')" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <span id="edit-skills-help" class="text-[10px] text-slate-400">Enter 1–20 skills. Each skill can contain up to 40 characters.</span>
+                <p id="edit-skills-error" class="hidden mt-1 text-[10px] font-semibold text-rose-600" role="alert"></p>
             </div>
         </div>
         <!-- Footer actions -->
@@ -432,7 +527,7 @@
             <button onclick="closeProfileModal()" class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-100 font-semibold text-slate-600 transition">
                 Cancel
             </button>
-            <button onclick="saveProfileData()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md shadow-blue-100">
+            <button id="profile-save-btn" onclick="saveProfileData()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold transition shadow-md shadow-blue-100">
                 Save Changes
             </button>
         </div>
@@ -455,73 +550,138 @@
         let dashboardTab = 'apps';  // 'apps' or 'bookmarks'
         
         let selectedJob = null;
+        let currentApplicationId = null;
         let isEmployerPersona = false;
 
-        // Seeker profile state (synced with LocalStorage)
+        // Supabase/API is the only persistent profile source.
         let profileState = {
-            name: "Alex Rivera",
-            headline: "Full-Stack Software Engineer specializing in React & Node.js",
-            email: "alex.rivera@example.com",
-            phone: "+60 12-342 9011",
-            bio: "Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.",
-            skills: ["React", "TypeScript", "Tailwind CSS", "Vite", "Node.js", "REST APIs"],
+            name: "",
+            headline: "",
+            email: "",
+            phone: "",
+            bio: "",
+            skills: [],
             avatar: null
         };
 
         // 2. BOOTSTRAP INITIALIZATION
-        window.addEventListener('DOMContentLoaded', () => {
-            loadLocalStorageData();
-            fetchJobs().then(() => {
-                syncProfileUI();
-                syncDashboardUI();
-            });
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadProfileFromServer();
+            await loadApplicationsFromServer();
+            await fetchJobs();
+            await loadBookmarksFromServer();
+            syncProfileUI();
+            syncDashboardUI();
+            window.setInterval(refreshDashboardData, 30000);
         });
 
-        // 3. PERSISTENCE ENGINE
-        function loadLocalStorageData() {
-            const savedProfile = localStorage.getItem('jobportal_profile');
-            if (savedProfile) {
-                try {
-                    profileState = JSON.parse(savedProfile);
-                } catch (e) {
-                    console.error("Failed to parse saved profile state", e);
+        let dashboardRefreshInProgress = false;
+        async function refreshDashboardData() {
+            if (dashboardRefreshInProgress || document.hidden) return;
+            dashboardRefreshInProgress = true;
+            try {
+                await Promise.all([
+                    loadApplicationsFromServer(),
+                    fetchJobs()
+                ]);
+                await loadBookmarksFromServer();
+                syncDashboardUI();
+            } finally {
+                dashboardRefreshInProgress = false;
+            }
+        }
+
+        // 3. SUPABASE/API PERSISTENCE
+        async function saveProfileState() {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: profileState.name,
+                    headline: profileState.headline,
+                    phone: profileState.phone,
+                    bio: profileState.bio,
+                    skills: profileState.skills,
+                    avatar: profileState.avatar
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not save profile.');
+            }
+            const saved = result.profile || {};
+            profileState = {
+                name: saved.full_name || profileState.name,
+                headline: saved.headline || '',
+                email: saved.email || profileState.email,
+                phone: saved.phone || '',
+                bio: saved.bio || '',
+                skills: Array.isArray(saved.skills) ? saved.skills : [],
+                avatar: saved.avatar ?? profileState.avatar
+            };
+        }
+
+        async function loadProfileFromServer() {
+            try {
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load profile.');
                 }
-            }
 
-            const savedApplied = localStorage.getItem('jobportal_applied');
-            if (savedApplied) {
-                try {
-                    appliedJobs = JSON.parse(savedApplied);
-                } catch (e) {}
-            }
-
-            const savedBookmarks = localStorage.getItem('jobportal_bookmarks');
-            if (savedBookmarks) {
-                try {
-                    bookmarkedJobs = JSON.parse(savedBookmarks);
-                } catch (e) {}
+                profileState = {
+                    name: data.full_name || profileState.name,
+                    headline: data.headline || '',
+                    email: data.email || profileState.email,
+                    phone: data.phone || '',
+                    bio: data.bio || '',
+                    skills: Array.isArray(data.skills) ? data.skills : [],
+                    avatar: data.avatar || null
+                };
+            } catch (error) {
+                console.warn('Failed to load profile from server.', error);
             }
         }
 
-        function saveProfileState() {
-            localStorage.setItem('jobportal_profile', JSON.stringify(profileState));
+        async function loadApplicationsFromServer() {
+            try {
+                const response = await fetch('/api/applications');
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load applications.');
+                }
+                appliedJobs = Array.isArray(data)
+                    ? data.filter(application => application.id)
+                    : [];
+            } catch (error) {
+                appliedJobs = [];
+                console.warn('Failed to load applications from server.', error);
+            }
         }
 
-        function saveAppliedState() {
-            localStorage.setItem('jobportal_applied', JSON.stringify(appliedJobs));
-        }
-
-        function saveBookmarksState() {
-            localStorage.setItem('jobportal_bookmarks', JSON.stringify(bookmarkedJobs));
+        async function loadBookmarksFromServer() {
+            try {
+                const response = await fetch('/api/bookmarks');
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load bookmarks.');
+                }
+                const activeJobIds = new Set(jobListings.map(job => String(job.id)));
+                bookmarkedJobs = (Array.isArray(data) ? data : [])
+                    .filter(jobId => activeJobIds.has(String(jobId)))
+                    .map(jobId => ({ jobId }));
+            } catch (error) {
+                bookmarkedJobs = [];
+                console.warn('Failed to load bookmarks from server.', error);
+            }
         }
 
         async function fetchJobs() {
             try {
                 const res = await fetch('/api/jobs');
-                if (res.ok) {
-                    jobListings = await res.json();
-                    console.log("[*] Synced jobs listings database:", jobListings.length);
-                }
+                if (!res.ok) throw new Error('Failed to load jobs.');
+                jobListings = await res.json();
+                console.log("[*] Synced jobs listings database:", jobListings.length);
             } catch (err) {
                 console.warn("[!] Fallback to static offline dataset. Direct mock jobs are active.");
                 jobListings = [
@@ -547,7 +707,7 @@
         // 5. REDIRECTING switchView
         function switchView(viewId) {
             if (viewId === 'explore') {
-                window.location.href = '/';
+                window.location.href = '/seeker';
             } else if (viewId === 'dashboard') {
                 window.location.href = '/dashboard';
             } else if (viewId === 'resumes') {
@@ -578,6 +738,412 @@
             }
         }
 
+        function safeHttpUrl(value) {
+            const rawValue = String(value || '').trim();
+            if (!rawValue) return '';
+            try {
+                const parsed = new URL(rawValue, window.location.origin);
+                return ['http:', 'https:'].includes(parsed.protocol)
+                    ? parsed.href
+                    : '';
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function safeTelephoneUrl(value) {
+            const rawValue = String(value || '').trim();
+            if (!rawValue) return '';
+
+            // Only an actual phone number becomes clickable.
+            const compactNumber = rawValue.replace(/[\s().-]/g, '');
+            if (!/^\+?\d{7,15}$/.test(compactNumber)) return '';
+            return `tel:${compactNumber}`;
+        }
+
+        function interviewActionHtml(interview) {
+            const interviewType = String(
+                interview?.interviewType || 'online'
+            ).trim().toLowerCase();
+            const details = String(interview?.locationOrLink || '').trim();
+            const safeDetails = escapeHtml(details || 'Details not provided');
+
+            if (interviewType === 'physical') {
+                return `<span class="font-semibold text-blue-800">📍 ${safeDetails}</span>`;
+            }
+
+            if (interviewType === 'phone') {
+                const phoneUrl = safeTelephoneUrl(details);
+                return phoneUrl
+                    ? `<a href="${escapeHtml(phoneUrl)}" class="font-bold text-blue-700 underline underline-offset-2">📞 Call ${safeDetails}</a>`
+                    : `<span class="font-semibold text-blue-800">📞 ${safeDetails}</span>`;
+            }
+
+            // A link is available only for an online interview. Requiring the
+            // protocol also prevents a physical address from becoming a fake
+            // relative website URL.
+            const meetingUrl = /^https?:\/\/\S+$/i.test(details)
+                ? safeHttpUrl(details)
+                : '';
+            return meetingUrl
+                ? `<a href="${escapeHtml(meetingUrl)}" target="_blank" rel="noopener noreferrer" class="font-bold text-blue-700 underline underline-offset-2">Join meeting</a>`
+                : '<span class="font-semibold text-amber-700">Meeting link not provided</span>';
+        }
+
+        function companyColorClass(job) {
+            return job?.logo_color || 'bg-blue-600 text-white';
+        }
+
+        function companyLogoContent(job) {
+            const logoUrl = safeHttpUrl(job?.companyLogoUrl);
+            if (logoUrl) {
+                return `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(job?.company || 'Company')} logo" class="h-full w-full object-cover">`;
+            }
+            return escapeHtml(job?.icon || job?.company?.slice(0, 2) || 'CO');
+        }
+
+        function openCompanyProfile(event, jobId) {
+            if (event) event.stopPropagation();
+            const job = jobListings.find(item => String(item.id) === String(jobId));
+            const profileUrl = safeHttpUrl(job?.companyProfileUrl);
+            if (!profileUrl) {
+                showFloatingNotice('This company has not published a company page yet.');
+                return;
+            }
+            window.open(profileUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        function openSelectedCompanyProfile(event) {
+            if (selectedJob) openCompanyProfile(event, selectedJob.id);
+        }
+
+        function applicationStatusStyle(status) {
+            switch (normaliseApplicationStatus(status)) {
+                case 'Interview':
+                    return 'bg-blue-50 text-blue-700 border-blue-100';
+                case 'Offer':
+                    return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+                case 'Rejected':
+                    return 'bg-rose-50 text-rose-700 border-rose-100';
+                default:
+                    return 'bg-amber-50 text-amber-700 border-amber-100';
+            }
+        }
+
+        function formatInterviewDate(value) {
+            const parsed = value ? new Date(value) : null;
+            if (!parsed || Number.isNaN(parsed.getTime())) return 'Date unavailable';
+            return parsed.toLocaleString('en-MY', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: 'numeric', minute: '2-digit'
+            });
+        }
+
+        function applicationInterviewHtml(application) {
+            const interview = application?.interview;
+            if (interview?.status === 'scheduled') {
+                const interviewType = String(
+                    interview.interviewType || 'online'
+                ).trim().toLowerCase();
+                const interviewLabel = {
+                    online: 'Online',
+                    physical: 'Physical',
+                    phone: 'Phone'
+                }[interviewType] || 'Interview';
+                return `
+                    <div class="mt-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] text-blue-800">
+                        <p class="font-extrabold">Interview: ${escapeHtml(formatInterviewDate(interview.interviewAt))}</p>
+                        <p class="mt-1">${escapeHtml(interviewLabel)} · ${interviewActionHtml(interview)}</p>
+                    </div>`;
+            }
+            if (application?.status === 'Interview') {
+                return '<p class="mt-2 text-[10px] font-semibold text-amber-600">Waiting for the employer to add meeting details.</p>';
+            }
+            return '';
+        }
+
+        function normaliseApplicationStatus(status) {
+            const value = String(status || 'Pending').trim().toLowerCase();
+            if (value === 'interview') return 'Interview';
+            if (['offer', 'accepted', 'hired'].includes(value)) return 'Offer';
+            if (['rejected', 'withdrawn'].includes(value)) return 'Rejected';
+            return 'Pending';
+        }
+
+        function formatApplicationTimestamp(value) {
+            if (!value) return 'Not recorded';
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) return String(value);
+            return parsed.toLocaleString('en-MY', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function applicationDateFields(application) {
+            const appliedAt = application?.createdAt
+                || application?.created_at
+                || application?.date
+                || '';
+            const updatedAt = application?.updatedAt
+                || application?.updated_at
+                || application?.statusUpdatedAt
+                || application?.status_updated_at
+                || '';
+            return { appliedAt, updatedAt };
+        }
+
+        function applicationProcessingTime(application) {
+            const { appliedAt, updatedAt } = applicationDateFields(application);
+            const started = appliedAt ? new Date(appliedAt) : null;
+            if (!started || Number.isNaN(started.getTime())) return 'Not available';
+
+            const status = normaliseApplicationStatus(application?.status);
+            const isFinished = status === 'Offer' || status === 'Rejected';
+            if (isFinished && !updatedAt) return 'Time not recorded';
+
+            const ended = isFinished ? new Date(updatedAt) : new Date();
+            if (Number.isNaN(ended.getTime()) || ended < started) return 'Not available';
+
+            const minutes = Math.max(0, Math.floor((ended - started) / 60000));
+            let duration;
+            if (minutes < 60) {
+                duration = `${minutes} min`;
+            } else if (minutes < 2880) {
+                const hours = Math.floor(minutes / 60);
+                duration = `${hours} hour${hours === 1 ? '' : 's'}`;
+            } else {
+                const days = Math.floor(minutes / 1440);
+                duration = `${days} day${days === 1 ? '' : 's'}`;
+            }
+            return isFinished ? `${duration} total` : `${duration} in process`;
+        }
+
+        function applicationDocumentInfo(application) {
+            const details = String(application?.details || '');
+            const resumeMatch = details.match(/Resume:\s*(.*?)(?:\s*[•|]\s*Cover Letter:|$)/i);
+            const coverMatch = details.match(/Cover Letter:\s*(.+)$/i);
+            const resume = application?.resume || {};
+
+            const resumeName = application?.resumeName
+                || resume.name
+                || resume.fileName
+                || (resumeMatch ? resumeMatch[1].trim() : '')
+                || (application?.resumeId ? 'Submitted resume' : 'Not recorded');
+            const coverName = application?.coverLetterOriginalName
+                || (coverMatch ? coverMatch[1].trim() : '')
+                || (application?.coverLetterText ? 'Written cover letter' : '')
+                || (application?.coverLetterFile ? 'Uploaded cover letter' : '')
+                || 'Not recorded';
+
+            const resumeStoredName = application?.resumeStoredFileName
+                || resume.storedFileName
+                || '';
+            const coverStoredName = application?.coverLetterFile || '';
+
+            return {
+                resumeName,
+                coverName,
+                resumeUrl: resumeStoredName
+                    ? `/uploads/${encodeURIComponent(resumeStoredName)}`
+                    : '',
+                coverUrl: coverStoredName
+                    ? `/uploads/cover-letters/${encodeURIComponent(coverStoredName)}`
+                    : ''
+            };
+        }
+
+        function applicationDocumentCard(title, name, url, icon) {
+            const action = url
+                ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold text-blue-600 hover:text-blue-800">Open file</a>`
+                : '<span class="text-[10px] font-bold text-emerald-600">Submitted</span>';
+            return `
+                <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 flex items-start gap-3">
+                    <div class="h-9 w-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0">${icon}</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">${title}</p>
+                        <p class="mt-1 truncate text-xs font-bold text-slate-800" title="${escapeHtml(name)}">${escapeHtml(name)}</p>
+                        <div class="mt-1">${action}</div>
+                    </div>
+                </div>`;
+        }
+
+        function applicationStageHtml(state, title, description, time) {
+            const styles = {
+                done: ['bg-emerald-500 text-white', 'border-emerald-100 bg-emerald-50/60', '✓'],
+                current: ['bg-blue-600 text-white', 'border-blue-100 bg-blue-50/70', '•'],
+                rejected: ['bg-rose-500 text-white', 'border-rose-100 bg-rose-50/70', '✕'],
+                waiting: ['bg-slate-100 text-slate-400', 'border-slate-100 bg-white', '']
+            };
+            const style = styles[state] || styles.waiting;
+            return `
+                <div class="rounded-xl border ${style[1]} p-3 flex items-start gap-3">
+                    <div class="h-7 w-7 rounded-full ${style[0]} flex items-center justify-center text-[10px] font-extrabold shrink-0">${style[2]}</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <p class="text-xs font-extrabold text-slate-800">${escapeHtml(title)}</p>
+                            <span class="text-[9px] font-semibold text-slate-400">${escapeHtml(time)}</span>
+                        </div>
+                        <p class="mt-0.5 text-[10px] leading-4 text-slate-500">${escapeHtml(description)}</p>
+                    </div>
+                </div>`;
+        }
+
+        function renderApplicationTimeline(application) {
+            const status = normaliseApplicationStatus(application?.status);
+            const { appliedAt, updatedAt } = applicationDateFields(application);
+            const interview = application?.interview;
+            const hasInterview = status === 'Interview'
+                || status === 'Offer'
+                || Boolean(interview?.interviewAt);
+            const isDecision = status === 'Offer' || status === 'Rejected';
+
+            const submitted = applicationStageHtml(
+                'done',
+                'Application Submitted',
+                'Resume and cover letter were submitted successfully.',
+                formatApplicationTimestamp(appliedAt)
+            );
+            const review = applicationStageHtml(
+                status === 'Pending' ? 'current' : 'done',
+                status === 'Pending' ? 'Pending Employer Review' : 'Employer Review',
+                status === 'Pending'
+                    ? 'The employer is currently reviewing your application.'
+                    : 'The employer has processed this application.',
+                status === 'Pending'
+                    ? formatApplicationTimestamp(appliedAt)
+                    : (updatedAt ? formatApplicationTimestamp(updatedAt) : 'Time not recorded')
+            );
+            const interviewState = status === 'Interview'
+                ? 'current'
+                : (hasInterview ? 'done' : 'waiting');
+            const interviewStage = applicationStageHtml(
+                interviewState,
+                'Interview',
+                interview?.interviewAt
+                    ? `${interview.interviewType || 'Interview'} scheduled`
+                    : (hasInterview ? 'Interview stage reached; schedule time was not recorded.' : 'Not reached yet.'),
+                interview?.interviewAt
+                    ? formatApplicationTimestamp(interview.interviewAt)
+                    : 'Waiting'
+            );
+            const decisionState = status === 'Rejected'
+                ? 'rejected'
+                : (status === 'Offer' ? 'done' : 'waiting');
+            const decision = applicationStageHtml(
+                decisionState,
+                status === 'Rejected' ? 'Application Rejected' : (status === 'Offer' ? 'Offer Received' : 'Final Decision'),
+                status === 'Rejected'
+                    ? 'The employer did not proceed with this application.'
+                    : (status === 'Offer' ? 'The employer has made an offer.' : 'Awaiting the employer’s final decision.'),
+                isDecision && updatedAt
+                    ? formatApplicationTimestamp(updatedAt)
+                    : 'Waiting'
+            );
+            return submitted + review + interviewStage + decision;
+        }
+
+        function renderApplicationInterviewDetail(application) {
+            const card = document.getElementById('application-detail-interview');
+            const interview = application?.interview;
+            if (interview?.status === 'scheduled') {
+                const type = String(interview.interviewType || 'online');
+                card.className = 'rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm';
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">📅</div>
+                        <div class="min-w-0">
+                            <h4 class="text-[10px] font-extrabold text-blue-900 uppercase tracking-wider">Interview Details</h4>
+                            <p class="mt-1 text-xs font-bold text-slate-900">${escapeHtml(formatInterviewDate(interview.interviewAt))}</p>
+                            <p class="mt-1 text-[11px] capitalize text-slate-600">${escapeHtml(type)} · ${interviewActionHtml(interview)}</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+            if (normaliseApplicationStatus(application?.status) === 'Interview') {
+                card.className = 'rounded-2xl border border-amber-100 bg-amber-50 p-4 shadow-sm';
+                card.innerHTML = '<p class="text-xs font-semibold text-amber-800">You have reached the interview stage. The employer has not added the interview time or meeting details yet.</p>';
+                return;
+            }
+            card.className = 'hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm';
+            card.innerHTML = '';
+        }
+
+        function openApplicationDetail(applicationId) {
+            currentApplicationId = String(applicationId);
+            const application = appliedJobs.find(
+                item => String(item.id) === currentApplicationId
+            );
+            if (!application) {
+                showFloatingNotice('Application details could not be found.');
+                return;
+            }
+
+            const job = jobListings.find(
+                item => String(item.id) === String(application.jobId)
+            );
+            const title = application.job || job?.title || 'Job application';
+            const company = application.company || job?.company || 'Company';
+            const status = normaliseApplicationStatus(application.status);
+            const { appliedAt, updatedAt } = applicationDateFields(application);
+
+            document.getElementById('application-detail-title').textContent = title;
+            document.getElementById('application-detail-company').textContent = company;
+            document.getElementById('application-detail-applied-at').textContent = formatApplicationTimestamp(appliedAt);
+            document.getElementById('application-detail-updated-at').textContent = updatedAt
+                ? formatApplicationTimestamp(updatedAt)
+                : 'No status update yet';
+            document.getElementById('application-detail-processing-time').textContent = applicationProcessingTime(application);
+
+            const statusBadge = document.getElementById('application-detail-status');
+            statusBadge.textContent = status;
+            statusBadge.className = `mt-1 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${applicationStatusStyle(status)}`;
+
+            const avatar = document.getElementById('application-detail-avatar');
+            avatar.className = `${companyColorClass(job)} h-11 w-11 overflow-hidden rounded-2xl flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase`;
+            avatar.innerHTML = companyLogoContent(
+                job || { company, icon: company.slice(0, 2).toUpperCase() }
+            );
+
+            document.getElementById('application-detail-timeline').innerHTML = renderApplicationTimeline(application);
+
+            const documents = applicationDocumentInfo(application);
+            document.getElementById('application-detail-documents').innerHTML =
+                applicationDocumentCard('Resume', documents.resumeName, documents.resumeUrl, '📄')
+                + applicationDocumentCard('Cover Letter', documents.coverName, documents.coverUrl, '✉️');
+
+            document.getElementById('application-detail-notes').textContent =
+                application.employerNotes
+                || application.statusDetails
+                || application.details
+                || 'No additional details have been provided.';
+            renderApplicationInterviewDetail(application);
+
+            const backdrop = document.getElementById('application-detail-backdrop');
+            const panel = document.getElementById('application-detail-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            window.setTimeout(() => {
+                backdrop.classList.add('opacity-100');
+                panel.classList.add('scale-100', 'opacity-100');
+            }, 20);
+        }
+
+        function closeApplicationDetail() {
+            const backdrop = document.getElementById('application-detail-backdrop');
+            const panel = document.getElementById('application-detail-panel');
+            backdrop.classList.remove('opacity-100');
+            panel.classList.remove('scale-100', 'opacity-100');
+            window.setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+                currentApplicationId = null;
+            }, 300);
+        }
+
         function syncDashboardUI() {
             const listApps = document.getElementById('dash-applied-list');
             const emptyApps = document.getElementById('dash-applied-empty');
@@ -587,6 +1153,10 @@
             // Set dynamic counters
             labelAppsTab.textContent = `My Applications (${appliedJobs.length})`;
             countAppsSummaryNum.textContent = appliedJobs.length;
+            document.getElementById('stat-interviews').textContent = appliedJobs.filter(
+                application => application.status === 'Interview'
+                    || application.interview?.status === 'scheduled'
+            ).length;
 
             if (appliedJobs.length === 0) {
                 emptyApps.classList.remove('hidden');
@@ -594,34 +1164,36 @@
             } else {
                 emptyApps.classList.add('hidden');
                 listApps.innerHTML = appliedJobs.map(app => {
-                    const job = jobListings.find(j => j.id === app.jobId) || {
-                        title: "Position",
-                        company: "Company Ltd",
-                        location: "Kuala Lumpur, Malaysia",
+                    const activeJob = jobListings.find(j => j.id === app.jobId);
+                    const job = activeJob || {
+                        id: app.jobId,
+                        title: app.job || "Position",
+                        company: app.company || "Company",
+                        location: "Posting no longer active",
                         logo_color: "bg-blue-600 text-white",
-                        icon: "CO"
+                        icon: (app.company || 'CO').slice(0, 2).toUpperCase()
                     };
+                    const status = app.status || 'Pending';
                     return `
                         <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3">
-                                <div class="${job.logo_color} h-11 w-11 rounded-xl flex items-center justify-center text-white text-xs font-extrabold shrink-0">
-                                    ${job.icon || 'CO'}
-                                </div>
+                                <button type="button" onclick="openCompanyProfile(event, '${app.jobId}')" title="View company background" class="${companyColorClass(job)} h-11 w-11 overflow-hidden rounded-xl flex items-center justify-center text-white text-xs font-extrabold shrink-0 transition hover:scale-105">
+                                    ${companyLogoContent(job)}
+                                </button>
                                 <div>
-                                    <h4 class="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer" onclick="openJobDetails('${job.id}')">${job.title}</h4>
-                                    <p class="text-xs text-slate-500 font-medium mt-0.5">${job.company} • <span class="text-slate-400 font-medium">${job.location}</span></p>
+                                    <h4 class="text-sm font-bold text-slate-900 ${activeJob ? 'hover:text-blue-600 cursor-pointer' : ''}" ${activeJob ? `onclick="openJobDetails('${job.id}')"` : ''}>${escapeHtml(job.title)}</h4>
+                                    <p class="text-xs text-slate-500 font-medium mt-0.5">${escapeHtml(job.company)} • <span class="text-slate-400 font-medium">${escapeHtml(job.location)}</span></p>
+                                    ${applicationInterviewHtml(app)}
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 self-stretch sm:self-auto justify-between border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0">
                                 <div class="text-right">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
-                                        <span class="h-1 w-1 rounded-full bg-amber-500"></span> Under Review
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${applicationStatusStyle(status)}">
+                                        ${escapeHtml(status)}
                                     </span>
                                     <p class="text-[9px] text-slate-400 font-extrabold uppercase mt-1">Applied: ${new Date(app.date).toLocaleDateString()}</p>
                                 </div>
-                                <button onclick="openJobDetails('${job.id}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60 font-bold text-xs h-9 px-4 rounded-xl transition flex items-center justify-center gap-1">
-                                    Manage
-                                </button>
+                                <button onclick="openApplicationDetail('${app.id}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60 font-bold text-xs h-9 px-4 rounded-xl transition flex items-center justify-center gap-1">View Details</button>
                             </div>
                         </div>
                     `;
@@ -646,12 +1218,12 @@
                     return `
                         <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3">
-                                <div class="${job.logo_color} h-11 w-11 rounded-xl flex items-center justify-center text-white text-xs font-extrabold shrink-0">
-                                    ${job.icon}
-                                </div>
+                                <button type="button" onclick="openCompanyProfile(event, '${job.id}')" title="View company background" class="${companyColorClass(job)} h-11 w-11 overflow-hidden rounded-xl flex items-center justify-center text-white text-xs font-extrabold shrink-0 transition hover:scale-105">
+                                    ${companyLogoContent(job)}
+                                </button>
                                 <div>
-                                    <h4 class="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer" onclick="openJobDetails('${job.id}')">${job.title}</h4>
-                                    <p class="text-xs text-slate-500 font-medium mt-0.5">${job.company} • <span class="text-slate-400 font-medium">${job.location}</span></p>
+                                    <h4 class="text-sm font-bold text-slate-900 hover:text-blue-600 cursor-pointer" onclick="openJobDetails('${job.id}')">${escapeHtml(job.title)}</h4>
+                                    <p class="text-xs text-slate-500 font-medium mt-0.5">${escapeHtml(job.company)} • <span class="text-slate-400 font-medium">${escapeHtml(job.location)}</span></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 self-stretch sm:self-auto justify-end">
@@ -661,7 +1233,7 @@
                                     </svg>
                                 </button>
                                 <button onclick="openJobDetails('${job.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl transition shadow-md shadow-blue-100 flex items-center justify-center">
-                                    View details
+                                    View Details
                                 </button>
                             </div>
                         </div>
@@ -671,6 +1243,15 @@
         }
 
         // 7. PROFILE EDITOR MODAL CONTROLLER
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
         function syncProfileUI() {
             // Header display
             document.getElementById('user-display-name').textContent = profileState.name;
@@ -688,7 +1269,7 @@
             // Render skills
             const box = document.getElementById('profile-skills-box');
             box.innerHTML = profileState.skills.map(s => `
-                <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">${s}</span>
+                <span class="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200/50">${escapeHtml(s)}</span>
             `).join('');
         }
 
@@ -704,8 +1285,207 @@
         }
 
         let pendingAvatarDataUrl = undefined; // undefined = no change staged this session
+        let profileFormInitialState = '';
+
+        const PHONE_RULES = {
+            '+60': { pattern: /^1\d{8,9}$/, stripZero: true, maxDigits: 11, placeholder: '0175816201', help: 'Malaysia: maximum 11 digits. Numbers only.', error: 'Malaysia numbers must contain 10 or 11 digits including the leading 0.' },
+            '+1': { pattern: /^[2-9]\d{2}[2-9]\d{6}$/, stripZero: false, maxDigits: 10, placeholder: '4155552671', help: 'United States: exactly 10 digits. Numbers only.', error: 'United States numbers must contain exactly 10 valid digits.' },
+            '+44': { pattern: /^7\d{9}$/, stripZero: true, maxDigits: 11, placeholder: '07911123456', help: 'United Kingdom: exactly 11 digits. Numbers only.', error: 'United Kingdom mobile numbers must contain 11 digits including the leading 0.' },
+            '+65': { pattern: /^[689]\d{7}$/, stripZero: false, maxDigits: 8, placeholder: '81234567', help: 'Singapore: exactly 8 digits. Numbers only.', error: 'Singapore numbers must contain exactly 8 valid digits.' },
+            '+61': { pattern: /^4\d{8}$/, stripZero: true, maxDigits: 10, placeholder: '0412345678', help: 'Australia: exactly 10 digits. Numbers only.', error: 'Australian mobile numbers must contain 10 digits including the leading 0.' },
+            '+91': { pattern: /^[6-9]\d{9}$/, stripZero: false, maxDigits: 10, placeholder: '9876543210', help: 'India: exactly 10 digits. Numbers only.', error: 'Indian mobile numbers must contain exactly 10 valid digits.' },
+            '+62': { pattern: /^8\d{8,11}$/, stripZero: true, maxDigits: 13, placeholder: '081234567890', help: 'Indonesia: maximum 13 digits. Numbers only.', error: 'Indonesian mobile numbers must contain 10 to 13 digits including the leading 0.' },
+            '+81': { pattern: /^(?:70|80|90)\d{8}$/, stripZero: true, maxDigits: 11, placeholder: '09012345678', help: 'Japan: exactly 11 digits. Numbers only.', error: 'Japanese mobile numbers must contain 11 digits including the leading 0.' },
+            '+86': { pattern: /^1[3-9]\d{9}$/, stripZero: false, maxDigits: 11, placeholder: '13800138000', help: 'China: exactly 11 digits. Numbers only.', error: 'Chinese mobile numbers must contain exactly 11 valid digits.' }
+        };
+
+        const PROFILE_FIELD_IDS = {
+            full_name: 'edit-name',
+            headline: 'edit-headline',
+            phone: 'edit-phone',
+            bio: 'edit-bio',
+            skills: 'edit-skills',
+            avatar: 'edit-avatar-input',
+            email: 'edit-email'
+        };
+
+        function captureProfileFormState() {
+            return JSON.stringify({
+                name: document.getElementById('edit-name').value,
+                headline: document.getElementById('edit-headline').value,
+                email: document.getElementById('edit-email').value,
+                country: document.getElementById('edit-phone-country').value,
+                phone: document.getElementById('edit-phone').value,
+                bio: document.getElementById('edit-bio').value,
+                skills: document.getElementById('edit-skills').value,
+                avatar: pendingAvatarDataUrl === undefined ? profileState.avatar : pendingAvatarDataUrl
+            });
+        }
+
+        function setProfileFieldError(field, message) {
+            const input = document.getElementById(PROFILE_FIELD_IDS[field]);
+            const suffix = field === 'full_name' ? 'name' : field;
+            const error = document.getElementById(`edit-${suffix}-error`);
+            if (input) {
+                input.classList.toggle('border-rose-400', Boolean(message));
+                input.setAttribute('aria-invalid', message ? 'true' : 'false');
+            }
+            if (error) {
+                error.textContent = message || '';
+                error.classList.toggle('hidden', !message);
+            }
+        }
+
+        function clearProfileErrors() {
+            Object.keys(PROFILE_FIELD_IDS).forEach(field => setProfileFieldError(field, ''));
+            const summary = document.getElementById('profile-form-error');
+            summary.textContent = '';
+            summary.classList.add('hidden');
+        }
+
+        function showProfileFormError(message) {
+            const summary = document.getElementById('profile-form-error');
+            summary.textContent = message;
+            summary.classList.remove('hidden');
+        }
+
+        function handleNameInput() {
+            const input = document.getElementById('edit-name');
+            const originalValue = input.value;
+            input.value = originalValue
+                .replace(/[^\p{L} ]/gu, '')
+                .replace(/ {2,}/g, ' ')
+                .slice(0, 80);
+
+            if (originalValue !== input.value) {
+                setProfileFieldError('full_name', 'Full name can contain letters and spaces only.');
+            } else {
+                setProfileFieldError('full_name', '');
+            }
+        }
+
+        function handleSkillsInput() {
+            const input = document.getElementById('edit-skills');
+            const originalValue = input.value;
+            input.value = originalValue.replace(/[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+            if (originalValue !== input.value) {
+                setProfileFieldError('skills', 'Angle brackets and control characters are not allowed.');
+            } else {
+                setProfileFieldError('skills', '');
+            }
+        }
+
+        function validateProfileField(field) {
+            if (field === 'full_name') {
+                const name = document.getElementById('edit-name').value.trim();
+                const validName = /^[\p{L} ]+$/u.test(name);
+                const message = !name
+                    ? 'Full name is required.'
+                    : name.length < 2
+                        ? 'Full name must contain at least 2 letters.'
+                        : !validName
+                            ? 'Full name can contain letters and spaces only.'
+                            : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'headline') {
+                const value = document.getElementById('edit-headline').value.trim();
+                const message = value.length < 3
+                    ? 'Professional headline must contain at least 3 characters.'
+                    : /[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value)
+                        ? 'Professional headline contains unsupported characters.'
+                        : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'phone') {
+                const countryCode = document.getElementById('edit-phone-country').value;
+                const rule = PHONE_RULES[countryCode];
+                const digits = phoneNationalDigits(document.getElementById('edit-phone').value, countryCode);
+                const message = rule.pattern.test(digits) ? '' : rule.error;
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'bio') {
+                const value = document.getElementById('edit-bio').value.trim();
+                const message = value.length < 20
+                    ? 'Professional bio must contain at least 20 characters.'
+                    : /[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value)
+                        ? 'Professional bio contains unsupported characters.'
+                        : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            if (field === 'skills') {
+                const skills = document.getElementById('edit-skills').value
+                    .split(',').map(skill => skill.trim()).filter(Boolean);
+                const invalid = skills.find(skill => skill.length > 40 || !/[\p{L}\p{N}]/u.test(skill));
+                const message = skills.length < 1
+                    ? 'Enter at least one core skill.'
+                    : skills.length > 20
+                        ? 'Enter no more than 20 core skills.'
+                        : invalid
+                            ? 'Each skill needs letters or numbers and must not exceed 40 characters.'
+                            : '';
+                setProfileFieldError(field, message);
+                return !message;
+            }
+
+            return true;
+        }
+
+        function updateProfileCounters() {
+            document.getElementById('edit-headline-count').textContent = `${document.getElementById('edit-headline').value.length}/120`;
+            document.getElementById('edit-bio-count').textContent = `${document.getElementById('edit-bio').value.length}/1000`;
+        }
+
+        function updatePhoneRules() {
+            const countryCode = document.getElementById('edit-phone-country').value;
+            const rule = PHONE_RULES[countryCode];
+            const input = document.getElementById('edit-phone');
+            input.placeholder = rule.placeholder;
+            input.maxLength = rule.maxDigits;
+            input.value = input.value.replace(/\D/g, '').slice(0, rule.maxDigits);
+            document.getElementById('edit-phone-help').textContent = rule.help;
+            setProfileFieldError('phone', '');
+        }
+
+        function handlePhoneInput() {
+            const input = document.getElementById('edit-phone');
+            const rule = PHONE_RULES[document.getElementById('edit-phone-country').value];
+            const originalValue = input.value;
+            const digitsOnly = originalValue.replace(/\D/g, '');
+            input.value = digitsOnly.slice(0, rule.maxDigits);
+
+            if (/\D/.test(originalValue)) {
+                setProfileFieldError('phone', 'Phone number can contain numbers only.');
+            } else if (digitsOnly.length > rule.maxDigits) {
+                setProfileFieldError('phone', `Maximum ${rule.maxDigits} digits allowed for this country.`);
+            } else {
+                setProfileFieldError('phone', '');
+            }
+        }
+
+        function phoneNationalDigits(phoneValue, countryCode) {
+            const rule = PHONE_RULES[countryCode];
+            let digits = phoneValue.replace(/\D/g, '');
+            const countryDigits = countryCode.slice(1);
+            if (phoneValue.trim().startsWith('+') && digits.startsWith(countryDigits)) {
+                digits = digits.slice(countryDigits.length);
+            }
+            if (rule.stripZero && digits.startsWith('0')) {
+                digits = digits.slice(1);
+            }
+            return digits;
+        }
 
         function openProfileModal() {
+            clearProfileErrors();
             document.getElementById('edit-name').value = profileState.name;
             document.getElementById('edit-headline').value = profileState.headline;
             document.getElementById('edit-email').value = profileState.email;
@@ -724,15 +1504,18 @@
             }
             document.getElementById('edit-phone-country').value = matchedCountry;
             document.getElementById('edit-phone').value = numberPart;
+            updatePhoneRules();
 
             document.getElementById('edit-bio').value = profileState.bio;
             document.getElementById('edit-skills').value = profileState.skills.join(', ');
+            updateProfileCounters();
 
             // Reset avatar staging area and show the current photo (if any)
             pendingAvatarDataUrl = undefined;
             const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
             renderAvatar(document.getElementById('edit-avatar-preview'), initials);
             document.getElementById('remove-avatar-btn').classList.toggle('hidden', !profileState.avatar);
+            profileFormInitialState = captureProfileFormState();
 
             const back = document.getElementById('modal-backdrop');
             const panel = document.getElementById('modal-panel');
@@ -754,12 +1537,33 @@
         function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
+            setProfileFieldError('avatar', '');
+
+            if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                event.target.value = '';
+                setProfileFieldError('avatar', 'Choose a PNG, JPG or WEBP image.');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                event.target.value = '';
+                setProfileFieldError('avatar', 'Profile photo must not exceed 2 MB.');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = () => {
-                pendingAvatarDataUrl = reader.result;
-                const preview = document.getElementById('edit-avatar-preview');
-                preview.innerHTML = `<img src="${reader.result}" class="h-full w-full object-cover" alt="Profile photo">`;
-                document.getElementById('remove-avatar-btn').classList.remove('hidden');
+                const image = new Image();
+                image.onload = () => {
+                    pendingAvatarDataUrl = reader.result;
+                    const preview = document.getElementById('edit-avatar-preview');
+                    preview.innerHTML = `<img src="${reader.result}" class="h-full w-full object-cover" alt="Profile photo">`;
+                    document.getElementById('remove-avatar-btn').classList.remove('hidden');
+                };
+                image.onerror = () => {
+                    event.target.value = '';
+                    setProfileFieldError('avatar', 'The selected file is not a valid image.');
+                };
+                image.src = reader.result;
             };
             reader.readAsDataURL(file);
         }
@@ -768,7 +1572,9 @@
             pendingAvatarDataUrl = null;
             document.getElementById('edit-avatar-input').value = '';
             const initials = profileState.name.split(' ').map(n => n[0]).join('').slice(0, 2);
-            renderAvatar(document.getElementById('edit-avatar-preview'), initials);
+            const preview = document.getElementById('edit-avatar-preview');
+            preview.innerHTML = '';
+            preview.textContent = initials;
             document.getElementById('remove-avatar-btn').classList.add('hidden');
         }
 
@@ -786,118 +1592,156 @@
             }, 300);
         }
 
-        function saveProfileData() {
-    const name = document.getElementById('edit-name').value.trim();
-    const email = document.getElementById('edit-email').value.trim();
+        async function saveProfileData() {
+            clearProfileErrors();
 
-    // Name cannot be empty
-    if (!name) {
-        showFloatingNotice("Please enter your name.");
-        return;
-    }
+            const name = document.getElementById('edit-name').value.trim().replace(/\s+/g, ' ');
+            const headline = document.getElementById('edit-headline').value.trim().replace(/\s+/g, ' ');
+            const email = document.getElementById('edit-email').value.trim();
+            const phoneInput = document.getElementById('edit-phone').value.trim();
+            const countryCode = document.getElementById('edit-phone-country').value;
+            const phoneRule = PHONE_RULES[countryCode];
+            const nationalDigits = phoneNationalDigits(phoneInput, countryCode);
+            const bio = document.getElementById('edit-bio').value.trim();
 
-    // Name cannot contain numbers
-    if (/\d/.test(name)) {
-        showFloatingNotice("Name cannot contain numbers.");
-        return;
-    }
+            const skills = [];
+            const seenSkills = new Set();
+            document.getElementById('edit-skills').value
+                .split(',')
+                .map(skill => skill.trim().replace(/\s+/g, ' '))
+                .filter(Boolean)
+                .forEach(skill => {
+                    const key = skill.toLocaleLowerCase();
+                    if (!seenSkills.has(key)) {
+                        seenSkills.add(key);
+                        skills.push(skill);
+                    }
+                });
 
-    // Name only allows letters, spaces, apostrophes and hyphens
-    if (!/^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(name)) {
-        showFloatingNotice(
-            "Name can only contain letters, spaces, apostrophes and hyphens."
-        );
-        return;
-    }
+            let valid = true;
+            const namePattern = /^[\p{L} ]+$/u;
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // Email cannot be empty
-    if (!email) {
-        showFloatingNotice("Please enter your email address.");
-        return;
-    }
+            if (name.length < 2 || name.length > 80) {
+                setProfileFieldError('full_name', 'Full name must contain between 2 and 80 characters.');
+                valid = false;
+            } else if (!namePattern.test(name) || (name.match(/\p{L}/gu) || []).length < 2) {
+                setProfileFieldError('full_name', 'Full name can contain letters and spaces only.');
+                valid = false;
+            }
 
-    // Email must have a valid format, including @
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (headline.length < 3 || headline.length > 120) {
+                setProfileFieldError('headline', 'Professional headline must contain between 3 and 120 characters.');
+                valid = false;
+            } else if (/[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(headline)) {
+                setProfileFieldError('headline', 'Professional headline contains unsupported characters.');
+                valid = false;
+            }
 
-    if (!emailPattern.test(email)) {
-        showFloatingNotice(
-            "Please enter a valid email address, for example name@example.com."
-        );
-        return;
-    }
+            if (!emailPattern.test(email)) {
+                setProfileFieldError('email', 'The account email address has an invalid format.');
+                valid = false;
+            }
 
-    profileState.name = name;
-    const headline =
-    document.getElementById('edit-headline').value.trim();
+            if (!nationalDigits || !phoneRule.pattern.test(nationalDigits)) {
+                setProfileFieldError('phone', phoneRule.error);
+                valid = false;
+            }
 
-const headlinePattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s&(),.'/-]+$/;
+            if (bio.length < 20 || bio.length > 1000) {
+                setProfileFieldError('bio', 'Professional bio must contain between 20 and 1,000 characters.');
+                valid = false;
+            } else if (/[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(bio)) {
+                setProfileFieldError('bio', 'Professional bio contains unsupported characters.');
+                valid = false;
+            }
 
-if (headline && !headlinePattern.test(headline)) {
-    showFloatingNotice(
-        "Professional headline can only contain letters and common punctuation."
-    );
-    return;
-}
+            if (skills.length < 1 || skills.length > 20) {
+                setProfileFieldError('skills', 'Enter between 1 and 20 core skills.');
+                valid = false;
+            } else {
+                const invalidSkill = skills.find(skill =>
+                    skill.length > 40 || /[<>\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(skill) || !/[\p{L}\p{N}]/u.test(skill)
+                );
+                if (invalidSkill) {
+                    setProfileFieldError('skills', 'Each skill needs letters or numbers and must not exceed 40 characters.');
+                    valid = false;
+                }
+            }
 
-profileState.headline = headline;
-    profileState.email = email;
+            if (!valid) {
+                showProfileFormError('Please correct the highlighted fields before saving.');
+                document.querySelector('#modal-panel [aria-invalid="true"]')?.focus();
+                return;
+            }
 
-    const countryCode =
-        document.getElementById('edit-phone-country').value;
-    const phoneNum =
-        document.getElementById('edit-phone').value.trim();
+            if (captureProfileFormState() === profileFormInitialState) {
+                showFloatingNotice('No profile changes to save.');
+                return;
+            }
 
-    profileState.phone = phoneNum
-        ? `${countryCode} ${phoneNum}`
-        : "";
+            const payload = {
+                full_name: name,
+                headline,
+                phone: phoneInput,
+                phone_country: countryCode,
+                bio,
+                skills,
+                avatar: pendingAvatarDataUrl === undefined ? profileState.avatar : pendingAvatarDataUrl
+            };
 
-    profileState.bio =
-        document.getElementById('edit-bio').value.trim();
+            const saveButton = document.getElementById('profile-save-btn');
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
 
-    const rawSkills =
-    document.getElementById('edit-skills').value;
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
 
-const skills = rawSkills
-    .split(',')
-    .map(skill => skill.trim())
-    .filter(skill => skill.length > 0);
+                if (!response.ok) {
+                    Object.entries(result.field_errors || {}).forEach(([field, message]) => {
+                        setProfileFieldError(field, message);
+                    });
+                    throw new Error(result.error || 'Profile update failed.');
+                }
 
-// Allow letters, spaces and common programming symbols
-const skillPattern = /^[A-Za-zÀ-ÖØ-öø-ÿ\s.+#/-]+$/;
+                const saved = result.profile || {};
+                profileState = {
+                    name: saved.full_name || name,
+                    headline: saved.headline || headline,
+                    email: saved.email || email,
+                    phone: saved.phone || `${countryCode} ${nationalDigits}`,
+                    bio: saved.bio || bio,
+                    skills: Array.isArray(saved.skills) ? saved.skills : skills,
+                    avatar: saved.avatar ?? payload.avatar
+                };
 
-const invalidSkill = skills.find(
-    skill => !skillPattern.test(skill)
-);
-
-if (invalidSkill) {
-    showFloatingNotice(
-        "Each skill can only contain letters and symbols like +, #, ., / and -."
-    );
-    return;
-}
-
-profileState.skills = skills;
-
-    if (pendingAvatarDataUrl !== undefined) {
-        profileState.avatar = pendingAvatarDataUrl;
-    }
-
-    saveProfileState();
-    syncProfileUI();
-    closeProfileModal();
-
-    showFloatingNotice(
-        "Seeker profile successfully updated and saved!"
-    );
-}
+                syncProfileUI();
+                closeProfileModal();
+                showFloatingNotice('Profile updated successfully.');
+            } catch (error) {
+                showProfileFormError(error.message || 'Profile update failed. Please try again.');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save Changes';
+            }
+        }
 
         // 8. DRAWER CONTROLLER
         function openJobDetails(jobId) {
             selectedJob = jobListings.find(j => j.id === jobId);
             if (!selectedJob) return;
 
-            document.getElementById('drawer-company-logo').className = `${selectedJob.logo_color} h-12 w-12 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs`;
-            document.getElementById('drawer-company-logo').textContent = selectedJob.icon;
+            const drawerCompanyLogo = document.getElementById('drawer-company-logo');
+            drawerCompanyLogo.className = `${companyColorClass(selectedJob)} h-12 w-12 overflow-hidden rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/30`;
+            drawerCompanyLogo.innerHTML = companyLogoContent(selectedJob);
+            drawerCompanyLogo.title = selectedJob.companyProfileUrl
+                ? 'View company background'
+                : 'Company page not available';
             document.getElementById('drawer-job-title').textContent = selectedJob.title;
             document.getElementById('drawer-company-name').textContent = selectedJob.company;
             document.getElementById('drawer-job-location').textContent = `📍 ${selectedJob.location}`;
@@ -959,57 +1803,61 @@ profileState.skills = skills;
             }, 300);
         }
 
-        function toggleCardBookmark(event, jobId) {
-            event.stopPropagation();
-            const idx = bookmarkedJobs.findIndex(bm => bm.jobId === jobId);
-            if (idx > -1) {
-                bookmarkedJobs.splice(idx, 1);
-                showFloatingNotice("Job removed from bookmarks.");
-            } else {
-                bookmarkedJobs.push({ jobId, date: new Date().toISOString() });
-                showFloatingNotice("Job bookmarked successfully!");
+        async function toggleBookmarkOnServer(jobId) {
+            const wasBookmarked = bookmarkedJobs.some(
+                bookmark => bookmark.jobId === jobId
+            );
+            try {
+                const response = await fetch(`/api/bookmarks/${encodeURIComponent(jobId)}`, {
+                    method: wasBookmarked ? 'DELETE' : 'POST'
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Bookmark update failed.');
+                }
+                bookmarkedJobs = (Array.isArray(data.bookmarks) ? data.bookmarks : [])
+                    .map(savedJobId => ({ jobId: savedJobId }));
+                syncDashboardUI();
+                showFloatingNotice(
+                    wasBookmarked
+                        ? 'Job removed from bookmarks.'
+                        : 'Job bookmarked successfully!'
+                );
+                return true;
+            } catch (error) {
+                showFloatingNotice(error.message || 'Bookmark update failed.');
+                return false;
             }
-            saveBookmarksState();
-            syncDashboardUI();
         }
 
-        function toggleDrawerBookmark() {
+        async function toggleCardBookmark(event, jobId) {
+            event.stopPropagation();
+            await toggleBookmarkOnServer(jobId);
+        }
+
+        async function toggleDrawerBookmark() {
             if (!selectedJob) return;
             const jobId = selectedJob.id;
-            const idx = bookmarkedJobs.findIndex(bm => bm.jobId === jobId);
+            const updated = await toggleBookmarkOnServer(jobId);
+            if (!updated) return;
             const bmSvg = document.getElementById('drawer-bookmark-svg');
-
-            if (idx > -1) {
-                bookmarkedJobs.splice(idx, 1);
-                bmSvg.setAttribute('fill', 'none');
-                bmSvg.classList.remove('text-rose-500');
-                showFloatingNotice("Job removed from bookmarks.");
-            } else {
-                bookmarkedJobs.push({ jobId, date: new Date().toISOString() });
+            if (bookmarkedJobs.some(bookmark => bookmark.jobId === jobId)) {
                 bmSvg.setAttribute('fill', 'currentColor');
                 bmSvg.classList.add('text-rose-500');
-                showFloatingNotice("Job bookmarked successfully!");
+            } else {
+                bmSvg.setAttribute('fill', 'none');
+                bmSvg.classList.remove('text-rose-500');
             }
-            saveBookmarksState();
-            syncDashboardUI();
         }
 
         function applyFromDrawer() {
             if (!selectedJob) return;
             const jobId = selectedJob.id;
             if (appliedJobs.some(app => app.jobId === jobId)) return;
-
-            appliedJobs.push({ jobId, date: new Date().toISOString() });
-            saveAppliedState();
-            syncDashboardUI();
-            
-            // Disable button
-            const applyBtn = document.getElementById('drawer-apply-btn');
-            applyBtn.textContent = 'Already Applied';
-            applyBtn.disabled = true;
-            applyBtn.className = "flex-1 bg-slate-100 text-slate-400 font-bold h-11 rounded-xl cursor-not-allowed flex items-center justify-center";
-
-            showFloatingNotice(`Success! Your application to ${selectedJob.company} has been sent.`);
+            showFloatingNotice('Opening Explore Positions to complete your application.');
+            window.setTimeout(() => {
+                window.location.href = '/seeker';
+            }, 500);
         }
 
         // AI Co-Pilot Integrations inside details drawer
@@ -1104,7 +1952,7 @@ profileState.skills = skills;
                 document.getElementById('tailor-ai-bio').textContent = suggestedBio;
                 
                 document.getElementById('tailor-ai-skills').innerHTML = suggestedSkills.map(s => `
-                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-blue-200/50">${s}</span>
+                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-blue-200/50">${escapeHtml(s)}</span>
                 `).join('');
 
                 openTailorModal();
@@ -1135,17 +1983,23 @@ profileState.skills = skills;
             }, 300);
         }
 
-        function acceptTailoredSuggestions() {
+        async function acceptTailoredSuggestions() {
             if (!customTailorProposal) return;
+            const previousProfile = { ...profileState, skills: [...profileState.skills] };
             profileState.headline = customTailorProposal.headline;
             profileState.bio = customTailorProposal.bio;
             profileState.skills = customTailorProposal.skills;
 
-            saveProfileState();
-            syncProfileUI();
-            closeTailorModal();
-            closeJobDetails();
-            showFloatingNotice("✨ Swapped profile values with co-pilot recommendations!");
+            try {
+                await saveProfileState();
+                syncProfileUI();
+                closeTailorModal();
+                closeJobDetails();
+                showFloatingNotice("✨ Profile recommendations saved successfully!");
+            } catch (error) {
+                profileState = previousProfile;
+                showFloatingNotice(error.message || 'Could not save profile recommendations.');
+            }
         }
 
         // ROLE SWITCHER (Employer vs Seeker)
@@ -1215,6 +2069,22 @@ profileState.skills = skills;
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 3500);
         }
+    </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', initialiseSeekerNotifications);
+        let seekerNotifications = [];
+        let seekerNotificationReadIdsMemory = new Set();
+        async function initialiseSeekerNotifications(){await fetchSeekerNotifications();window.setInterval(fetchSeekerNotifications,30000);document.addEventListener('click',event=>{const container=document.getElementById('seeker-notification-container');if(container&&!container.contains(event.target))closeSeekerNotificationPanel();});}
+        function seekerNotificationReadIds(){return new Set(seekerNotificationReadIdsMemory);}
+        function saveSeekerNotificationReadIds(ids){seekerNotificationReadIdsMemory=new Set([...ids].slice(-500).map(String));}
+        function seekerNotificationTime(value,includeTime=false){const date=new Date(value);if(!value||Number.isNaN(date.getTime()))return'';return new Intl.DateTimeFormat('en-MY',includeTime?{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}:{day:'numeric',month:'short',year:'numeric'}).format(date);}
+        function buildSeekerNotifications(applications){const items=[];(Array.isArray(applications)?applications:[]).forEach(application=>{const id=String(application.id||application.jobId||'application');const job=application.job||application.position||'Job application';const company=application.company||'Employer';const appliedDate=application.date||application.created_at||'';items.push({id:`${id}:submitted`,title:'Application submitted',message:`${job} at ${company}`,date:appliedDate,tone:'slate',icon:'✓'});const status=String(application.status||'Pending');if(status.toLowerCase()!=='pending'){const tone=['offer','accepted','hired'].includes(status.toLowerCase())?'emerald':['rejected','withdrawn'].includes(status.toLowerCase())?'rose':status.toLowerCase()==='interview'?'blue':'amber';items.push({id:`${id}:status:${status.toLowerCase()}`,title:`Application ${status}`,message:`${job} at ${company}`,date:application.updatedAt||application.updated_at||appliedDate,tone,icon:status.toLowerCase()==='interview'?'I':'•'});}const interview=application.interview;if(interview?.interviewAt){const when=seekerNotificationTime(interview.interviewAt,true);const meeting=interview.locationOrLink?` · ${interview.locationOrLink}`:'';items.push({id:`${id}:interview:${interview.interviewAt}:${interview.locationOrLink||''}`,title:'Interview scheduled',message:`${job} · ${when}${meeting}`,date:interview.interviewAt,tone:'blue',icon:'I'});}});return[...new Map(items.map(item=>[item.id,item])).values()].sort((a,b)=>(new Date(b.date).getTime()||0)-(new Date(a.date).getTime()||0)).slice(0,30);}
+        async function fetchSeekerNotifications(){try{const response=await fetch('/api/applications',{cache:'no-store'});if(!response.ok)return;seekerNotifications=buildSeekerNotifications(await response.json());renderSeekerNotifications();}catch(error){console.warn('Failed to load notifications',error);}}
+        function toggleSeekerNotificationPanel(){const panel=document.getElementById('seeker-notification-panel');const button=document.getElementById('seeker-notification-button');panel.classList.toggle('hidden');button.setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));}
+        function closeSeekerNotificationPanel(){document.getElementById('seeker-notification-panel')?.classList.add('hidden');document.getElementById('seeker-notification-button')?.setAttribute('aria-expanded','false');}
+        function renderSeekerNotifications(){const list=document.getElementById('seeker-notification-list');const empty=document.getElementById('seeker-notification-empty');const badge=document.getElementById('seeker-notification-badge');const summary=document.getElementById('seeker-notification-summary');if(!list||!empty||!badge||!summary)return;const readIds=seekerNotificationReadIds();const unread=seekerNotifications.filter(item=>!readIds.has(item.id)).length;badge.textContent=unread>9?'9+':String(unread);badge.classList.toggle('hidden',unread===0);summary.textContent=unread?`${unread} unread notification${unread===1?'':'s'}`:'You are all caught up.';list.replaceChildren();empty.classList.toggle('hidden',seekerNotifications.length>0);seekerNotifications.forEach(item=>{const unreadItem=!readIds.has(item.id);const button=document.createElement('button');button.type='button';button.className=`block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${unreadItem?'bg-blue-50/60':'bg-white'}`;const row=document.createElement('div');row.className='flex items-start gap-3';const icon=document.createElement('span');const tones={slate:'bg-slate-100 text-slate-600',blue:'bg-blue-50 text-blue-600',emerald:'bg-emerald-50 text-emerald-600',rose:'bg-rose-50 text-rose-600',amber:'bg-amber-50 text-amber-600'};icon.className=`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${tones[item.tone]||tones.slate}`;icon.textContent=item.icon;const copy=document.createElement('span');copy.className='min-w-0 flex-1';const title=document.createElement('span');title.className='block text-[12px] font-bold text-slate-800';title.textContent=item.title;const message=document.createElement('span');message.className='mt-0.5 block text-[11px] leading-5 text-slate-500';message.textContent=item.message;const time=document.createElement('span');time.className='mt-1 block text-[10px] font-medium text-slate-400';time.textContent=seekerNotificationTime(item.date,item.title==='Interview scheduled');copy.append(title,message,time);row.append(icon,copy);if(unreadItem){const dot=document.createElement('span');dot.className='mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500';row.appendChild(dot);}button.appendChild(row);button.addEventListener('click',()=>openSeekerNotification(item.id));list.appendChild(button);});}
+        function openSeekerNotification(id){const readIds=seekerNotificationReadIds();readIds.add(id);saveSeekerNotificationReadIds(readIds);renderSeekerNotifications();window.location.href='/dashboard';}
+        function markAllSeekerNotificationsRead(){const readIds=seekerNotificationReadIds();seekerNotifications.forEach(item=>readIds.add(item.id));saveSeekerNotificationReadIds(readIds);renderSeekerNotifications();}
     </script>
 </body>
 </html>

@@ -60,13 +60,33 @@
 
                 <!-- User profile block -->
                 <div class="flex items-center gap-3">
+                    <div class="relative" id="seeker-notification-container">
+                        <button type="button" id="seeker-notification-button" onclick="toggleSeekerNotificationPanel()" aria-label="Job seeker notifications" aria-expanded="false" class="relative h-9 w-9 rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="seeker-notification-badge" class="hidden absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-[18px] text-white">0</span>
+                        </button>
+                        <div id="seeker-notification-panel" class="hidden absolute right-0 top-12 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                <div><p class="text-[13px] font-bold text-slate-900">Notifications</p><p class="text-[11px] text-slate-400" id="seeker-notification-summary">You are all caught up.</p></div>
+                                <button type="button" onclick="markAllSeekerNotificationsRead()" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800">Mark all read</button>
+                            </div>
+                            <div id="seeker-notification-list" class="max-h-96 overflow-y-auto"></div>
+                            <div id="seeker-notification-empty" class="hidden px-5 py-10 text-center text-[12px] text-slate-400">No notifications yet.</div>
+                        </div>
+                    </div>
                     <div class="text-right hidden sm:block">
-                        <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
+                            <div class="text-xs font-bold text-slate-900" id="user-display-name">Job Seeker</div>
                         <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
                     </div>
-                    <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase" id="user-avatar-initials">
-                        AL
+                    <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden" id="user-avatar-initials">
+                            JS
                     </div>
+                    <button onclick="logoutUser()" class="text-xs font-bold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 bg-red-50/30 hover:bg-red-50/50">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -331,7 +351,7 @@
                 <!-- Loading / Upload Progress bar (hidden by default) -->
                 <div id="upload-progress-container" class="hidden border border-slate-100 rounded-xl p-4 flex flex-col gap-2 bg-slate-50/20">
                     <div class="flex justify-between text-xs font-bold">
-                        <span id="uploading-file-name" class="text-slate-700">Alex_Rivera_Resume.pdf</span>
+                        <span id="uploading-file-name" class="text-slate-700">Selected_resume.pdf</span>
                         <span id="upload-percent-text" class="text-blue-600">0%</span>
                     </div>
                     <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -672,8 +692,8 @@
     </div>
 
     <!-- Floating Notice Toast Container -->
-    <div id="toast-notice" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
-        <span class="text-blue-400" id="toast-icon">✓</span>
+    <div id="toast-notice" role="status" aria-live="polite" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
+        <span class="text-emerald-400 text-sm leading-none" id="toast-icon" aria-hidden="true">✓</span>
         <span id="toast-message">Success!</span>
     </div>
 
@@ -683,6 +703,7 @@
         let activeView = 'resumes';
         let resumesSubView = 'list'; // 'list', 'upload', 'builder'
         let templateLayoutChoice = 'modern';
+        let savedTemplateLayoutChoice = 'modern';
         let builderLayoutChoice = 'modern';
         let builderAccentColor = '#2563eb';
 
@@ -703,12 +724,13 @@
         let resumesList = [];
 
         let profileState = {
-            name: "Alex Rivera",
-            headline: "Full-Stack Software Engineer specializing in React & Node.js",
-            email: "alex.rivera@example.com",
-            phone: "+60 12-342 9011",
-            bio: "Driven and creative software developer with over 3 years of building accessible, user-friendly frontend web apps. Enthusiastic about responsive layouts, robust component design, and collaborative product delivery.",
-            skills: ["React", "TypeScript", "Tailwind CSS", "Vite", "Node.js", "REST APIs"]
+            name: "",
+            headline: "",
+            email: "",
+            phone: "",
+            bio: "",
+            skills: [],
+            avatar: null
         };
 
         let selectedActiveResume = null;
@@ -718,30 +740,83 @@
 
         // 2. BOOTSTRAP INITIALIZATION
         window.addEventListener('DOMContentLoaded', async () => {
-            loadLocalStorageData();
+            await loadProfileFromServer();
             await fetchResumesFromServer();
             renderResumesHubList();
         });
 
-        // 3. PERSISTENCE ENGINE
-        function loadLocalStorageData() {
-            const savedProfile = localStorage.getItem('jobportal_profile');
-            if (savedProfile) {
-                try {
-                    profileState = JSON.parse(savedProfile);
-                } catch (e) {}
+        async function loadProfileFromServer() {
+            const response = await fetch('/api/profile');
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
             }
-
-            const displayNameEl = document.getElementById('user-display-name');
-            if (displayNameEl) {
-                displayNameEl.innerText = profileState.name;
+            const profile = await response.json();
+            if (!response.ok) {
+                throw new Error(profile.error || 'Could not load profile.');
             }
+            profileState = {
+                name: profile.full_name || '',
+                headline: profile.headline || '',
+                email: profile.email || '',
+                phone: profile.phone || '',
+                bio: profile.bio || '',
+                skills: Array.isArray(profile.skills) ? profile.skills : [],
+                avatar: profile.avatar || null
+            };
+            syncHeaderProfile();
 
-            const savedLayoutChoice = localStorage.getItem('jobportal_saved_template_choice') || 'modern';
-            setTemplateLayoutChoice(savedLayoutChoice);
+            setTemplateLayoutChoice(savedTemplateLayoutChoice);
             const indicator = document.getElementById('preferred-layout-indicator');
             if (indicator) {
-                indicator.textContent = `Preferred: ${savedLayoutChoice.charAt(0).toUpperCase() + savedLayoutChoice.slice(1)}`;
+                indicator.textContent = `Preferred: ${savedTemplateLayoutChoice.charAt(0).toUpperCase() + savedTemplateLayoutChoice.slice(1)}`;
+            }
+        }
+
+        function profileInitials() {
+            return String(profileState.name || '')
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .map(name => name[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase() || 'JS';
+        }
+
+        function renderHeaderAvatar() {
+            const avatar = document.getElementById('user-avatar-initials');
+            if (!avatar) return;
+            avatar.className = 'h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden';
+            avatar.replaceChildren();
+            if (profileState.avatar) {
+                const image = document.createElement('img');
+                image.src = profileState.avatar;
+                image.alt = 'Profile photo';
+                image.className = 'h-full w-full object-cover';
+                avatar.appendChild(image);
+            } else {
+                avatar.textContent = profileInitials();
+            }
+        }
+
+        function syncHeaderProfile() {
+            const displayName = document.getElementById('user-display-name');
+            const displayRole = document.getElementById('user-display-role');
+            if (displayName) displayName.textContent = profileState.name || 'Job Seeker';
+            if (displayRole) displayRole.textContent = 'Candidate';
+            renderHeaderAvatar();
+        }
+
+        async function logoutUser() {
+            try {
+                sessionStorage.clear();
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+            } finally {
+                window.location.replace('/login?t=' + Date.now());
             }
         }
 
@@ -794,7 +869,7 @@
         // 5. REDIRECTING switchView
         function switchView(viewId) {
             if (viewId === 'explore') {
-                window.location.href = '/';
+                window.location.href = '/seeker';
             } else if (viewId === 'dashboard') {
                 window.location.href = '/dashboard';
             } else if (viewId === 'resumes') {
@@ -916,7 +991,7 @@
             const MAX_FILE_SIZE = 10 * 1024 * 1024;
             if (file.size > MAX_FILE_SIZE) {
                 event.target.value = '';
-                showFloatingNotice('The file must not exceed 10 MB.');
+                showFloatingNotice('The file must not exceed 10 MB.', 'error');
                 return;
             }
 
@@ -972,7 +1047,7 @@
             } catch (err) {
                 clearInterval(interval);
                 progressContainer.classList.add('hidden');
-                showFloatingNotice(err.message || "Upload failed. Please try again.");
+                showFloatingNotice(err.message || "Upload failed. Please try again.", 'error');
             }
         }
 
@@ -1090,7 +1165,7 @@
                     defaultFormat: 'pdf'
                 });
                 if (!outputFormat) {
-                    showFloatingNotice('AI resume was not saved.');
+                    showFloatingNotice('AI resume was not saved.', 'warning');
                     return;
                 }
                 const record = await persistBuilderResume(
@@ -1107,7 +1182,8 @@
             } catch (saveErr) {
                 showFloatingNotice(
                     saveErr.message ||
-                    "Generated the resume, but couldn't save it to the server."
+                    "Generated the resume, but couldn't save it to the server.",
+                    'error'
                 );
             } finally {
                 btn.innerHTML = originalHTML;
@@ -1120,7 +1196,7 @@
             const descArea = document.getElementById('form-exp-desc');
             const bulletText = descArea.value.trim();
             if (!bulletText) {
-                showFloatingNotice("Please type some duties/bullets first to polish!");
+                showFloatingNotice("Please type some duties/bullets first to polish!", 'warning');
                 return;
             }
 
@@ -1167,7 +1243,7 @@
         async function downloadResume(resumeId) {
             let resume = resumesList.find(r => r.id === resumeId);
             if (!resume) {
-                showFloatingNotice("Resume not found.");
+                showFloatingNotice("Resume not found.", 'error');
                 return;
             }
 
@@ -1192,7 +1268,7 @@
                     resume = record;
                     renderResumesHubList();
                 } catch (err) {
-                    showFloatingNotice(err.message || "Couldn't generate this resume file.");
+                    showFloatingNotice(err.message || "Couldn't generate this resume file.", 'error');
                     return;
                 }
             }
@@ -1201,7 +1277,8 @@
                 showFloatingNotice(
                     resume.type === 'upload'
                         ? "This old upload has no stored file. Please upload it again."
-                        : "Save this resume as PDF or DOCX first."
+                        : "Save this resume as PDF or DOCX first.",
+                    'warning'
                 );
                 return;
             }
@@ -1212,7 +1289,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            showFloatingNotice(`Downloading ${resume.fileName || resume.name}...`);
+            showFloatingNotice(`Downloading ${resume.fileName || resume.name}...`, 'info');
         }
 
         // Opens the actual uploaded or generated file in a new tab.
@@ -1221,11 +1298,11 @@
         function viewUploadedResume(resumeId) {
             const resume = resumesList.find(r => r.id === resumeId);
             if (!resume) {
-                showFloatingNotice("Resume not found.");
+                showFloatingNotice("Resume not found.", 'error');
                 return;
             }
             if (!resume.storedFileName) {
-                showFloatingNotice("No document file exists yet. Save it as PDF or DOCX first.");
+                showFloatingNotice("No document file exists yet. Save it as PDF or DOCX first.", 'warning');
                 return;
             }
             window.open(`/uploads/${encodeURIComponent(resume.storedFileName)}`, '_blank');
@@ -1307,7 +1384,7 @@
 
         function compileResumeToHtml(resume) {
             const pi = resume.data.personalInfo;
-            const name = pi.name || 'Alex Rivera';
+            const name = pi.name || 'Your Name';
             const title = pi.title || 'Full-Stack Software Engineer';
             const email = pi.email || '';
             const phone = pi.phone || '';
@@ -1568,7 +1645,7 @@
                 renderResumesHubList();
                 showFloatingNotice(`Deleted resume "${name}" permanently.`);
             } else {
-                showFloatingNotice("Couldn't delete this resume on the server. Please try again.");
+                showFloatingNotice("Couldn't delete this resume on the server. Please try again.", 'error');
             }
             closeDeleteConfirmModal();
         }
@@ -1630,7 +1707,7 @@
                 btn.innerHTML = `✏️ Update Experience Item`;
                 btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded-lg transition mt-1";
             }
-            showFloatingNotice("Loaded work experience item into form. You can modify it and click 'Update Experience'!");
+            showFloatingNotice("Loaded work experience item into form. You can modify it and click 'Update Experience'!", 'info');
         }
 
         function addExperienceFromBuilderForm() {
@@ -1641,7 +1718,7 @@
             const desc = document.getElementById('form-exp-desc').value.trim();
 
             if (!role || !company || !start) {
-                showFloatingNotice("Role, company, and start date are required!");
+                showFloatingNotice("Role, company, and start date are required!", 'warning');
                 return;
             }
 
@@ -1733,7 +1810,7 @@
             const end = document.getElementById('form-edu-end').value.trim();
 
             if (!degree || !field || !school || !start || !end) {
-                showFloatingNotice("Please fill in all education fields!");
+                showFloatingNotice("Please fill in all education fields!", 'warning');
                 return;
             }
 
@@ -1782,7 +1859,7 @@
             const desc = document.getElementById('form-proj-desc').value.trim();
 
             if (!name || !desc) {
-                showFloatingNotice("Project name and description are required!");
+                showFloatingNotice("Project name and description are required!", 'warning');
                 return;
             }
 
@@ -1897,10 +1974,9 @@
             });
 
             // Update Save button text & style depending on whether it matches the saved preference
-            const savedChoice = localStorage.getItem('jobportal_saved_template_choice') || 'modern';
             const btnSave = document.getElementById('btn-save-template-choice');
             if (btnSave) {
-                if (layout === savedChoice) {
+                if (layout === savedTemplateLayoutChoice) {
                     btnSave.className = "text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-default pointer-events-none";
                     btnSave.innerHTML = `<span>✨ Default Saved</span>`;
                 } else {
@@ -1911,7 +1987,7 @@
         }
 
         function saveSelectedTemplateChoice() {
-            localStorage.setItem('jobportal_saved_template_choice', templateLayoutChoice);
+            savedTemplateLayoutChoice = templateLayoutChoice;
             
             const indicator = document.getElementById('preferred-layout-indicator');
             if (indicator) {
@@ -2058,7 +2134,7 @@
                 defaultFormat: selectedActiveResume.fileFormat || 'pdf'
             });
             if (!outputFormat) {
-                showFloatingNotice("Resume changes were not saved.");
+                showFloatingNotice("Resume changes were not saved.", 'warning');
                 return;
             }
 
@@ -2097,7 +2173,8 @@
                 showResumesSubView('list');
             } catch (err) {
                 showFloatingNotice(
-                    err.message || "Couldn't save this resume to the server. Please try again."
+                    err.message || "Couldn't save this resume to the server. Please try again.",
+                    'error'
                 );
             } finally {
                 if (saveBtn) {
@@ -2509,8 +2586,7 @@
                 if (strong) strong.textContent = profileState.name;
                 if (role) role.textContent = "Candidate";
                 if (avatar) {
-                    avatar.textContent = profileState.name.split(' ').map(n => n[0]).join('').slice(0,2);
-                    avatar.className = "h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase";
+                    renderHeaderAvatar();
                 }
                 if (banner) {
                     banner.innerHTML = `
@@ -2528,11 +2604,25 @@
 
         // Toast Floater Helper
         let toastTimeout = null;
-        function showFloatingNotice(text) {
+        function showFloatingNotice(text, type = 'success') {
             const toast = document.getElementById('toast-notice');
             const message = document.getElementById('toast-message');
+            const icon = document.getElementById('toast-icon');
+
+            const variants = {
+                success: { symbol: '✓', color: 'text-emerald-400', label: 'Success' },
+                info: { symbol: 'i', color: 'text-blue-400', label: 'Information' },
+                warning: { symbol: '⚠', color: 'text-amber-400', label: 'Warning' },
+                error: { symbol: '✕', color: 'text-rose-400', label: 'Error' }
+            };
+            const variant = variants[type] || variants.info;
 
             message.textContent = text;
+            icon.textContent = variant.symbol;
+            icon.className = `${variant.color} text-sm leading-none shrink-0`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+            toast.setAttribute('aria-label', `${variant.label}: ${text}`);
             toast.classList.remove('translate-y-20', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
 
@@ -2543,5 +2633,21 @@
             }, 3500);
         }
     </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', initialiseSeekerNotifications);
+        let seekerNotifications = [];
+        let seekerNotificationReadIdsMemory = new Set();
+        async function initialiseSeekerNotifications(){await fetchSeekerNotifications();window.setInterval(fetchSeekerNotifications,30000);document.addEventListener('click',event=>{const container=document.getElementById('seeker-notification-container');if(container&&!container.contains(event.target))closeSeekerNotificationPanel();});}
+        function seekerNotificationReadIds(){return new Set(seekerNotificationReadIdsMemory);}
+        function saveSeekerNotificationReadIds(ids){seekerNotificationReadIdsMemory=new Set([...ids].slice(-500).map(String));}
+        function seekerNotificationTime(value,includeTime=false){const date=new Date(value);if(!value||Number.isNaN(date.getTime()))return'';return new Intl.DateTimeFormat('en-MY',includeTime?{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}:{day:'numeric',month:'short',year:'numeric'}).format(date);}
+        function buildSeekerNotifications(applications){const items=[];(Array.isArray(applications)?applications:[]).forEach(application=>{const id=String(application.id||application.jobId||'application');const job=application.job||application.position||'Job application';const company=application.company||'Employer';const appliedDate=application.date||application.created_at||'';items.push({id:`${id}:submitted`,title:'Application submitted',message:`${job} at ${company}`,date:appliedDate,tone:'slate',icon:'✓'});const status=String(application.status||'Pending');if(status.toLowerCase()!=='pending'){const tone=['offer','accepted','hired'].includes(status.toLowerCase())?'emerald':['rejected','withdrawn'].includes(status.toLowerCase())?'rose':status.toLowerCase()==='interview'?'blue':'amber';items.push({id:`${id}:status:${status.toLowerCase()}`,title:`Application ${status}`,message:`${job} at ${company}`,date:application.updatedAt||application.updated_at||appliedDate,tone,icon:status.toLowerCase()==='interview'?'I':'•'});}const interview=application.interview;if(interview?.interviewAt){const when=seekerNotificationTime(interview.interviewAt,true);const meeting=interview.locationOrLink?` · ${interview.locationOrLink}`:'';items.push({id:`${id}:interview:${interview.interviewAt}:${interview.locationOrLink||''}`,title:'Interview scheduled',message:`${job} · ${when}${meeting}`,date:interview.interviewAt,tone:'blue',icon:'I'});}});return[...new Map(items.map(item=>[item.id,item])).values()].sort((a,b)=>(new Date(b.date).getTime()||0)-(new Date(a.date).getTime()||0)).slice(0,30);}
+        async function fetchSeekerNotifications(){try{const response=await fetch('/api/applications',{cache:'no-store'});if(!response.ok)return;seekerNotifications=buildSeekerNotifications(await response.json());renderSeekerNotifications();}catch(error){console.warn('Failed to load notifications',error);}}
+        function toggleSeekerNotificationPanel(){const panel=document.getElementById('seeker-notification-panel');const button=document.getElementById('seeker-notification-button');panel.classList.toggle('hidden');button.setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));}
+        function closeSeekerNotificationPanel(){document.getElementById('seeker-notification-panel')?.classList.add('hidden');document.getElementById('seeker-notification-button')?.setAttribute('aria-expanded','false');}
+        function renderSeekerNotifications(){const list=document.getElementById('seeker-notification-list');const empty=document.getElementById('seeker-notification-empty');const badge=document.getElementById('seeker-notification-badge');const summary=document.getElementById('seeker-notification-summary');if(!list||!empty||!badge||!summary)return;const readIds=seekerNotificationReadIds();const unread=seekerNotifications.filter(item=>!readIds.has(item.id)).length;badge.textContent=unread>9?'9+':String(unread);badge.classList.toggle('hidden',unread===0);summary.textContent=unread?`${unread} unread notification${unread===1?'':'s'}`:'You are all caught up.';list.replaceChildren();empty.classList.toggle('hidden',seekerNotifications.length>0);seekerNotifications.forEach(item=>{const unreadItem=!readIds.has(item.id);const button=document.createElement('button');button.type='button';button.className=`block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${unreadItem?'bg-blue-50/60':'bg-white'}`;const row=document.createElement('div');row.className='flex items-start gap-3';const icon=document.createElement('span');const tones={slate:'bg-slate-100 text-slate-600',blue:'bg-blue-50 text-blue-600',emerald:'bg-emerald-50 text-emerald-600',rose:'bg-rose-50 text-rose-600',amber:'bg-amber-50 text-amber-600'};icon.className=`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${tones[item.tone]||tones.slate}`;icon.textContent=item.icon;const copy=document.createElement('span');copy.className='min-w-0 flex-1';const title=document.createElement('span');title.className='block text-[12px] font-bold text-slate-800';title.textContent=item.title;const message=document.createElement('span');message.className='mt-0.5 block text-[11px] leading-5 text-slate-500';message.textContent=item.message;const time=document.createElement('span');time.className='mt-1 block text-[10px] font-medium text-slate-400';time.textContent=seekerNotificationTime(item.date,item.title==='Interview scheduled');copy.append(title,message,time);row.append(icon,copy);if(unreadItem){const dot=document.createElement('span');dot.className='mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500';row.appendChild(dot);}button.appendChild(row);button.addEventListener('click',()=>openSeekerNotification(item.id));list.appendChild(button);});}
+        function openSeekerNotification(id){const readIds=seekerNotificationReadIds();readIds.add(id);saveSeekerNotificationReadIds(readIds);renderSeekerNotifications();window.location.href='/dashboard';}
+        function markAllSeekerNotificationsRead(){const readIds=seekerNotificationReadIds();seekerNotifications.forEach(item=>readIds.add(item.id));saveSeekerNotificationReadIds(readIds);renderSeekerNotifications();}
+    </script>
 </body>
-</html>
+</html

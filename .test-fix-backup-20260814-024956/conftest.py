@@ -1,8 +1,20 @@
-"""Shared fixtures for the job portal acceptance tests."""
+"""
+Shared fixtures for the plain pytest acceptance tests.
 
+These talk to the REAL Flask apps (seeker_main.py and employer_main.py)
+through their test clients -- no mocking of the storage layer, so a
+passing test means the actual backend code (including real Supabase
+Database + Storage calls) works, not just that a mock was set up
+correctly.
+
+NOTE: storage is now Supabase (Postgres + Storage bucket), not a local
+data/ folder. Instead of wiping a directory, each test's reset_storage
+fixture snapshots what already exists before the test runs, and deletes
+only the rows/files that test itself created -- so the shared Supabase
+project doesn't accumulate test junk between runs, and tests don't step
+on each other's or your real data.
+"""
 import io
-import os
-import zipfile
 
 import pytest
 from reportlab.pdfgen import canvas
@@ -16,67 +28,6 @@ from resume_builder import ResumeStorage
 job_store = JobStorage()
 app_tracker = ApplicationTracking()
 resume_store = ResumeStorage()
-
-TEST_SEEKER_USER_ID = os.environ.get(
-    "TEST_SEEKER_USER_ID",
-    "11111111-1111-4111-8111-111111111111",
-)
-TEST_EMPLOYER_ID = os.environ.get("TEST_EMPLOYER_ID", "EMP007")
-
-_resolved_employer = None
-
-
-def _get_test_employer():
-    """Return the real employer record used by integration tests.
-
-    The recruitment tables reference ``auth.users(id)``. A made-up UUID in
-    the Flask session therefore authenticates the request but correctly fails
-    when the lifecycle row is inserted. Resolve the configured public
-    employer ID to its genuine Auth user ID instead.
-    """
-    global _resolved_employer
-    if _resolved_employer is None:
-        _resolved_employer = employer_main.get_employer_from_db(
-            TEST_EMPLOYER_ID
-        )
-
-    if not _resolved_employer:
-        pytest.fail(
-            "No employer record was found for TEST_EMPLOYER_ID="
-            f"{TEST_EMPLOYER_ID!r}. Set TEST_EMPLOYER_ID in .env to an "
-            "existing employer such as EMP007."
-        )
-    if not _resolved_employer.get("user_id"):
-        pytest.fail(
-            f"Employer {TEST_EMPLOYER_ID!r} is not linked to a Supabase "
-            "Auth user. Register/login that employer once before testing."
-        )
-    return _resolved_employer
-
-
-def authenticate_seeker_client(client):
-    """Attach the signed-in seeker session expected by protected routes."""
-    with client.session_transaction() as flask_session:
-        flask_session["user_id"] = TEST_SEEKER_USER_ID
-        flask_session["email"] = "acceptance.seeker@example.com"
-        flask_session["full_name"] = "Acceptance Job Seeker"
-        # Use the application's canonical value instead of duplicating the
-        # role string here.  This keeps the acceptance session identical to a
-        # real successful login even if AuthService changes the stored label.
-        flask_session["role"] = seeker_main.JOB_SEEKER_ROLE
-    return client
-
-
-def authenticate_employer_client(client):
-    """Attach a session backed by a genuine employers/auth.users row."""
-    employer = _get_test_employer()
-    with client.session_transaction() as flask_session:
-        flask_session["auth_user_id"] = str(employer["user_id"])
-        flask_session["employer_id"] = str(employer["employer_id"])
-        flask_session["company_name"] = employer.get("company_name") or "Employer"
-        flask_session["company_email"] = employer.get("company_email") or ""
-        flask_session["role"] = "employer"
-    return client
 
 
 def valid_pdf_bytes(text='Sample Resume Content', marker=None):
@@ -99,44 +50,6 @@ def valid_pdf_bytes(text='Sample Resume Content', marker=None):
     if marker:
         c.setSubject(marker)
     c.save()
-    return buf.getvalue()
-
-
-def valid_docx_bytes(text="Sample Resume Content"):
-    """Build the minimum valid OOXML package required for a DOCX upload."""
-    buf = io.BytesIO()
-    escaped_text = (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr(
-            "[Content_Types].xml",
-            """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>""",
-        )
-        archive.writestr(
-            "_rels/.rels",
-            """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>""",
-        )
-        archive.writestr(
-            "word/document.xml",
-            """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body><w:p><w:r><w:t>"""
-            + escaped_text
-            + """</w:t></w:r></w:p><w:sectPr/></w:body>
-</w:document>""",
-        )
     return buf.getvalue()
 
 
@@ -167,16 +80,14 @@ def reset_storage():
 def seeker_client():
     app = seeker_main.create_app()
     app.testing = True
-    client = app.test_client()
-    return authenticate_seeker_client(client)
+    return app.test_client()
 
 
 @pytest.fixture
 def employer_client():
     app = employer_main.create_app()
     app.testing = True
-    client = app.test_client()
-    return authenticate_employer_client(client)
+    return app.test_client()
 
 
 def create_valid_application(seeker_client, job):
@@ -200,7 +111,6 @@ def create_valid_application(seeker_client, job):
         'resumeId': resume['id'],
         'coverLetterText': 'Dear Hiring Manager, I am applying for this role.',
     })
-    assert app_res.status_code == 201, app_res.get_json()
     return app_res.get_json()['application']
 
 

@@ -60,6 +60,20 @@
 
                     <!-- User profile block -->
                     <div class="flex items-center gap-3">
+                        <div class="relative" id="seeker-notification-container">
+                            <button type="button" id="seeker-notification-button" onclick="toggleSeekerNotificationPanel()" aria-label="Job seeker notifications" aria-expanded="false" class="relative h-9 w-9 rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                <span id="seeker-notification-badge" class="hidden absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-[18px] text-white">0</span>
+                            </button>
+                            <div id="seeker-notification-panel" class="hidden absolute right-0 top-12 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                    <div><p class="text-[13px] font-bold text-slate-900">Notifications</p><p class="text-[11px] text-slate-400" id="seeker-notification-summary">You are all caught up.</p></div>
+                                    <button type="button" onclick="markAllSeekerNotificationsRead()" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800">Mark all read</button>
+                                </div>
+                                <div id="seeker-notification-list" class="max-h-96 overflow-y-auto"></div>
+                                <div id="seeker-notification-empty" class="hidden px-5 py-10 text-center text-[12px] text-slate-400">No notifications yet.</div>
+                            </div>
+                        </div>
                         <div class="text-right hidden sm:block">
                             <div class="text-xs font-bold text-slate-900" id="user-display-name">Alex Rivera</div>
                             <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider" id="user-display-role">Candidate</div>
@@ -67,6 +81,13 @@
                         <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs border border-blue-200 uppercase overflow-hidden" id="user-avatar-initials">
                             AL
                         </div>
+                         <!-- Logout Button -->
+                        <button onclick="logoutUser()" class="text-xs font-bold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 bg-red-50/30 hover:bg-red-50/50">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                            Logout
+                        </button>
                     </div>
                 </div>
             </div>
@@ -79,13 +100,13 @@
             <div class="flex items-center justify-between">
                 <!-- Navigation tabs -->
                 <nav class="flex gap-8">
-                    <button onclick="switchView('explore')" id="nav-explore" class="py-4 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all">
+                    <button onclick="navigateToView('explore')" id="nav-explore" class="py-4 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all">
                         Explore Positions
                     </button>
                     <button onclick="window.location.href='/resumes'" id="nav-resumes" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all flex items-center gap-1.5">
                         My Resumes <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                     </button>
-                    <button onclick="switchView('dashboard')" id="nav-dashboard" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all">
+                    <button onclick="navigateToView('dashboard')" id="nav-dashboard" class="py-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-900 transition-all">
                         My Dashboard
                     </button>
                 </nav>
@@ -369,7 +390,7 @@
                             <p class="text-xs text-slate-400 max-w-sm">
                                 Explore the main listings board and tap "Apply Now" to start!
                             </p>
-                            <button onclick="switchView('explore')" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md shadow-blue-100">
+                            <button onclick="navigateToView('explore')" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md shadow-blue-100">
                                 Browse Open Jobs
                             </button>
                         </div>
@@ -390,7 +411,7 @@
                             <p class="text-xs text-slate-400 max-w-sm">
                                 Explore the listings and save positions you're interested in!
                             </p>
-                            <button onclick="switchView('explore')" class="mt-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs px-4 py-2 rounded-xl transition-all">
+                            <button onclick="navigateToView('explore')" class="mt-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs px-4 py-2 rounded-xl transition-all">
                                 Discover Open Jobs
                             </button>
                         </div>
@@ -410,7 +431,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="flex items-center gap-4">
-            <div id="drawer-company-logo" class="h-16 w-16 rounded-2xl flex items-center justify-center text-2xl font-extrabold text-white bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg logo-glow">SS</div>
+            <button type="button" id="drawer-company-logo" onclick="openSelectedCompanyProfile(event)" title="View company background" class="h-16 w-16 overflow-hidden rounded-2xl flex items-center justify-center text-2xl font-extrabold text-white bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg logo-glow transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/70">SS</button>
             <div>
                 <h2 class="text-xl font-extrabold tracking-tight text-white" id="drawer-job-title">Senior React Engineer</h2>
                 <p class="text-sm font-semibold text-blue-100" id="drawer-company-name">Synthetix Solutions</p>
@@ -636,7 +657,7 @@
                     <label class="block font-bold text-slate-700 mb-1.5">Email Address</label>
                     <input
     type="email"
-    id="edit-email"
+    id="edit-email" readonly title="Email is managed by your login account"
     required
     title="Please enter a valid email address"
     class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
@@ -739,9 +760,9 @@
     <!-- Header: company-colored avatar + job title -->
     <div class="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-5 py-5 text-white flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3 min-w-0">
-            <div id="app-detail-avatar" class="h-11 w-11 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase">
+            <button type="button" id="app-detail-avatar" onclick="openApplicationCompanyProfile(event)" title="View company background" class="h-11 w-11 overflow-hidden rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase transition hover:scale-105">
                 JP
-            </div>
+            </button>
             <div class="min-w-0">
                 <h3 class="text-base font-extrabold tracking-tight truncate" id="app-detail-title">Python Developer</h3>
                 <p class="text-xs font-medium text-blue-100 truncate" id="app-detail-company">ABC Technology</p>
@@ -787,6 +808,9 @@
                 <!-- populated by JS -->
             </div>
         </div>
+
+        <!-- Candidate-visible interview meeting details -->
+        <div id="app-detail-interview-card" class="hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm"></div>
 
         <!-- Additional details -->
         <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
@@ -851,7 +875,7 @@
         let selectedJob = null;
         const isEmployer = false;
 
-        // Seeker profile state (synced with LocalStorage)
+        // Seeker profile state (synced through Flask + Supabase)
         let profileState = {
             name: "Alex Rivera",
             headline: "Full-Stack Software Engineer specializing in React & Node.js",
@@ -866,60 +890,119 @@
         // Static tailor state backup in case Gemini returns fallback or errors
         let customTailorProposal = null;
 
-        // 2. BOOTSTRAP INITIALIZATION - 改为异步加载
+        // 2. BOOTSTRAP INITIALIZATION
         window.addEventListener('DOMContentLoaded', async () => {
-            loadLocalStorageData(); // Profile remains local until Sprint 3
-            await loadApplicationsFromServer(); // 从后端加载申请列表
-            await fetchJobs(); // 加载职位列表
-            await loadBookmarksFromServer(); // 从 Supabase 加载收藏
+            await loadProfileFromServer();
+            await loadApplicationsFromServer();
+            await fetchJobs();
+            await loadBookmarksFromServer();
             document.getElementById('sort-select').value = 'match';
             applySortAndFilter();
             syncProfileUI();
-
-            // /dashboard and / both serve this same page — open straight to the
-            // Dashboard view when loaded via /dashboard so "My Dashboard" links
-            // from other pages (My Resumes, etc.) land in the right place.
             if (window.location.pathname === '/dashboard') {
                 switchView('dashboard');
             }
+            window.setInterval(refreshPortalData, 30000);
         });
 
-        // 3. PERSISTENCE ENGINE
-        function loadLocalStorageData() {
-            const savedProfile = localStorage.getItem('jobportal_profile');
-            if (savedProfile) {
-                try {
-                    profileState = JSON.parse(savedProfile);
-                } catch (e) {
-                    console.error("Failed to parse saved profile state", e);
-                }
+        let portalRefreshInProgress = false;
+        async function refreshPortalData() {
+            if (portalRefreshInProgress || document.hidden) return;
+            portalRefreshInProgress = true;
+            try {
+                await Promise.all([
+                    loadApplicationsFromServer(),
+                    fetchJobs(false)
+                ]);
+                await loadBookmarksFromServer();
+                renderJobsGrid();
+                syncDashboardUI();
+            } finally {
+                portalRefreshInProgress = false;
             }
-
-            // Bookmarks now live in Supabase. Remove the obsolete browser copy.
-            localStorage.removeItem('jobportal_bookmarks');
         }
 
-        // 从后端加载申请数据
+        // 3. PROFILE PERSISTENCE THROUGH FLASK + SUPABASE
+        async function loadProfileFromServer() {
+            const response = await fetch('/api/profile');
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            const profile = await response.json();
+            if (!response.ok) {
+                throw new Error(profile.error || 'Could not load profile.');
+            }
+            profileState = {
+                name: profile.full_name || '',
+                headline: profile.headline || '',
+                email: profile.email || '',
+                phone: profile.phone || '',
+                bio: profile.bio || '',
+                skills: Array.isArray(profile.skills) ? profile.skills : [],
+                avatar: profile.avatar || null
+            };
+        }
+
         async function loadApplicationsFromServer() {
             try {
                 const res = await fetch('/api/applications');
                 if (res.ok) {
                     appliedJobs = await res.json();
-                    // 确保每个申请都有 id 字段
                     appliedJobs = appliedJobs.filter(app => app.id);
                 } else {
                     appliedJobs = [];
                 }
             } catch (e) {
-                console.warn("Failed to load applications from server, using empty list", e);
+                console.warn('Failed to load applications from server', e);
                 appliedJobs = [];
             }
-            // 不保存到 localStorage，每次从服务器获取最新数据
         }
 
-        function saveProfileState() {
-            localStorage.setItem('jobportal_profile', JSON.stringify(profileState));
+        async function saveProfileState() {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    full_name: profileState.name,
+                    headline: profileState.headline,
+                    phone: profileState.phone,
+                    bio: profileState.bio,
+                    skills: profileState.skills,
+                    avatar: profileState.avatar
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not save profile.');
+            }
+            const profile = result.profile;
+            profileState = {
+                name: profile.full_name || '',
+                headline: profile.headline || '',
+                email: profile.email || profileState.email,
+                phone: profile.phone || '',
+                bio: profile.bio || '',
+                skills: Array.isArray(profile.skills) ? profile.skills : [],
+                avatar: profile.avatar || null
+            };
             syncProfileUI();
+        }
+
+        async function logoutUser() {
+            try {
+                // Call logout API
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                // Force redirect to login with cache busting
+                window.location.replace('/login?t=' + Date.now());
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.replace('/login?t=' + Date.now());
+            }
         }
 
         async function loadBookmarksFromServer() {
@@ -929,7 +1012,10 @@
                 if (!res.ok) {
                     throw new Error(data.error || 'Failed to load bookmarks.');
                 }
-                bookmarkedJobs = Array.isArray(data) ? data : [];
+                const activeJobIds = new Set(jobListings.map(job => job.id));
+                bookmarkedJobs = Array.isArray(data)
+                    ? data.filter(jobId => activeJobIds.has(jobId))
+                    : [];
             } catch (e) {
                 console.warn('Failed to load bookmarks from Supabase', e);
                 bookmarkedJobs = [];
@@ -1037,9 +1123,11 @@
     }
 ];
 
-        async function fetchJobs() {
+        async function fetchJobs(showLoading = true) {
     const grid = document.getElementById('listings-grid');
-    grid.innerHTML = `<div class="col-span-full flex items-center justify-center py-16"><div class="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>`;
+    if (showLoading) {
+        grid.innerHTML = `<div class="col-span-full flex items-center justify-center py-16"><div class="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>`;
+    }
     
     try {
         // 尝试获取推荐职位（带匹配分数）
@@ -1114,6 +1202,56 @@
             radios.forEach(r => { if (r.value === 'all') r.checked = true; });
 
             setCategoryFilter('all');
+        }
+
+        function escapeMarkup(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function safeHttpUrl(value) {
+            const rawValue = String(value || '').trim();
+            if (!rawValue) return '';
+            try {
+                const parsed = new URL(rawValue, window.location.origin);
+                return ['http:', 'https:'].includes(parsed.protocol)
+                    ? parsed.href
+                    : '';
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function companyLogoContent(job) {
+            const logoUrl = safeHttpUrl(job?.companyLogoUrl);
+            if (logoUrl) {
+                return `<img src="${escapeMarkup(logoUrl)}" alt="${escapeMarkup(job?.company || 'Company')} logo" class="h-full w-full object-cover">`;
+            }
+            return escapeMarkup(job?.icon || job?.company?.slice(0, 2) || 'JP');
+        }
+
+        function openCompanyProfile(event, jobId) {
+            if (event) event.stopPropagation();
+            const job = jobListings.find(item => String(item.id) === String(jobId));
+            const profilePath = job?.companyProfileUrl
+                || (job?.employerPublicId
+                    ? `/view-company/${encodeURIComponent(job.employerPublicId)}`
+                    : '');
+            const profileUrl = safeHttpUrl(profilePath);
+            if (!profileUrl) {
+                showFloatingNotice('This company has not published a company page yet.');
+                return;
+            }
+            window.location.assign(profileUrl);
+        }
+
+        function openSelectedCompanyProfile(event) {
+            if (event) event.stopPropagation();
+            if (selectedJob) openCompanyProfile(event, selectedJob.id);
         }
 
         function renderJobsGrid() {
@@ -1210,9 +1348,9 @@
                 
                 <div class="flex justify-between items-start">
                     <div class="flex gap-3.5">
-                        <div class="h-11 w-11 rounded-xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold shadow-2xs">
-                            ${job.icon || 'JP'}
-                        </div>
+                        <button type="button" onclick="openCompanyProfile(event, '${job.id}')" title="View ${escapeMarkup(job.company)} company background" class="h-11 w-11 overflow-hidden rounded-xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold shadow-2xs transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                            ${companyLogoContent(job)}
+                        </button>
                         <div class="flex flex-col">
                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${job.company}</span>
                             <h4 class="text-sm font-bold text-slate-900 mt-0.5 group-hover:text-blue-600 transition-colors">${job.title}</h4>
@@ -1356,8 +1494,11 @@ function applySortAndFilter() {
             else if (selectedJob.icon === 'NC') initialColor = "bg-red-600";
 
             const compLogo = document.getElementById('drawer-company-logo');
-            compLogo.className = `h-12 w-12 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs ${initialColor}`;
-            compLogo.innerText = selectedJob.icon || 'JP';
+            compLogo.className = `h-12 w-12 overflow-hidden rounded-xl flex items-center justify-center text-white text-base font-bold shadow-xs ${initialColor} transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/70`;
+            compLogo.innerHTML = companyLogoContent(selectedJob);
+            compLogo.title = selectedJob.companyProfileUrl
+                ? 'View company background'
+                : 'Company page not available';
 
             // Parse the plain-text description into structured sections (headers + bullet lists)
             document.getElementById('drawer-job-desc').innerHTML = renderJobDescription(selectedJob.description);
@@ -1514,10 +1655,7 @@ function applySortAndFilter() {
                 panel.classList.remove('opacity-0', 'scale-95');
             }, 10);
 
-            // Fetch the real, current resume list from the backend — this used to
-            // read a stale localStorage cache left over from before resumes moved
-            // to real server-side storage, which could reference resumes that no
-            // longer exist (or don't exist at all) by the time you apply.
+            // Fetch the real, current resume list from the Supabase-backed API.
             await fetchApplyModalResumes();
             renderApplyResumeOptions();
             updateApplySubmitState();
@@ -1717,7 +1855,8 @@ function applySortAndFilter() {
                         applyBtn.innerHTML = `✓ Already Applied`;
                     }
                 } else {
-                    showFloatingNotice("Application failed. Please try again.");
+                    const errorData = await res.json().catch(() => ({}));
+                    showFloatingNotice(errorData.error || "Application failed. Please try again.");
                 }
             } catch (e) {
                 showFloatingNotice(e.message || "Network error.");
@@ -1766,6 +1905,60 @@ function applySortAndFilter() {
             }
         }
 
+        function formatCandidateInterviewDate(value) {
+            const parsed = value ? new Date(value) : null;
+            if (!parsed || Number.isNaN(parsed.getTime())) return 'Date not available';
+            return parsed.toLocaleString('en-MY', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function applicationInterviewSummary(app) {
+            const interview = app?.interview;
+            if (interview?.status === 'scheduled') {
+                return `<p class="mt-1.5 text-[10px] font-bold text-blue-600">Interview: ${escapeMarkup(formatCandidateInterviewDate(interview.interviewAt))}</p>`;
+            }
+            if (app?.status === 'Interview') {
+                return '<p class="mt-1.5 text-[10px] font-semibold text-amber-600">Waiting for meeting details from employer</p>';
+            }
+            return '';
+        }
+
+        function renderApplicationInterviewCard(app) {
+            const card = document.getElementById('app-detail-interview-card');
+            const interview = app?.interview;
+            if (interview?.status === 'scheduled') {
+                const meetingUrl = safeHttpUrl(interview.locationOrLink);
+                const type = escapeMarkup(interview.interviewType || 'online');
+                const location = meetingUrl
+                    ? `<a href="${escapeMarkup(meetingUrl)}" target="_blank" rel="noopener noreferrer" class="font-bold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900">Join interview meeting</a>`
+                    : `<span class="font-semibold text-blue-800">${escapeMarkup(interview.locationOrLink || 'Details not provided')}</span>`;
+                card.className = 'rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm';
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">📅</div>
+                        <div class="min-w-0">
+                            <h4 class="text-[10px] font-extrabold text-blue-900 uppercase tracking-wider">Interview Meeting</h4>
+                            <p class="mt-1 text-xs font-bold text-slate-900">${escapeMarkup(formatCandidateInterviewDate(interview.interviewAt))}</p>
+                            <p class="mt-1 text-[11px] capitalize text-slate-600">${type} · ${location}</p>
+                            <p class="mt-2 text-[10px] text-blue-700">Malaysia time (UTC+8). Please join a few minutes early.</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+            if (app?.status === 'Interview') {
+                card.className = 'rounded-2xl border border-amber-100 bg-amber-50 p-4 shadow-sm';
+                card.innerHTML = '<p class="text-xs font-semibold text-amber-800">You have moved to the interview stage. The employer has not added the meeting details yet.</p>';
+                return;
+            }
+            card.className = 'hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm';
+            card.innerHTML = '';
+        }
+
         function syncDashboardUI() {
             // Update Tab Badge Counts
             document.getElementById('dash-tab-apps').innerText = `My Applications (${appliedJobs.length})`;
@@ -1794,9 +1987,9 @@ function applySortAndFilter() {
                     return `
                         <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-slate-200 transition">
                             <div class="flex items-center gap-3.5">
-                                <div class="h-10 w-10 rounded-xl ${initialColor} text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">
-                                    ${originalJob.icon || 'JP'}
-                                </div>
+                                <button type="button" onclick="openCompanyProfile(event, '${app.jobId}')" title="View company background" class="h-10 w-10 overflow-hidden rounded-xl ${initialColor} text-white flex items-center justify-center text-xs font-extrabold shadow-2xs transition hover:scale-105">
+                                    ${companyLogoContent(originalJob)}
+                                </button>
                                 <div>
                                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">${originalJob.company}</h4>
                                     <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">${originalJob.title}</h3>
@@ -1805,6 +1998,7 @@ function applySortAndFilter() {
                                         <span>•</span>
                                         <span>Applied: ${app.date}</span>
                                     </div>
+                                    ${applicationInterviewSummary(app)}
                                 </div>
                             </div>
                             
@@ -1848,9 +2042,9 @@ function applySortAndFilter() {
                     return `
                         <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-slate-200 transition">
                             <div class="flex items-center gap-3.5">
-                                <div class="h-10 w-10 rounded-xl ${initialColor} text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">
-                                    ${job.icon || 'JP'}
-                                </div>
+                                <button type="button" onclick="openCompanyProfile(event, '${job.id}')" title="View company background" class="h-10 w-10 overflow-hidden rounded-xl ${initialColor} text-white flex items-center justify-center text-xs font-extrabold shadow-2xs transition hover:scale-105">
+                                    ${companyLogoContent(job)}
+                                </button>
                                 <div>
                                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">${job.company}</h4>
                                     <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">${job.title}</h3>
@@ -1990,7 +2184,7 @@ function applySortAndFilter() {
             }, 300);
         }
 
-        function saveProfileData() {
+        async function saveProfileData() {
     const name = document.getElementById('edit-name').value.trim();
     const email = document.getElementById('edit-email').value.trim();
 
@@ -2086,13 +2280,13 @@ profileState.skills = skills;
         profileState.avatar = pendingAvatarDataUrl;
     }
 
-    saveProfileState();
-    syncProfileUI();
-    closeProfileModal();
-
-    showFloatingNotice(
-        "Seeker profile successfully updated and saved!"
-    );
+    try {
+        await saveProfileState();
+        closeProfileModal();
+        showFloatingNotice("Seeker profile successfully saved to Supabase!");
+    } catch (error) {
+        showFloatingNotice(error.message || "Could not save profile.");
+    }
 }
 
         // 9. CO-PILOT SYSTEM (ATS SCAN & RESUME TAILORING ON ACTIVE JOBS)
@@ -2143,7 +2337,7 @@ profileState.skills = skills;
                 if (appMatch) {
                     appMatch.atsScore = data.matchScore;
                     appMatch.atsGapAnalysis = data.analysis;
-                    // 这里不需要保存到 localStorage，因为每次从服务器获取最新数据
+                    // The next API refresh returns the latest server data.
                 }
 
                 renderATSUI(data.matchScore, data.analysis);
@@ -2304,7 +2498,18 @@ profileState.skills = skills;
             }, 300);
         }
 
-        // 10. TAB NAVIGATION & VIEW toggling
+        // Always use the canonical Flask page URLs for navigation.
+        function navigateToView(viewId) {
+            if (viewId === 'dashboard') {
+                window.location.href = '/dashboard';
+            } else if (viewId === 'resumes') {
+                window.location.href = '/resumes';
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        // Internal view toggling after Flask renders seeker.html.
         function switchView(viewId) {
             activeView = viewId;
             const viewExplore = document.getElementById('view-explore');
@@ -2379,8 +2584,10 @@ profileState.skills = skills;
                 else if (originalJob.icon === 'NC') initialColor = "bg-red-600";
             }
             const avatar = document.getElementById('app-detail-avatar');
-            avatar.className = `h-11 w-11 rounded-2xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase`;
-            avatar.innerText = (originalJob && originalJob.icon) || (app.company || 'JP').slice(0, 2);
+            avatar.className = `h-11 w-11 overflow-hidden rounded-2xl ${initialColor} text-white flex items-center justify-center text-sm font-extrabold border border-white/30 shadow-lg shrink-0 uppercase transition hover:scale-105`;
+            avatar.innerHTML = companyLogoContent(
+                originalJob || { company: app.company, icon: (app.company || 'JP').slice(0, 2) }
+            );
 
             // Status badge, icon, and progress track — all driven by the same style source
             const status = app.status || 'Pending';
@@ -2395,6 +2602,7 @@ profileState.skills = skills;
             statusIconWrap.innerText = style.icon;
 
             document.getElementById('app-detail-progress-track').innerHTML = renderProgressTrack(status);
+            renderApplicationInterviewCard(app);
 
             // Show / hide edit section (employer only)
             const editSection = document.getElementById('app-detail-edit-section');
@@ -2415,6 +2623,11 @@ profileState.skills = skills;
                 backdrop.classList.add('opacity-100');
                 panel.classList.add('scale-100', 'opacity-100');
             }, 50);
+        }
+
+        function openApplicationCompanyProfile(event) {
+            const app = appliedJobs.find(item => item.id === currentAppId);
+            if (app) openCompanyProfile(event, app.jobId);
         }
 
         function closeAppDetail() {
@@ -2483,6 +2696,158 @@ profileState.skills = skills;
                 alertBox.classList.remove('opacity-100', 'translate-y-0');
                 alertBox.classList.add('opacity-0', 'translate-y-5');
             }, 4000);
+        }
+    </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', initialiseSeekerNotifications);
+        let seekerNotifications = [];
+        let seekerNotificationReadIdsState = new Set();
+
+        async function initialiseSeekerNotifications() {
+            await loadSeekerNotificationReadIds();
+            await fetchSeekerNotifications();
+            window.setInterval(fetchSeekerNotifications, 30000);
+            document.addEventListener('click', event => {
+                const container = document.getElementById('seeker-notification-container');
+                if (container && !container.contains(event.target)) closeSeekerNotificationPanel();
+            });
+        }
+
+        async function loadSeekerNotificationReadIds() {
+            try {
+                const response = await fetch('/api/seeker/preferences', {
+                    cache: 'no-store'
+                });
+                if (!response.ok) return;
+                const preferences = await response.json();
+                seekerNotificationReadIdsState = new Set(
+                    (preferences.notification_read_ids || []).map(String)
+                );
+            } catch (error) {
+                console.warn('Could not load notification preferences.', error);
+            }
+        }
+
+        async function saveSeekerNotificationReadIds() {
+            const response = await fetch('/api/seeker/preferences', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    notification_read_ids: [...seekerNotificationReadIdsState].slice(-500)
+                })
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.error || 'Could not save notification preferences.');
+            }
+        }
+
+        function buildSeekerNotifications(applications) {
+            const items = [];
+            (Array.isArray(applications) ? applications : []).forEach(application => {
+                const id = String(application.id || application.jobId || 'application');
+                const job = application.job || application.position || 'Job application';
+                const company = application.company || 'Employer';
+                const appliedDate = application.date || application.created_at || '';
+                items.push({id: `${id}:submitted`, title: 'Application submitted', message: `${job} at ${company}`, date: appliedDate, tone: 'slate', icon: '✓'});
+                const status = String(application.status || 'Pending');
+                if (status.toLowerCase() !== 'pending') {
+                    const tone = ['offer','accepted','hired'].includes(status.toLowerCase()) ? 'emerald' : ['rejected','withdrawn'].includes(status.toLowerCase()) ? 'rose' : status.toLowerCase() === 'interview' ? 'blue' : 'amber';
+                    items.push({id: `${id}:status:${status.toLowerCase()}`, title: `Application ${status}`, message: `${job} at ${company}`, date: application.updatedAt || application.updated_at || appliedDate, tone, icon: status.toLowerCase() === 'interview' ? 'I' : '•'});
+                }
+                const interview = application.interview;
+                if (interview?.interviewAt) {
+                    const when = seekerNotificationTime(interview.interviewAt, true);
+                    const meeting = interview.locationOrLink ? ` · ${interview.locationOrLink}` : '';
+                    items.push({id: `${id}:interview:${interview.interviewAt}:${interview.locationOrLink || ''}`, title: 'Interview scheduled', message: `${job} · ${when}${meeting}`, date: interview.interviewAt, tone: 'blue', icon: 'I'});
+                }
+            });
+            return [...new Map(items.map(item => [item.id, item])).values()].sort((a, b) => (new Date(b.date).getTime() || 0) - (new Date(a.date).getTime() || 0)).slice(0, 30);
+        }
+
+        async function fetchSeekerNotifications() {
+            try {
+                const response = await fetch('/api/applications', {cache: 'no-store'});
+                if (!response.ok) return;
+                seekerNotifications = buildSeekerNotifications(await response.json());
+                renderSeekerNotifications();
+            } catch (error) { console.warn('Failed to load notifications', error); }
+        }
+
+        function toggleSeekerNotificationPanel() {
+            const panel = document.getElementById('seeker-notification-panel');
+            const button = document.getElementById('seeker-notification-button');
+            panel.classList.toggle('hidden');
+            button.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+        }
+
+        function closeSeekerNotificationPanel() {
+            document.getElementById('seeker-notification-panel')?.classList.add('hidden');
+            document.getElementById('seeker-notification-button')?.setAttribute('aria-expanded', 'false');
+        }
+
+        function seekerNotificationTime(value, includeTime = false) {
+            const date = new Date(value);
+            if (!value || Number.isNaN(date.getTime())) return '';
+            return new Intl.DateTimeFormat('en-MY', includeTime ? {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'} : {day:'numeric',month:'short',year:'numeric'}).format(date);
+        }
+
+        function renderSeekerNotifications() {
+            const list = document.getElementById('seeker-notification-list');
+            const empty = document.getElementById('seeker-notification-empty');
+            const badge = document.getElementById('seeker-notification-badge');
+            const summary = document.getElementById('seeker-notification-summary');
+            if (!list || !empty || !badge || !summary) return;
+            const unread = seekerNotifications.filter(
+                item => !seekerNotificationReadIdsState.has(item.id)
+            ).length;
+            badge.textContent = unread > 9 ? '9+' : String(unread);
+            badge.classList.toggle('hidden', unread === 0);
+            summary.textContent = unread ? `${unread} unread notification${unread === 1 ? '' : 's'}` : 'You are all caught up.';
+            list.replaceChildren();
+            empty.classList.toggle('hidden', seekerNotifications.length > 0);
+            seekerNotifications.forEach(item => {
+                const unreadItem = !seekerNotificationReadIdsState.has(item.id);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${unreadItem ? 'bg-blue-50/60' : 'bg-white'}`;
+                const row = document.createElement('div'); row.className = 'flex items-start gap-3';
+                const icon = document.createElement('span');
+                const tones = {slate:'bg-slate-100 text-slate-600',blue:'bg-blue-50 text-blue-600',emerald:'bg-emerald-50 text-emerald-600',rose:'bg-rose-50 text-rose-600',amber:'bg-amber-50 text-amber-600'};
+                icon.className = `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${tones[item.tone] || tones.slate}`; icon.textContent = item.icon;
+                const copy = document.createElement('span'); copy.className = 'min-w-0 flex-1';
+                const title = document.createElement('span'); title.className = 'block text-[12px] font-bold text-slate-800'; title.textContent = item.title;
+                const message = document.createElement('span'); message.className = 'mt-0.5 block text-[11px] leading-5 text-slate-500'; message.textContent = item.message;
+                const time = document.createElement('span'); time.className = 'mt-1 block text-[10px] font-medium text-slate-400'; time.textContent = seekerNotificationTime(item.date, item.title === 'Interview scheduled');
+                copy.append(title, message, time); row.append(icon, copy);
+                if (unreadItem) { const dot = document.createElement('span'); dot.className = 'mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500'; row.appendChild(dot); }
+                button.appendChild(row);
+                button.addEventListener('click', () => openSeekerNotification(item.id));
+                list.appendChild(button);
+            });
+        }
+
+        async function openSeekerNotification(id) {
+            seekerNotificationReadIdsState.add(id);
+            renderSeekerNotifications();
+            try {
+                await saveSeekerNotificationReadIds();
+            } catch (error) {
+                console.warn(error.message, error);
+            }
+            window.location.href = '/dashboard';
+        }
+
+        async function markAllSeekerNotificationsRead() {
+            seekerNotifications.forEach(
+                item => seekerNotificationReadIdsState.add(item.id)
+            );
+            renderSeekerNotifications();
+            try {
+                await saveSeekerNotificationReadIds();
+            } catch (error) {
+                console.warn(error.message, error);
+            }
         }
     </script>
 </body>

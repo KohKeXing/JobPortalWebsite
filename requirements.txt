@@ -7,3 +7,4 @@ reportlab>=4.0
 python-docx>=1.1.0
 pypdf>=5.0
 cryptography>=42.0
+bcrypt>=3.2.0

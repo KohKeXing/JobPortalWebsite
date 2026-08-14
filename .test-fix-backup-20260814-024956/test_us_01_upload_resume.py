@@ -6,7 +6,7 @@ reuse a resume I already have instead of building a new one.
 """
 import io
 
-from conftest import valid_docx_bytes, valid_pdf_bytes
+from conftest import valid_pdf_bytes
 
 
 def test_successfully_upload_a_valid_resume_file(seeker_client):
@@ -55,10 +55,7 @@ def test_accept_a_docx_file_as_well_as_pdf(seeker_client):
     When I upload a valid DOCX file named "My_Resume.docx"
     Then the file should be uploaded successfully
     """
-    fake_docx = (
-        io.BytesIO(valid_docx_bytes("My DOCX resume")),
-        'My_Resume.docx',
-    )
+    fake_docx = (io.BytesIO(b'PK\x03\x04 fake docx binary content'), 'My_Resume.docx')
 
     res = seeker_client.post(
         '/api/resumes/upload',

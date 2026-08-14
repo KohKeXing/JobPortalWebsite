@@ -16,26 +16,20 @@ import io
 
 import seeker_main
 import employer_main
-from conftest import (
-    authenticate_employer_client,
-    authenticate_seeker_client,
-    create_valid_application,
-    post_job,
-    valid_pdf_bytes,
-)
+from conftest import post_job, create_valid_application, valid_pdf_bytes
 
 
 def _fresh_seeker_client():
     """A new Flask app instance, as if the server had just restarted."""
     app = seeker_main.create_app()
     app.testing = True
-    return authenticate_seeker_client(app.test_client())
+    return app.test_client()
 
 
 def _fresh_employer_client():
     app = employer_main.create_app()
     app.testing = True
-    return authenticate_employer_client(app.test_client())
+    return app.test_client()
 
 
 def test_a_submitted_application_survives_a_server_restart(employer_client, seeker_client):

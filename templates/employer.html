@@ -43,12 +43,49 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="text-right hidden sm:block">
-                        <div class="text-[13px] font-semibold text-slate-900 leading-tight">Hiring Team</div>
-                        <div class="text-[11px] text-slate-400 leading-tight">PixelCraft Studio</div>
+                        <div class="text-[13px] font-semibold text-slate-900 leading-tight" id="employer-name-display">{{ company_name | default('Employer', true) }}</div>
+                        <div class="text-[11px] text-slate-400 leading-tight" id="employer-company-display">{{ company_email | default('', true) }}</div>
                     </div>
-                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] border border-slate-200">HT</div>
+                    <div class="relative" id="notification-container">
+                        <button type="button" id="notification-button" onclick="toggleNotificationPanel()" aria-label="Employer notifications" aria-expanded="false" class="relative h-9 w-9 rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center">
+                            <svg class="h-4.5 w-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="notification-badge" class="hidden absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-[18px] text-white">0</span>
+                        </button>
+                        <div id="notification-panel" class="hidden absolute right-0 top-12 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                <div>
+                                    <p class="text-[13px] font-bold text-slate-900">Notifications</p>
+                                    <p class="text-[11px] text-slate-400" id="notification-summary">You are all caught up.</p>
+                                </div>
+                                <button type="button" onclick="markAllNotificationsRead()" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800">Mark all read</button>
+                            </div>
+                            <div id="notification-list" class="max-h-96 overflow-y-auto"></div>
+                            <div id="notification-empty" class="hidden px-5 py-10 text-center text-[12px] text-slate-400">No notifications yet.</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="openEmployerProfileModal()" title="View employer profile" aria-label="View employer profile" class="h-9 w-9 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 font-bold flex items-center justify-center text-[11px] border border-slate-200 hover:border-blue-200 transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 overflow-hidden" id="employer-icon-button">
+                        <img id="employer-icon-image" src="{{ company_logo_url | default('', true) }}" alt="Company logo" class="{{ 'h-full w-full object-cover' if company_logo_url else 'hidden h-full w-full object-cover' }}">
+                        <span id="employer-initials" class="{{ 'hidden' if company_logo_url else '' }}">{{ company_initials | default('EM', true) }}</span>
+                    </button>
+                    <!-- Logout Button -->
+                    <button onclick="logoutEmployer()" class="text-xs font-bold text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 bg-red-50/30 hover:bg-red-50/50">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Logout
+                    </button>
                 </div>
             </div>
+            <nav class="flex h-11 items-end gap-7" aria-label="Employer console navigation">
+                <a href="/employer/dashboard" aria-current="page" class="flex h-11 items-center gap-2 border-b-2 border-blue-600 px-1 text-[13px] font-bold text-blue-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    Job Postings
+                </a>
+                <a href="/employer/company-profile" class="flex h-11 items-center gap-2 border-b-2 border-transparent px-1 text-[13px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0-14h4m-4 4h4m-4 4h4m-4 6v-4h4v4"></path></svg>
+                    Company Background
+                </a>
+            </nav>
         </div>
     </header>
 
@@ -121,13 +158,14 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-slate-200 bg-slate-50/60">
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide">Position</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Location</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Salary</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Type</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide text-center">Applicants</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Actions</th>
+                            <tr class="border-b border-blue-700 bg-blue-600">
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide">Position</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide hidden md:table-cell">Location</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide hidden lg:table-cell">Salary</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide hidden sm:table-cell">Type</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide">Status</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide text-center">Applicants</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="jobs-table-body" class="divide-y divide-slate-100">
@@ -145,23 +183,45 @@
 
         <!-- ==================== APPLICANTS TABLE ==================== -->
         <div class="flex flex-col gap-3">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 class="text-[13px] font-bold text-slate-700 uppercase tracking-wide">Applicants</h2>
-                <select id="applicant-job-filter" onchange="renderApplicants()" class="text-[12px] font-medium border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
-                    <option value="all">All Jobs</option>
-                </select>
+                    <button type="button" onclick="exportApplicantsCsv()" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 10v6m0 0l-3-3m3 3l3-3M5 20h14a2 2 0 002-2V8l-6-6H7a2 2 0 00-2 2v3"></path></svg>
+                        Export CSV
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                    <input id="applicant-search" type="search" oninput="renderApplicants()" placeholder="Search applicant or job..." class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <select id="applicant-job-filter" onchange="renderApplicants()" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                        <option value="all">All Jobs</option>
+                    </select>
+                    <select id="applicant-status-filter" onchange="renderApplicants()" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Interview">Interview</option>
+                        <option value="Offer">Offer</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                    <select id="applicant-sort" onchange="renderApplicants()" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="name">Applicant name</option>
+                        <option value="status">Status</option>
+                    </select>
+                </div>
             </div>
 
             <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-slate-200 bg-slate-50/60">
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide">Position</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Applied</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Notes</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide">Status</th>
-                                <th class="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Update</th>
+                            <tr class="border-b border-blue-700 bg-blue-600">
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide">Applicant</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide hidden md:table-cell">Applied</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide hidden lg:table-cell">Notes</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide">Status</th>
+                                <th class="px-5 py-3 text-[11px] font-bold text-white uppercase tracking-wide text-right">Update</th>
                             </tr>
                         </thead>
                         <tbody id="applicants-table-body" class="divide-y divide-slate-100">
@@ -177,6 +237,76 @@
             </div>
         </div>
     </main>
+
+    <!-- ==================== EMPLOYER PROFILE MODAL ==================== -->
+    <div id="employer-profile-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeEmployerProfileModal()"></div>
+    <div id="employer-profile-panel" class="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto bg-white z-50 shadow-xl rounded-2xl border border-slate-200 scale-[0.98] opacity-0 transition-all duration-200 ease-out hidden overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="employer-profile-title">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="text-[15px] font-bold text-slate-900" id="employer-profile-title">Employer Profile</h3>
+                <p class="text-[12px] text-slate-400 mt-0.5">Upload your logo and view registered account details.</p>
+            </div>
+            <button type="button" onclick="closeEmployerProfileModal()" aria-label="Close employer profile" class="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition">
+                <svg class="icon w-4.5 h-4.5" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div id="employer-profile-loading" class="p-10 text-center text-[13px] text-slate-500">Loading profile...</div>
+        <div id="employer-profile-content" class="hidden p-5 space-y-5 text-[13px]">
+            <div class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-blue-600 text-white shadow-sm">
+                    <img id="profile-logo-image" class="hidden h-full w-full object-cover" alt="Company logo">
+                    <span id="profile-large-initials" class="flex h-full w-full items-center justify-center text-sm font-bold">EM</span>
+                    <label id="profile-logo-edit-control" class="absolute inset-0 flex cursor-pointer items-center justify-center bg-slate-900/65 text-center text-[10px] font-bold text-white opacity-0 transition hover:opacity-100 focus-within:opacity-100">
+                        Change<br>Logo
+                        <input id="profile-logo-input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadEmployerLogo(this.files[0])">
+                    </label>
+                </div>
+                <div class="min-w-0">
+                    <p id="profile-summary-name" class="font-bold text-slate-900 truncate">Employer</p>
+                    <p id="profile-summary-email" class="text-[12px] text-slate-500 truncate">—</p>
+                    <p id="profile-logo-help" class="text-[11px] text-blue-600 mt-1">JPG, PNG, or WEBP · maximum 5 MB</p>
+                </div>
+            </div>
+
+            <div>
+                <label for="profile-company-name" class="block font-semibold text-slate-700 mb-1.5">Company Name</label>
+                <input type="text" id="profile-company-name" readonly aria-readonly="true" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed">
+                <p class="text-[11px] text-slate-400 mt-1.5">The company name was set during registration and cannot be changed here.</p>
+            </div>
+
+            <div>
+                <label for="profile-company-email" class="block font-semibold text-slate-700 mb-1.5">Company Email</label>
+                <input type="email" id="profile-company-email" readonly class="w-full px-3 py-2.5 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed">
+                <p class="text-[11px] text-slate-400 mt-1.5">Your login email cannot be changed from this profile.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Employer ID</p>
+                    <p id="profile-employer-id" class="text-[12px] font-medium text-slate-600 break-all">—</p>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Member Since</p>
+                    <p id="profile-created-at" class="text-[12px] font-medium text-slate-600">—</p>
+                </div>
+            </div>
+
+            <a id="manage-company-page-link" href="#" class="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-blue-700 transition hover:bg-blue-100">
+                <span>
+                    <span class="block text-[13px] font-bold">Manage Company Page</span>
+                    <span class="mt-0.5 block text-[11px] text-blue-500">Add company background, details, and gallery.</span>
+                </span>
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </a>
+
+            <p id="employer-profile-error" class="hidden text-[12px] font-medium text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
+        </div>
+
+        <div id="employer-profile-actions" class="hidden p-5 border-t border-slate-200 bg-slate-50/60 flex flex-wrap justify-end gap-2">
+            <button type="button" onclick="closeEmployerProfileModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Close</button>
+        </div>
+    </div>
 
     <!-- ==================== JOB EDITOR MODAL ==================== -->
     <div id="job-modal-backdrop" class="fixed inset-0 bg-slate-900/40 z-50 hidden transition-opacity duration-200 opacity-0" onclick="closeJobModal()"></div>
@@ -196,14 +326,14 @@
                     <input type="text" id="job-form-title" required pattern="[A-Za-z ]+" title="Job title can only contain letters and spaces" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1.5">Company *</label>
-                    <input type="text" id="job-form-company" placeholder="e.g. Synthetix Solutions" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    <label class="block font-semibold text-slate-700 mb-1.5">Company (your account)</label>
+                    <input type="text" id="job-form-company" value="{{ company_name | default('', true) }}" readonly class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed">
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Location *</label>
-                    <input type="text" id="job-form-location" required pattern="[A-Za-z ]+" title="Location can only contain letters and spaces" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+                    <input type="text" id="job-form-location" required pattern="[A-Za-z, ]+" title="Location can only contain letters, spaces and commas" class="w-full border border-slate-200 rounded-lg px-3 py-2">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Salary Range *</label>
@@ -235,6 +365,23 @@
                 <label class="block font-semibold text-slate-700 mb-1.5">Job Description *</label>
                 <textarea id="job-form-description" rows="6" placeholder="Describe the role, key responsibilities, and qualifications..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"></textarea>
             </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Posting Status</label>
+                    <select id="job-form-lifecycle" class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                        <option value="published">Published</option>
+                        <option value="draft">Draft</option>
+                        <option value="closed">Closed</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                    <p class="mt-1.5 text-[11px] text-slate-400">Draft, close, reopen, or archive the listing.</p>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5">Application Deadline</label>
+                    <input type="date" id="job-form-deadline" class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    <p class="mt-1.5 text-[11px] text-slate-400">The job becomes expired after this date.</p>
+                </div>
+            </div>
             <label class="flex items-center gap-2 cursor-pointer w-fit">
                 <input type="checkbox" id="job-form-featured" class="h-4 w-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
                 <span class="font-semibold text-slate-700">Feature this listing</span>
@@ -247,7 +394,7 @@
         </div>
     </div>
 
-    <!-- ==================== DELETE CONFIRMATION MODAL (SIMPLIFIED) ==================== -->
+    <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
     <div id="delete-job-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:9999;" onclick="closeDeleteJobModal()"></div>
     <div id="delete-job-panel" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:1rem;">
         <div style="max-width:28rem;width:100%;background:white;border-radius:1rem;border:1px solid #e2e8f0;padding:1.5rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
@@ -294,6 +441,10 @@
         </div>
         <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4 text-[13px]">
             <div>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Applicant</p>
+                <p class="font-bold text-slate-900" id="applicant-detail-name">Applicant</p>
+            </div>
+            <div>
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Position</p>
                 <p class="font-bold text-slate-900" id="applicant-detail-job">—</p>
                 <p class="text-[12px] text-slate-400" id="applicant-detail-company">—</p>
@@ -329,9 +480,57 @@
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">Application Notes</p>
                 <p class="text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3" id="applicant-detail-notes">No additional details provided.</p>
             </div>
+            <div class="border-t border-slate-100 pt-4">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">Interview</p>
+                <div id="applicant-detail-interview" class="rounded-lg border border-slate-100 bg-slate-50 p-3 text-[12px] text-slate-400">No interview scheduled.</div>
+            </div>
         </div>
-        <div class="p-5 border-t border-slate-200 bg-slate-50/60 flex justify-end shrink-0">
+        <div class="p-5 border-t border-slate-200 bg-slate-50/60 flex flex-wrap justify-end gap-2 shrink-0">
             <button onclick="closeApplicantDetailModal()" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100 font-semibold text-slate-600 transition text-[13px]">Close</button>
+            <button id="applicant-detail-interview-button" onclick="openInterviewModalFromDetails()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-[13px]">Schedule Interview</button>
+        </div>
+    </div>
+
+    <!-- ==================== INTERVIEW SCHEDULER MODAL ==================== -->
+    <div id="interview-backdrop" class="fixed inset-0 bg-slate-900/50 z-[60] hidden opacity-0 transition-opacity duration-200" onclick="closeInterviewModal()"></div>
+    <div id="interview-panel" class="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[60] hidden max-w-lg mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white opacity-0 scale-[0.98] shadow-2xl transition-all duration-200" role="dialog" aria-modal="true" aria-labelledby="interview-title">
+        <div class="flex items-center justify-between border-b border-slate-200 p-5">
+            <div>
+                <h3 id="interview-title" class="text-[15px] font-bold text-slate-900">Schedule Interview</h3>
+                <p id="interview-applicant-label" class="mt-0.5 text-[12px] text-slate-400">Applicant</p>
+            </div>
+            <button type="button" onclick="closeInterviewModal()" class="h-8 w-8 rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center" aria-label="Close interview scheduler">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="max-h-[65vh] space-y-4 overflow-y-auto p-5 text-[13px]">
+            <div>
+                <label for="interview-datetime" class="mb-1.5 block font-semibold text-slate-700">Date and Time *</label>
+                <input id="interview-datetime" type="datetime-local" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                <p class="mt-1 text-[11px] text-slate-400">Malaysia time (UTC+8).</p>
+            </div>
+            <div>
+                <label for="interview-type" class="mb-1.5 block font-semibold text-slate-700">Interview Type *</label>
+                <select id="interview-type" onchange="updateInterviewLocationLabel()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <option value="online">Online meeting</option>
+                    <option value="physical">Physical interview</option>
+                    <option value="phone">Phone interview</option>
+                </select>
+            </div>
+            <div>
+                <label id="interview-location-label" for="interview-location" class="mb-1.5 block font-semibold text-slate-700">Meeting Link *</label>
+                <input id="interview-location" type="text" maxlength="500" placeholder="https://meet.example.com/..." class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+            </div>
+            <div>
+                <label for="interview-notes" class="mb-1.5 block font-semibold text-slate-700">Interview Notes</label>
+                <textarea id="interview-notes" rows="4" maxlength="2000" placeholder="Topics to discuss, interviewer name, preparation notes..." class="w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"></textarea>
+            </div>
+            <p id="interview-error" class="hidden rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-[12px] font-medium text-rose-600"></p>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-slate-50/60 p-5">
+            <button type="button" id="interview-cancel-existing" onclick="cancelScheduledInterview()" class="hidden mr-auto rounded-lg border border-rose-200 bg-white px-4 py-2 text-[13px] font-semibold text-rose-600 transition hover:bg-rose-50">Cancel Interview</button>
+            <button type="button" onclick="closeInterviewModal()" class="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100">Close</button>
+            <button type="button" id="interview-save-button" onclick="saveInterview()" class="rounded-lg bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-blue-700 disabled:bg-blue-300">Save Interview</button>
         </div>
     </div>
 
@@ -347,14 +546,201 @@
         let applicationsList = [];
         let editingJobId = null;
         let jobIdPendingDelete = null;
+        let employerProfile = null;
+        let selectedInterviewApplicationId = null;
+        let selectedApplicantDetailId = null;
+        let notificationsList = [];
+        let companyLogoUrl = {{ company_logo_url | default('', true) | tojson }};
 
         window.addEventListener('DOMContentLoaded', async () => {
-            await Promise.all([fetchJobs(), fetchApplications()]);
+            await Promise.all([fetchJobs(), fetchApplications(), fetchNotifications()]);
             renderJobs();
             renderApplicantFilterOptions();
             renderApplicants();
             renderStats();
+            renderNotifications();
+            setInterviewMinimumDate();
+            window.setInterval(async () => {
+                await fetchNotifications();
+                renderNotifications();
+            }, 30000);
         });
+
+        document.addEventListener('click', (event) => {
+            const container = document.getElementById('notification-container');
+            if (container && !container.contains(event.target)) {
+                closeNotificationPanel();
+            }
+        });
+
+        // ==================== LOGOUT FUNCTION ====================
+        async function logoutEmployer() {
+            try {
+                const res = await fetch('/api/employer/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                localStorage.removeItem('employer_token');
+                localStorage.removeItem('employer_id');
+                window.location.href = '/employer/login';
+            } catch (e) {
+                window.location.href = '/employer/login';
+            }
+        }
+
+        // ==================== EMPLOYER PROFILE ====================
+        function companyInitials(companyName) {
+            const words = String(companyName || '').trim().split(/\s+/).filter(Boolean);
+            if (!words.length) return 'EM';
+            return (words.length >= 2 ? words[0][0] + words[1][0] : words[0].slice(0, 2)).toUpperCase();
+        }
+
+        function formatProfileDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '—';
+            return date.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function applyEmployerLogo(logoUrl, companyName) {
+            companyLogoUrl = logoUrl || '';
+            const initials = companyInitials(companyName);
+            const headerImage = document.getElementById('employer-icon-image');
+            const headerFallback = document.getElementById('employer-initials');
+            const profileImage = document.getElementById('profile-logo-image');
+            const profileFallback = document.getElementById('profile-large-initials');
+
+            headerFallback.textContent = initials;
+            profileFallback.textContent = initials;
+            if (companyLogoUrl) {
+                headerImage.src = companyLogoUrl;
+                profileImage.src = companyLogoUrl;
+                headerImage.classList.remove('hidden');
+                profileImage.classList.remove('hidden');
+                headerFallback.classList.add('hidden');
+                profileFallback.classList.add('hidden');
+            } else {
+                headerImage.removeAttribute('src');
+                profileImage.removeAttribute('src');
+                headerImage.classList.add('hidden');
+                profileImage.classList.add('hidden');
+                headerFallback.classList.remove('hidden');
+                profileFallback.classList.remove('hidden');
+            }
+        }
+
+        function showEmployerProfileModal() {
+            const backdrop = document.getElementById('employer-profile-backdrop');
+            const panel = document.getElementById('employer-profile-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        async function openEmployerProfileModal() {
+            showEmployerProfileModal();
+            const loadingBox = document.getElementById('employer-profile-loading');
+            loadingBox.textContent = 'Loading profile...';
+            loadingBox.classList.remove('hidden');
+            document.getElementById('employer-profile-content').classList.add('hidden');
+            document.getElementById('employer-profile-actions').classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/employer/profile');
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    window.location.href = '/employer/login';
+                    return;
+                }
+                if (!res.ok) throw new Error(data.error || 'Unable to load employer profile.');
+
+                employerProfile = data;
+                populateEmployerProfile(data);
+                document.getElementById('employer-profile-loading').classList.add('hidden');
+                document.getElementById('employer-profile-content').classList.remove('hidden');
+                document.getElementById('employer-profile-actions').classList.remove('hidden');
+            } catch (err) {
+                document.getElementById('employer-profile-loading').textContent = err.message || 'Unable to load employer profile.';
+            }
+        }
+
+        function populateEmployerProfile(profile) {
+            const name = profile.company_name || 'Employer';
+            const email = profile.company_email || '';
+
+            document.getElementById('profile-company-name').value = name;
+            document.getElementById('profile-company-email').value = email;
+            document.getElementById('profile-employer-id').textContent = profile.employer_id || '—';
+            document.getElementById('profile-created-at').textContent = formatProfileDate(profile.created_at);
+            document.getElementById('profile-summary-name').textContent = name;
+            document.getElementById('profile-summary-email').textContent = email || '—';
+            document.getElementById('manage-company-page-link').href = `/companies/${encodeURIComponent(profile.employer_id || '')}`;
+            applyEmployerLogo(profile.logo_url, name);
+            document.getElementById('employer-profile-error').classList.add('hidden');
+        }
+
+        function closeEmployerProfileModal() {
+            const backdrop = document.getElementById('employer-profile-backdrop');
+            const panel = document.getElementById('employer-profile-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+            }, 200);
+        }
+
+        async function uploadEmployerLogo(file) {
+            if (!file) return;
+            const errorBox = document.getElementById('employer-profile-error');
+            const input = document.getElementById('profile-logo-input');
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                errorBox.textContent = 'Only JPG, PNG, and WEBP images are allowed.';
+                errorBox.classList.remove('hidden');
+                input.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                errorBox.textContent = 'The company logo must be 5 MB or smaller.';
+                errorBox.classList.remove('hidden');
+                input.value = '';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('logo', file);
+            errorBox.classList.add('hidden');
+            showFloatingNotice('Uploading company logo...');
+            try {
+                const response = await fetch('/api/employer/profile/logo', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.status === 401) {
+                    window.location.href = '/employer/login';
+                    return;
+                }
+                if (!response.ok) throw new Error(data.error || 'Unable to upload company logo.');
+                employerProfile = data.profile;
+                populateEmployerProfile(employerProfile);
+                renderJobs();
+                showFloatingNotice(data.message || 'Company logo updated successfully.');
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.classList.remove('hidden');
+            } finally {
+                input.value = '';
+            }
+        }
 
         // ==================== DATA FETCHING ====================
         async function fetchJobs() {
@@ -377,6 +763,105 @@
             }
         }
 
+        async function fetchNotifications() {
+            try {
+                const res = await fetch('/api/employer/notifications');
+                notificationsList = res.ok ? await res.json() : [];
+            } catch (error) {
+                console.warn('Failed to load notifications', error);
+                notificationsList = [];
+            }
+        }
+
+        // ==================== NOTIFICATIONS ====================
+        function toggleNotificationPanel() {
+            const panel = document.getElementById('notification-panel');
+            const button = document.getElementById('notification-button');
+            const opening = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !opening);
+            button.setAttribute('aria-expanded', opening ? 'true' : 'false');
+        }
+
+        function closeNotificationPanel() {
+            document.getElementById('notification-panel')?.classList.add('hidden');
+            document.getElementById('notification-button')?.setAttribute('aria-expanded', 'false');
+        }
+
+        function notificationTime(value) {
+            const created = new Date(value);
+            if (Number.isNaN(created.getTime())) return '';
+            const seconds = Math.max(0, Math.floor((Date.now() - created.getTime()) / 1000));
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+            return created.toLocaleDateString();
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notification-list');
+            const empty = document.getElementById('notification-empty');
+            const badge = document.getElementById('notification-badge');
+            const unreadCount = notificationsList.filter(item => !item.is_read).length;
+            badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+            badge.classList.toggle('hidden', unreadCount === 0);
+            document.getElementById('notification-summary').textContent = unreadCount
+                ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+                : 'You are all caught up.';
+
+            if (!notificationsList.length) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            list.innerHTML = notificationsList.map(item => `
+                <button type="button" data-notification-id="${escapeHtml(item.id)}" data-application-id="${escapeHtml(item.related_application_id || '')}" class="notification-item block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${item.is_read ? 'bg-white' : 'bg-blue-50/60'}">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-1 h-2 w-2 shrink-0 rounded-full ${item.is_read ? 'bg-slate-200' : 'bg-blue-600'}"></span>
+                        <span class="min-w-0">
+                            <span class="block text-[12px] font-bold text-slate-800">${escapeHtml(item.title)}</span>
+                            <span class="mt-0.5 block text-[11px] leading-relaxed text-slate-500">${escapeHtml(item.message)}</span>
+                            <span class="mt-1 block text-[10px] font-medium text-slate-400">${escapeHtml(notificationTime(item.created_at))}</span>
+                        </span>
+                    </div>
+                </button>
+            `).join('');
+            list.querySelectorAll('.notification-item').forEach(button => {
+                button.addEventListener('click', () => openNotification(
+                    button.dataset.notificationId,
+                    button.dataset.applicationId,
+                ));
+            });
+        }
+
+        async function openNotification(notificationId, applicationId) {
+            const notification = notificationsList.find(item => item.id === notificationId);
+            if (notification && !notification.is_read) {
+                notification.is_read = true;
+                renderNotifications();
+                fetch(`/api/employer/notifications/${encodeURIComponent(notificationId)}/read`, {
+                    method: 'PUT'
+                }).catch(() => {});
+            }
+            closeNotificationPanel();
+            if (applicationId && applicationsList.some(app => app.id === applicationId)) {
+                openApplicantDetailModal(applicationId);
+            }
+        }
+
+        async function markAllNotificationsRead() {
+            if (!notificationsList.some(item => !item.is_read)) return;
+            try {
+                const res = await fetch('/api/employer/notifications/read-all', { method: 'PUT' });
+                if (!res.ok) throw new Error('Unable to mark notifications as read.');
+                notificationsList.forEach(item => { item.is_read = true; });
+                renderNotifications();
+            } catch (error) {
+                showFloatingNotice(error.message);
+            }
+        }
+
         // ==================== STATS ====================
         function renderStats() {
             document.getElementById('stat-total-jobs').textContent = jobsList.length;
@@ -394,6 +879,30 @@
                 case 'Pending':
                 default: return { badgeClass: 'bg-amber-50 text-amber-700 border-amber-100' };
             }
+        }
+
+        function getJobLifecycleStyle(status) {
+            switch (String(status || 'published').toLowerCase()) {
+                case 'draft': return 'bg-slate-100 text-slate-600 border-slate-200';
+                case 'closed': return 'bg-rose-50 text-rose-700 border-rose-100';
+                case 'archived': return 'bg-violet-50 text-violet-700 border-violet-100';
+                case 'expired': return 'bg-amber-50 text-amber-700 border-amber-100';
+                case 'published':
+                default: return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            }
+        }
+
+        function jobLifecycleOptions(status) {
+            const labels = {
+                draft: 'Move to Draft',
+                published: status === 'expired' ? 'Reopen Job' : 'Publish Job',
+                closed: 'Close Applications',
+                archived: 'Archive Job'
+            };
+            return ['published', 'draft', 'closed', 'archived']
+                .filter(value => value !== status)
+                .map(value => `<option value="${value}">${labels[value]}</option>`)
+                .join('');
         }
 
         // ==================== JOBS RENDERING ====================
@@ -415,11 +924,19 @@
 
             tbody.innerHTML = jobsList.slice().reverse().map(job => {
                 const applicantCount = applicantCountForJob(job.id);
+                const lifecycleStatus = String(job.lifecycleStatus || 'published').toLowerCase();
+                const lifecycleLabel = lifecycleStatus.charAt(0).toUpperCase() + lifecycleStatus.slice(1);
+                const deadlineLabel = job.applicationDeadline
+                    ? `Deadline: ${new Date(`${job.applicationDeadline}T00:00:00`).toLocaleDateString()}`
+                    : 'No deadline';
+                const logoMarkup = companyLogoUrl
+                    ? `<img src="${escapeHtml(companyLogoUrl)}" alt="${escapeHtml(job.company || 'Company')} logo" class="h-8 w-8 rounded-lg border border-slate-200 object-cover shrink-0">`
+                    : `<div class="h-8 w-8 rounded-lg bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold shrink-0 uppercase">${escapeHtml(companyInitials(job.company || 'Employer'))}</div>`;
                 return `
                     <tr class="hover:bg-slate-50/60 transition">
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-3 min-w-0">
-                                <div class="h-8 w-8 rounded-lg ${job.logo_color || 'bg-slate-800 text-white'} flex items-center justify-center text-[10px] font-bold shrink-0 uppercase">${job.icon || 'JP'}</div>
+                                ${logoMarkup}
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5">
                                         <p class="text-[13px] font-bold text-slate-900 truncate">${escapeHtml(job.title)}</p>
@@ -434,11 +951,22 @@
                         <td class="px-5 py-3.5 hidden sm:table-cell">
                             <span class="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">${escapeHtml(job.type)}</span>
                         </td>
+                        <td class="px-5 py-3.5">
+                            <span class="inline-flex text-[10px] font-bold px-2 py-1 rounded-full border ${getJobLifecycleStyle(lifecycleStatus)}">${escapeHtml(lifecycleLabel)}</span>
+                            <p class="mt-1 text-[10px] text-slate-400 whitespace-nowrap">${escapeHtml(deadlineLabel)}</p>
+                            <select onchange="updateJobLifecycle('${job.id}', this.value); this.value = ''" class="mt-1.5 max-w-[9rem] rounded-md border border-slate-200 bg-white px-1.5 py-1 text-[10px] text-slate-600 focus:border-blue-500 focus:outline-none">
+                                <option value="">Change...</option>
+                                ${jobLifecycleOptions(lifecycleStatus)}
+                            </select>
+                        </td>
                         <td class="px-5 py-3.5 text-center">
                             <span class="text-[12px] font-bold text-slate-900">${applicantCount}</span>
                         </td>
                         <td class="px-5 py-3.5">
                             <div class="flex items-center justify-end gap-1">
+                                <button onclick="duplicateJob('${job.id}')" title="Duplicate as draft" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition">
+                                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V5a2 2 0 012-2h7a2 2 0 012 2v7a2 2 0 01-2 2h-2m-7 7h7a2 2 0 002-2v-7a2 2 0 00-2-2H8a2 2 0 00-2 2v7a2 2 0 002 2z"></path></svg>
+                                </button>
                                 <button onclick="openJobModal('${job.id}')" title="Edit" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition">
                                     <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 </button>
@@ -454,10 +982,21 @@
 
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         // ==================== JOB MODAL (CREATE / EDIT) ====================
+        function todayLocalDateValue() {
+            const now = new Date();
+            const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 10);
+        }
+
         function openJobModal(jobId = null) {
             editingJobId = jobId;
             const title = document.getElementById('job-modal-title');
@@ -477,21 +1016,28 @@
                 document.getElementById('job-form-category').value = job.category || '';
                 document.getElementById('job-form-tags').value = (job.tags || []).join(', ');
                 document.getElementById('job-form-description').value = job.description || '';
+                document.getElementById('job-form-lifecycle').value = job.storedLifecycleStatus || (job.lifecycleStatus === 'expired' ? 'published' : job.lifecycleStatus) || 'published';
+                document.getElementById('job-form-deadline').value = job.applicationDeadline || '';
                 document.getElementById('job-form-featured').checked = !!job.featured;
             } else {
                 title.textContent = 'Post New Job';
                 submitBtn.textContent = 'Post Job';
                 document.getElementById('job-form-id').value = '';
                 document.getElementById('job-form-title').value = '';
-                document.getElementById('job-form-company').value = '';
+                const companyInput = document.getElementById('job-form-company');
+                companyInput.value = companyInput.defaultValue;
                 document.getElementById('job-form-location').value = '';
                 document.getElementById('job-form-salary').value = '';
                 document.getElementById('job-form-type').value = 'Full-time';
                 document.getElementById('job-form-category').value = '';
                 document.getElementById('job-form-tags').value = '';
                 document.getElementById('job-form-description').value = '';
+                document.getElementById('job-form-lifecycle').value = 'published';
+                document.getElementById('job-form-deadline').value = '';
                 document.getElementById('job-form-featured').checked = false;
             }
+
+            document.getElementById('job-form-deadline').min = todayLocalDateValue();
 
             const backdrop = document.getElementById('job-modal-backdrop');
             const panel = document.getElementById('job-modal-panel');
@@ -522,6 +1068,8 @@
             const type = document.getElementById('job-form-type').value;
             const category = document.getElementById('job-form-category').value.trim();
             const description = document.getElementById('job-form-description').value.trim();
+            const lifecycleStatus = document.getElementById('job-form-lifecycle').value;
+            const applicationDeadline = document.getElementById('job-form-deadline').value;
             const featured = document.getElementById('job-form-featured').checked;
             const tags = document.getElementById('job-form-tags').value
                 .split(',').map(t => t.trim()).filter(Boolean);
@@ -531,50 +1079,57 @@
                 return;
             }
 
-            // Allows letters and spaces only
+            // Validation
             const alphaPattern = /^[A-Za-z ]+$/;
-            // Allows letters, spaces, and commas
             const locationPattern = /^[A-Za-z, ]+$/;
-            // Category & Tags: letters, spaces, &, %
             const categoryTagPattern = /^[A-Za-z&, ]+$/;
 
-            // Job title: letters and spaces only
             if (!alphaPattern.test(title)) {
                 showFloatingNotice('Job title can only contain letters and spaces.');
                 return;
             }
 
-            // Location: letters, spaces, and commas only
             if (!locationPattern.test(location)) {
                 showFloatingNotice('Location can only contain letters, spaces, and commas.');
                 return;
             }
 
-            // Category: letters and spaces only
-            if (!categoryTagPattern.test(category)) {
-                showFloatingNotice(
-                    'Category can only contain letters, spaces, commas, and &.'
-                );
+            if (category && !categoryTagPattern.test(category)) {
+                showFloatingNotice('Category can only contain letters, spaces, commas, and &.');
                 return;
             }
 
-            // Tags: each tag can only contain letters and spaces
             for (const tag of tags) {
-            if (!categoryTagPattern.test(tag.trim())) {
-                showFloatingNotice(
-                    'Tags can only contain letters, spaces, commas, and &.'
-                );
-                return;
-            }           
-         }
+                if (!categoryTagPattern.test(tag.trim())) {
+                    showFloatingNotice('Tags can only contain letters, spaces, commas, and &.');
+                    return;
+                }
+            }
 
-            // Salary: numbers only
             if (!/^\d+$/.test(salary)) {
                 showFloatingNotice('Salary can only contain numbers.');
                 return;
             }
 
-            const payload = { title, company, location, salary, type, category, description, featured, tags };
+            const today = todayLocalDateValue();
+            if (applicationDeadline && applicationDeadline < today) {
+                showFloatingNotice('Application deadline cannot be in the past.');
+                return;
+            }
+
+            const payload = {
+                title,
+                company,
+                location,
+                salary,
+                type,
+                category,
+                description,
+                featured,
+                tags,
+                lifecycleStatus,
+                applicationDeadline
+            };
             const submitBtn = document.getElementById('job-form-submit-btn');
             const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
@@ -622,22 +1177,55 @@
             }
         }
 
+        async function updateJobLifecycle(jobId, status) {
+            if (!status) return;
+            try {
+                const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/lifecycle`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Unable to update job status.');
+                const index = jobsList.findIndex(job => job.id === data.job.id);
+                if (index > -1) jobsList[index] = data.job;
+                renderJobs();
+                renderStats();
+                showFloatingNotice(data.message || 'Job status updated.');
+            } catch (error) {
+                showFloatingNotice(error.message);
+                renderJobs();
+            }
+        }
+
+        async function duplicateJob(jobId) {
+            try {
+                const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/duplicate`, {
+                    method: 'POST'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Unable to duplicate this job.');
+                jobsList.push(data);
+                renderJobs();
+                renderApplicantFilterOptions();
+                renderStats();
+                showFloatingNotice('Job duplicated as a draft.');
+            } catch (error) {
+                showFloatingNotice(error.message);
+            }
+        }
+
         // ==================== DELETE JOB ====================
         function openDeleteJobModal(jobId) {
-            console.log('Opening delete modal for job:', jobId);
             jobIdPendingDelete = jobId;
             const backdrop = document.getElementById('delete-job-backdrop');
             const panel = document.getElementById('delete-job-panel');
             
-            // Force show using inline styles
             backdrop.style.display = 'block';
             panel.style.display = 'flex';
-            
-            console.log('Modal should be visible now');
         }
 
         function closeDeleteJobModal() {
-            console.log('Closing delete modal');
             const backdrop = document.getElementById('delete-job-backdrop');
             const panel = document.getElementById('delete-job-panel');
             
@@ -647,12 +1235,7 @@
         }
 
         async function confirmDeleteJob() {
-            if (!jobIdPendingDelete) {
-                console.log('No job ID to delete');
-                return;
-            }
-            
-            console.log('Confirming delete for job:', jobIdPendingDelete);
+            if (!jobIdPendingDelete) return;
             
             try {
                 const res = await fetch(`/api/jobs/${jobIdPendingDelete}`, { 
@@ -670,9 +1253,7 @@
                 renderApplicants();
                 renderStats();
                 showFloatingNotice('Job posting deleted.');
-                console.log('Job deleted successfully');
             } catch (err) {
-                console.error('Delete error:', err);
                 showFloatingNotice('Could not delete this job. Please try again.');
             } finally {
                 closeDeleteJobModal();
@@ -688,14 +1269,62 @@
             select.value = jobsList.some(j => j.id === currentValue) ? currentValue : 'all';
         }
 
-        function renderApplicants() {
+        function candidateNameForApplication(app) {
+            return String(
+                app.candidateName
+                || app.applicantName
+                || app.fullName
+                || app.full_name
+                || app.name
+                || 'Applicant'
+            ).trim();
+        }
+
+        function candidateEmailForApplication(app) {
+            return String(app.candidateEmail || app.applicantEmail || app.email || '').trim();
+        }
+
+        function getFilteredApplications() {
             const filterValue = document.getElementById('applicant-job-filter').value || 'all';
+            const statusValue = document.getElementById('applicant-status-filter').value || 'all';
+            const searchValue = document.getElementById('applicant-search').value.trim().toLowerCase();
+            const sortValue = document.getElementById('applicant-sort').value || 'newest';
+
+            const filtered = applicationsList.filter(app => {
+                if (filterValue !== 'all' && app.jobId !== filterValue) return false;
+                if (statusValue !== 'all' && (app.status || 'Pending') !== statusValue) return false;
+                if (!searchValue) return true;
+                const job = jobsList.find(item => item.id === app.jobId);
+                const searchText = [
+                    candidateNameForApplication(app),
+                    candidateEmailForApplication(app),
+                    job?.title,
+                    app.job,
+                    app.status,
+                    app.details,
+                    app.date
+                ].filter(Boolean).join(' ').toLowerCase();
+                return searchText.includes(searchValue);
+            });
+
+            filtered.sort((left, right) => {
+                if (sortValue === 'name') {
+                    return candidateNameForApplication(left).localeCompare(candidateNameForApplication(right));
+                }
+                if (sortValue === 'status') {
+                    return String(left.status || 'Pending').localeCompare(String(right.status || 'Pending'));
+                }
+                const leftTime = new Date(left.date || 0).getTime() || 0;
+                const rightTime = new Date(right.date || 0).getTime() || 0;
+                return sortValue === 'oldest' ? leftTime - rightTime : rightTime - leftTime;
+            });
+            return filtered;
+        }
+
+        function renderApplicants() {
             const tbody = document.getElementById('applicants-table-body');
             const emptyState = document.getElementById('applicants-empty-state');
-
-            const filtered = filterValue === 'all'
-                ? applicationsList
-                : applicationsList.filter(a => a.jobId === filterValue);
+            const filtered = getFilteredApplications();
 
             if (!filtered.length) {
                 tbody.innerHTML = '';
@@ -704,17 +1333,20 @@
             }
             emptyState.classList.add('hidden');
 
-            tbody.innerHTML = filtered.slice().reverse().map(app => {
+            tbody.innerHTML = filtered.map(app => {
                 const style = getStatusStyle(app.status);
                 const job = jobsList.find(j => j.id === app.jobId);
                 const jobTitle = job ? job.title : (app.job || 'Unknown Job');
-                const company = job ? job.company : (app.company || 'Unknown Company');
+                const candidateName = candidateNameForApplication(app);
+                const interview = app.interview;
+                const canScheduleInterview = app.status === 'Interview';
 
                 return `
                     <tr class="hover:bg-slate-50/60 transition">
                         <td class="px-5 py-3.5">
-                            <p class="text-[13px] font-bold text-slate-900">${escapeHtml(jobTitle)}</p>
-                            <p class="text-[11px] text-slate-400">${escapeHtml(company)}</p>
+                            <p class="text-[13px] font-bold text-slate-900">${escapeHtml(candidateName)}</p>
+                            <p class="text-[11px] text-slate-400">${escapeHtml(jobTitle)}</p>
+                            ${interview && interview.status === 'scheduled' ? `<p class="mt-1 text-[10px] font-semibold text-blue-600">Interview: ${escapeHtml(formatInterviewDate(interview.interviewAt))}</p>` : ''}
                         </td>
                         <td class="px-5 py-3.5 text-[12px] text-slate-500 hidden md:table-cell">${escapeHtml(app.date)}</td>
                         <td class="px-5 py-3.5 text-[12px] text-slate-500 hidden lg:table-cell max-w-xs truncate">${escapeHtml(app.details) || '—'}</td>
@@ -723,6 +1355,9 @@
                         </td>
                         <td class="px-5 py-3.5">
                             <div class="flex items-center justify-end gap-2">
+                                <button ${canScheduleInterview ? `onclick="openInterviewModal('${app.id}')"` : 'disabled'} title="${canScheduleInterview ? (interview && interview.status === 'scheduled' ? 'Edit Interview' : 'Schedule Interview') : 'Change status to Interview first'}" class="h-7 w-7 flex items-center justify-center ${canScheduleInterview ? (interview && interview.status === 'scheduled' ? 'text-blue-600 bg-blue-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50') : 'cursor-not-allowed text-slate-300 bg-slate-50'} rounded-md transition shrink-0">
+                                    <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M5 11h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </button>
                                 <button onclick="openApplicantDetailModal('${app.id}')" title="View Details" class="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition shrink-0">
                                     <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 </button>
@@ -745,16 +1380,73 @@
             }).join('');
         }
 
+        function csvCell(value) {
+            let text = String(value ?? '');
+            if (/^[=+\-@]/.test(text)) text = `'${text}`;
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+
+        function exportApplicantsCsv() {
+            const applicants = getFilteredApplications();
+            if (!applicants.length) {
+                showFloatingNotice('There are no applicants to export.');
+                return;
+            }
+            const rows = [[
+                'Applicant', 'Email', 'Job', 'Applied', 'Status', 'Interview Date',
+                'Interview Type', 'Interview Location or Link', 'Application Notes'
+            ]];
+            applicants.forEach(app => {
+                const job = jobsList.find(item => item.id === app.jobId);
+                const interview = app.interview || {};
+                rows.push([
+                    candidateNameForApplication(app),
+                    candidateEmailForApplication(app),
+                    job?.title || app.job || 'Unknown Job',
+                    app.date || '',
+                    app.status || 'Pending',
+                    interview.interviewAt || '',
+                    interview.interviewType || '',
+                    interview.locationOrLink || '',
+                    app.details || ''
+                ]);
+            });
+            const csv = `\uFEFF${rows.map(row => row.map(csvCell).join(',')).join('\r\n')}`;
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `applicants-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
         // ==================== APPLICANT DETAIL MODAL ====================
+        function formatInterviewDate(value) {
+            if (!value) return '—';
+            const interviewDate = new Date(value);
+            if (Number.isNaN(interviewDate.getTime())) return '—';
+            return interviewDate.toLocaleString('en-MY', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
         async function openApplicantDetailModal(appId) {
             const app = applicationsList.find(a => a.id === appId);
             if (!app) return;
+            selectedApplicantDetailId = appId;
 
             const job = jobsList.find(j => j.id === app.jobId);
             const jobTitle = job ? job.title : (app.job || 'Unknown Job');
             const company = job ? job.company : (app.company || 'Unknown Company');
             const style = getStatusStyle(app.status);
 
+            document.getElementById('applicant-detail-name').textContent = candidateNameForApplication(app);
             document.getElementById('applicant-detail-job').textContent = jobTitle;
             document.getElementById('applicant-detail-company').textContent = company;
             document.getElementById('applicant-detail-date').textContent = app.date || '—';
@@ -764,7 +1456,33 @@
             badge.textContent = app.status || 'Pending';
             badge.className = `inline-block text-[11px] font-bold px-2.5 py-1 rounded-full border ${style.badgeClass}`;
 
-            // Cover letter — show inline text, or a link to the uploaded file
+            const interviewBox = document.getElementById('applicant-detail-interview');
+            const interviewButton = document.getElementById('applicant-detail-interview-button');
+            if (app.interview && app.interview.status === 'scheduled') {
+                interviewBox.className = 'rounded-lg border border-blue-100 bg-blue-50 p-3 text-[12px] text-blue-800';
+                interviewBox.innerHTML = `
+                    <p class="font-bold">${escapeHtml(formatInterviewDate(app.interview.interviewAt))}</p>
+                    <p class="mt-1 capitalize">${escapeHtml(app.interview.interviewType)} · ${escapeHtml(app.interview.locationOrLink)}</p>
+                    ${app.interview.notes ? `<p class="mt-2 whitespace-pre-line text-blue-700">${escapeHtml(app.interview.notes)}</p>` : ''}
+                `;
+                interviewButton.textContent = 'Edit Interview';
+            } else {
+                interviewBox.className = 'rounded-lg border border-slate-100 bg-slate-50 p-3 text-[12px] text-slate-400';
+                interviewBox.textContent = app.interview?.status === 'cancelled'
+                    ? 'The previous interview was cancelled.'
+                    : 'No interview scheduled.';
+                interviewButton.textContent = 'Schedule Interview';
+            }
+            const canScheduleInterview = app.status === 'Interview';
+            interviewButton.disabled = !canScheduleInterview;
+            interviewButton.title = canScheduleInterview
+                ? interviewButton.textContent
+                : 'Change status to Interview first';
+            interviewButton.className = canScheduleInterview
+                ? 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-[13px]'
+                : 'px-4 py-2 bg-slate-200 text-slate-400 rounded-lg font-semibold text-[13px] cursor-not-allowed';
+
+            // Cover letter
             const coverBox = document.getElementById('applicant-detail-cover-box');
             if (app.coverLetterText) {
                 coverBox.innerHTML = `<p class="text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(app.coverLetterText)}</p>`;
@@ -779,7 +1497,7 @@
                 coverBox.innerHTML = `<p class="text-slate-400 text-[12px]">No cover letter provided.</p>`;
             }
 
-            // Resume — fetch the real record from the shared resume storage
+            // Resume
             const resumeBox = document.getElementById('applicant-detail-resume-box');
             if (!app.resumeId) {
                 resumeBox.innerHTML = `<p class="text-slate-400 text-[12px]">No resume on file for this application.</p>`;
@@ -804,7 +1522,6 @@
                             ` : ''}
                         `;
                     } else {
-                        // Legacy builder resume saved before real file generation.
                         const info = resume.data?.personalInfo || {};
                         const skills = resume.data?.skills || [];
                         const experience = resume.data?.experience || [];
@@ -847,7 +1564,164 @@
             setTimeout(() => {
                 backdrop.classList.add('hidden');
                 panel.classList.add('hidden');
+                selectedApplicantDetailId = null;
             }, 200);
+        }
+
+        // ==================== INTERVIEW SCHEDULING ====================
+        function localDateTimeInputValue(value) {
+            const parsed = value ? new Date(value) : new Date(Date.now() + 60 * 60 * 1000);
+            if (Number.isNaN(parsed.getTime())) return '';
+            const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 16);
+        }
+
+        function setInterviewMinimumDate() {
+            const input = document.getElementById('interview-datetime');
+            if (input) input.min = localDateTimeInputValue(new Date(Date.now() + 5 * 60000));
+        }
+
+        function openInterviewModalFromDetails() {
+            if (selectedApplicantDetailId) openInterviewModal(selectedApplicantDetailId);
+        }
+
+        function openInterviewModal(appId) {
+            const app = applicationsList.find(item => item.id === appId);
+            if (!app) return;
+            if (app.status !== 'Interview') {
+                showFloatingNotice('Change the applicant status to Interview before scheduling.');
+                return;
+            }
+            selectedInterviewApplicationId = appId;
+            const existing = app.interview && app.interview.status === 'scheduled'
+                ? app.interview
+                : null;
+            document.getElementById('interview-title').textContent = existing
+                ? 'Edit Interview'
+                : 'Schedule Interview';
+            document.getElementById('interview-applicant-label').textContent = candidateNameForApplication(app);
+            document.getElementById('interview-datetime').value = localDateTimeInputValue(existing?.interviewAt);
+            document.getElementById('interview-type').value = existing?.interviewType || 'online';
+            document.getElementById('interview-location').value = existing?.locationOrLink || '';
+            document.getElementById('interview-notes').value = existing?.notes || '';
+            document.getElementById('interview-cancel-existing').classList.toggle('hidden', !existing);
+            document.getElementById('interview-error').classList.add('hidden');
+            updateInterviewLocationLabel();
+            setInterviewMinimumDate();
+
+            const backdrop = document.getElementById('interview-backdrop');
+            const panel = document.getElementById('interview-panel');
+            backdrop.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('opacity-0', 'scale-[0.98]');
+            }, 10);
+        }
+
+        function closeInterviewModal() {
+            const backdrop = document.getElementById('interview-backdrop');
+            const panel = document.getElementById('interview-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('opacity-0', 'scale-[0.98]');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+                panel.classList.add('hidden');
+                selectedInterviewApplicationId = null;
+            }, 200);
+        }
+
+        function updateInterviewLocationLabel() {
+            const type = document.getElementById('interview-type').value;
+            const label = document.getElementById('interview-location-label');
+            const input = document.getElementById('interview-location');
+            if (type === 'physical') {
+                label.textContent = 'Interview Location *';
+                input.placeholder = 'Office address or meeting room';
+            } else if (type === 'phone') {
+                label.textContent = 'Phone Details *';
+                input.placeholder = 'Phone number or calling instructions';
+            } else {
+                label.textContent = 'Meeting Link *';
+                input.placeholder = 'https://meet.example.com/...';
+            }
+        }
+
+        async function saveInterview() {
+            const appId = selectedInterviewApplicationId;
+            if (!appId) return;
+            const interviewAt = document.getElementById('interview-datetime').value;
+            const interviewType = document.getElementById('interview-type').value;
+            const locationOrLink = document.getElementById('interview-location').value.trim();
+            const notes = document.getElementById('interview-notes').value.trim();
+            const errorBox = document.getElementById('interview-error');
+            const saveButton = document.getElementById('interview-save-button');
+
+            let validationError = '';
+            if (!interviewAt) validationError = 'Please choose the interview date and time.';
+            else if (new Date(interviewAt).getTime() <= Date.now()) validationError = 'Interview date and time must be in the future.';
+            else if (!locationOrLink) validationError = 'Please provide the meeting link, location, or phone details.';
+            else if (interviewType === 'online' && !/^https?:\/\/\S+$/i.test(locationOrLink)) {
+                validationError = 'Online meeting links must start with http:// or https://.';
+            }
+            if (validationError) {
+                errorBox.textContent = validationError;
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            errorBox.classList.add('hidden');
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+            try {
+                const res = await fetch(`/api/applications/${encodeURIComponent(appId)}/interview`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interviewAt, interviewType, locationOrLink, notes })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Unable to schedule interview.');
+                const app = applicationsList.find(item => item.id === appId);
+                if (app) {
+                    app.interview = data.interview;
+                    app.status = 'Interview';
+                }
+                renderApplicants();
+                renderStats();
+                closeInterviewModal();
+                if (selectedApplicantDetailId === appId) openApplicantDetailModal(appId);
+                await fetchNotifications();
+                renderNotifications();
+                showFloatingNotice(data.message || 'Interview scheduled successfully.');
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.classList.remove('hidden');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save Interview';
+            }
+        }
+
+        async function cancelScheduledInterview() {
+            const appId = selectedInterviewApplicationId;
+            if (!appId) return;
+            try {
+                const res = await fetch(`/api/applications/${encodeURIComponent(appId)}/interview`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Unable to cancel interview.');
+                const app = applicationsList.find(item => item.id === appId);
+                if (app) app.interview = data.interview;
+                renderApplicants();
+                closeInterviewModal();
+                if (selectedApplicantDetailId === appId) openApplicantDetailModal(appId);
+                showFloatingNotice(data.message || 'Interview cancelled.');
+            } catch (error) {
+                const errorBox = document.getElementById('interview-error');
+                errorBox.textContent = error.message;
+                errorBox.classList.remove('hidden');
+            }
         }
 
         async function updateApplicantStatus(appId, newStatus) {
@@ -860,18 +1734,18 @@
                 });
                 if (!res.ok) throw new Error('Failed to update status.');
 
-                const app = applicationsList.find(a => a.id === appId);
-                if (app) app.status = newStatus;
-
+                await fetchApplications();
                 renderApplicants();
                 renderStats();
+                await fetchNotifications();
+                renderNotifications();
                 showFloatingNotice(`Applicant status updated to "${newStatus}".`);
             } catch (err) {
                 showFloatingNotice('Could not update status. Please try again.');
             }
         }
 
-        // ==================== DELETE APPLICANT (Rejected only) ====================
+        // ==================== DELETE APPLICANT ====================
         let applicantIdPendingDelete = null;
 
         function openDeleteApplicantModal(appId) {

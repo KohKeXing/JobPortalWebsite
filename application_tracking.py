@@ -70,6 +70,22 @@ class ApplicationTracking:
         )
         return [_api_application(row) for row in (response.data or [])]
 
+    def get_applications_for_owner(
+        self,
+        owner_key: str,
+    ) -> list[dict[str, Any]]:
+        """Return only applications created by one signed-in job seeker."""
+        if not owner_key:
+            return []
+        response = (
+            self.client.table("applications")
+            .select(APPLICATION_COLUMNS)
+            .eq("owner_key", owner_key)
+            .order("application_date", desc=True)
+            .execute()
+        )
+        return [_api_application(row) for row in (response.data or [])]
+
     def get_application(self, app_id: str) -> dict[str, Any] | None:
         if not _is_valid_uuid(app_id):
             return None
@@ -142,6 +158,25 @@ class ApplicationTracking:
             self.client.table("applications")
             .update(changes)
             .eq("id", app_id)
+            .execute()
+        )
+        return bool(response.data)
+
+    def claim_legacy_application(self, app_id: str, owner_key: str) -> bool:
+        """Attach a pre-owner-key application to its verified seeker.
+
+        The caller must first verify ownership (for example by matching the
+        submitted resume email/name to the signed-in profile).  The database
+        update itself is guarded so an already-owned application can never be
+        reassigned.
+        """
+        if not _is_valid_uuid(app_id) or not owner_key:
+            return False
+        response = (
+            self.client.table("applications")
+            .update({"owner_key": owner_key})
+            .eq("id", app_id)
+            .is_("owner_key", "null")
             .execute()
         )
         return bool(response.data)
