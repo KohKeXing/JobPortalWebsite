@@ -894,27 +894,73 @@ class ResumeStorage:
     def client(self):
         return self._provided_client or get_supabase_client()
 
-    def get_resumes(self):
+    @staticmethod
+    def _normalise_owner_key(owner_key):
+        """Return a safe owner key or ``None`` for legacy/admin calls."""
+        if owner_key is None:
+            return None
+        owner_key = str(owner_key).strip()
+        if not owner_key:
+            raise ValueError("A signed-in job seeker is required.")
+        return owner_key
+
+    @staticmethod
+    def _apply_owner_filter(query, owner_key):
+        """Scope a Supabase query when an authenticated owner is supplied."""
+        if owner_key is not None:
+            query = query.eq("owner_key", owner_key)
+        return query
+
+    def get_resumes(self, owner_key=None):
+        owner_key = self._normalise_owner_key(owner_key)
+        query = self.client.table("resumes").select(RESUME_COLUMNS)
+        query = self._apply_owner_filter(query, owner_key)
+        response = query.order("last_modified", desc=True).execute()
+        return [_api_resume(row) for row in (response.data or [])]
+
+    def get_unowned_resumes(self):
+        """Return legacy rows created before per-user ownership was added."""
         response = (
             self.client.table("resumes")
             .select(RESUME_COLUMNS)
+            .is_("owner_key", "null")
             .order("last_modified", desc=True)
             .execute()
         )
         return [_api_resume(row) for row in (response.data or [])]
 
-    def get_resume(self, resume_id):
+    def claim_unowned_resume(self, resume_id, owner_key):
+        """Atomically assign one legacy, ownerless row to a job seeker."""
+        owner_key = self._normalise_owner_key(owner_key)
+        if owner_key is None:
+            raise ValueError("A signed-in job seeker is required.")
         response = (
             self.client.table("resumes")
-            .select(RESUME_COLUMNS)
+            .update({
+                "owner_key": owner_key,
+                "last_modified": _utc_timestamp(),
+            })
             .eq("id", resume_id)
-            .limit(1)
+            .is_("owner_key", "null")
             .execute()
         )
         rows = response.data or []
         return _api_resume(rows[0]) if rows else None
 
+    def get_resume(self, resume_id, owner_key=None):
+        owner_key = self._normalise_owner_key(owner_key)
+        query = (
+            self.client.table("resumes")
+            .select(RESUME_COLUMNS)
+            .eq("id", resume_id)
+        )
+        query = self._apply_owner_filter(query, owner_key)
+        response = query.limit(1).execute()
+        rows = response.data or []
+        return _api_resume(rows[0]) if rows else None
+
     def add_uploaded_resume(self, file_storage, owner_key=None):
+        owner_key = self._normalise_owner_key(owner_key)
         safe_name, extension, content = _read_upload(
             file_storage,
             ALLOWED_RESUME_EXTENSIONS,
@@ -922,6 +968,9 @@ class ResumeStorage:
         )
 
         stored_name = f"{uuid.uuid4().hex}{extension}"
+        # Keep the established Storage layout for backward compatibility.
+        # Account isolation is enforced by the database owner_key, not by
+        # relying on a predictable Storage folder name.
         storage_path = f"unassigned/{stored_name}"
         bucket = self.client.storage.from_(RESUME_BUCKET)
 
@@ -992,6 +1041,7 @@ class ResumeStorage:
         layout,
         data,
         output_format,
+        owner_key=None,
     ):
         output_format = _output_format(output_format)
         content = _generate_builder_document(
@@ -1040,6 +1090,7 @@ class ResumeStorage:
         output_format,
         owner_key=None,
     ):
+        owner_key = self._normalise_owner_key(owner_key)
         name = name or "Untitled Resume"
         layout = layout or "modern"
         data = data or {}
@@ -1048,6 +1099,7 @@ class ResumeStorage:
             layout,
             data,
             output_format,
+            owner_key=owner_key,
         )
         row = {
             "id": "res-" + uuid.uuid4().hex[:12],
@@ -1068,14 +1120,15 @@ class ResumeStorage:
             raise
         return _api_resume(response.data[0])
 
-    def update_resume(self, resume_id, updates):
-        existing_response = (
+    def update_resume(self, resume_id, updates, owner_key=None):
+        owner_key = self._normalise_owner_key(owner_key)
+        existing_query = (
             self.client.table("resumes")
             .select(RESUME_COLUMNS)
             .eq("id", resume_id)
-            .limit(1)
-            .execute()
         )
+        existing_query = self._apply_owner_filter(existing_query, owner_key)
+        existing_response = existing_query.limit(1).execute()
         existing_rows = existing_response.data or []
         if not existing_rows:
             return None
@@ -1114,16 +1167,18 @@ class ResumeStorage:
                 layout,
                 data,
                 output_format,
+                owner_key=owner_key or existing.get("owner_key"),
             )
             changes.update(new_file)
 
         try:
-            response = (
+            update_query = (
                 self.client.table("resumes")
                 .update(changes)
                 .eq("id", resume_id)
-                .execute()
             )
+            update_query = self._apply_owner_filter(update_query, owner_key)
+            response = update_query.execute()
         except Exception:
             if new_file:
                 self.client.storage.from_(RESUME_BUCKET).remove(
@@ -1147,41 +1202,75 @@ class ResumeStorage:
         rows = response.data or []
         if rows:
             return _api_resume(rows[0])
-        return self.get_resume(resume_id)
+        return self.get_resume(resume_id, owner_key=owner_key)
 
-    def delete_resume(self, resume_id):
-        response = (
+    def delete_resume(self, resume_id, owner_key=None):
+        owner_key = self._normalise_owner_key(owner_key)
+        select_query = (
             self.client.table("resumes")
             .select(RESUME_COLUMNS)
             .eq("id", resume_id)
-            .limit(1)
-            .execute()
         )
+        select_query = self._apply_owner_filter(select_query, owner_key)
+        response = select_query.limit(1).execute()
         rows = response.data or []
         if not rows:
             return False
 
         row = rows[0]
-        self.client.table("resumes").delete().eq("id", resume_id).execute()
+        delete_query = (
+            self.client.table("resumes").delete().eq("id", resume_id)
+        )
+        delete_query = self._apply_owner_filter(delete_query, owner_key)
+        delete_query.execute()
         if row.get("storage_path"):
             self.client.storage.from_(
                 row.get("storage_bucket") or RESUME_BUCKET
             ).remove([row["storage_path"]])
         return True
 
-    def download_uploaded_resume(self, stored_filename):
+    def download_uploaded_resume(self, stored_filename, owner_key=None):
         """Download and DECRYPT a resume file."""
-        response = (
+        owner_key = self._normalise_owner_key(owner_key)
+        query = (
             self.client.table("resumes")
             .select(
                 "id,file_name,file_format,storage_bucket,storage_path,"
                 "stored_file_name,owner_key"
             )
             .eq("stored_file_name", stored_filename)
-            .limit(1)
-            .execute()
         )
+        query = self._apply_owner_filter(query, owner_key)
+        response = query.limit(1).execute()
         rows = response.data or []
+
+        # Compatibility for files saved before resume ownership existed.
+        # A legacy row is claimed atomically by the current signed-in user on
+        # its first successful download, so it cannot later be downloaded by
+        # a different account through this owner-scoped route.
+        if not rows and owner_key is not None:
+            legacy_response = (
+                self.client.table("resumes")
+                .select(
+                    "id,file_name,file_format,storage_bucket,storage_path,"
+                    "stored_file_name,owner_key"
+                )
+                .eq("stored_file_name", stored_filename)
+                .is_("owner_key", "null")
+                .limit(1)
+                .execute()
+            )
+            legacy_rows = legacy_response.data or []
+            if legacy_rows:
+                legacy_row = legacy_rows[0]
+                claimed = self.claim_unowned_resume(
+                    legacy_row.get("id"),
+                    owner_key,
+                )
+                if claimed:
+                    legacy_row["owner_key"] = owner_key
+                    rows = [legacy_row]
+
         if not rows:
             return None
 
