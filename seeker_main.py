@@ -536,6 +536,52 @@ def create_app():
         except Exception:
             return False
 
+    def _legacy_resume_matches_current_seeker(resume):
+        """Recognise an ownerless resume without exposing it to the browser."""
+        data = resume.get("data") if isinstance(resume.get("data"), dict) else {}
+        personal_info = (
+            data.get("personalInfo")
+            if isinstance(data.get("personalInfo"), dict)
+            else {}
+        )
+        resume_email = str(personal_info.get("email") or "").strip().lower()
+        seeker_email = str(session.get("email") or "").strip().lower()
+        if resume_email and seeker_email and resume_email == seeker_email:
+            return True
+
+        resume_name = _normalise_identity(personal_info.get("name"))
+        seeker_name = _normalise_identity(session.get("full_name"))
+        if resume_name and seeker_name and resume_name == seeker_name:
+            return True
+
+        # Uploaded legacy files have no structured personal information.
+        # Claim only a conservative filename/title prefix, for example
+        # KohKeXing_Resume for the signed-in user Koh Ke Xing.
+        resume_label = _normalise_identity(
+            resume.get("name") or resume.get("fileName")
+        )
+        return bool(
+            len(seeker_name) >= 5
+            and resume_label
+            and resume_label.startswith(seeker_name)
+        )
+
+    def _current_seeker_resumes():
+        """Return only this account's resumes and safely claim legacy rows."""
+        owner_key = session["user_id"]
+
+        # Older versions saved owner_key as NULL. Migrate only rows whose
+        # embedded email/name or filename clearly matches the signed-in user.
+        for legacy_resume in resume_store.get_unowned_resumes():
+            if not _legacy_resume_matches_current_seeker(legacy_resume):
+                continue
+            resume_store.claim_unowned_resume(
+                legacy_resume.get("id"),
+                owner_key,
+            )
+
+        return resume_store.get_resumes(owner_key=owner_key)
+
     def _current_seeker_applications():
         owner_key = session["user_id"]
         applications = app_tracker.get_applications_for_owner(owner_key)
@@ -1134,7 +1180,10 @@ def create_app():
             return jsonify({"error": "jobId, job title and company are required"}), 400
         if not resume_id:
             return jsonify({"error": "A resume must be selected to apply."}), 400
-        selected_resume = resume_store.get_resume(resume_id)
+        selected_resume = resume_store.get_resume(
+            resume_id,
+            owner_key=session["user_id"],
+        )
         if not selected_resume:
             return jsonify({"error": "The selected resume was not found."}), 400
         if not selected_resume.get("storedFileName"):
@@ -1289,17 +1338,22 @@ def create_app():
     # RESUME STORAGE API ROUTES (Supabase Database + private Storage)
     # ---------------------------------------------------------
     @app.route("/api/resumes", methods=["GET"])
+    @seeker_required
     def get_resumes():
-        return jsonify(resume_store.get_resumes())
+        return jsonify(_current_seeker_resumes())
 
     @app.route("/api/resumes/upload", methods=["POST"])
+    @seeker_required
     def upload_resume():
         file = request.files.get("resume")
         if not file or not file.filename:
             return jsonify({"error": "No file was provided."}), 400
 
         try:
-            record = resume_store.add_uploaded_resume(file)
+            record = resume_store.add_uploaded_resume(
+                file,
+                owner_key=session["user_id"],
+            )
             return jsonify({"success": True, "resume": record}), 201
         except ValueError as exc:
             app.logger.warning("Resume validation failed: %s", exc)
@@ -1311,6 +1365,7 @@ def create_app():
             }), 500
 
     @app.route("/api/resumes/builder", methods=["POST"])
+    @seeker_required
     def create_builder_resume():
         body = request.get_json() or {}
         name = body.get("name", "Untitled Resume")
@@ -1323,6 +1378,7 @@ def create_app():
                 layout,
                 data,
                 output_format,
+                owner_key=session["user_id"],
             )
             return jsonify({"success": True, "resume": record}), 201
         except ValueError as e:
@@ -1334,10 +1390,15 @@ def create_app():
             }), 500
 
     @app.route("/api/resumes/<resume_id>", methods=["PUT"])
+    @seeker_required
     def update_resume(resume_id):
         updates = request.get_json() or {}
         try:
-            record = resume_store.update_resume(resume_id, updates)
+            record = resume_store.update_resume(
+                resume_id,
+                updates,
+                owner_key=session["user_id"],
+            )
             if record:
                 return jsonify({"success": True, "resume": record}), 200
             return jsonify({"error": "Resume not found"}), 404
@@ -1350,15 +1411,23 @@ def create_app():
             }), 500
 
     @app.route("/api/resumes/<resume_id>", methods=["DELETE"])
+    @seeker_required
     def delete_resume(resume_id):
-        success = resume_store.delete_resume(resume_id)
+        success = resume_store.delete_resume(
+            resume_id,
+            owner_key=session["user_id"],
+        )
         if success:
             return jsonify({"success": True}), 200
         return jsonify({"error": "Resume not found"}), 404
 
     @app.route("/uploads/<filename>")
+    @seeker_required
     def serve_uploaded_resume(filename):
-        stored_file = resume_store.download_uploaded_resume(filename)
+        stored_file = resume_store.download_uploaded_resume(
+            filename,
+            owner_key=session["user_id"],
+        )
         if stored_file is None:
             return jsonify({"error": "Resume file not found"}), 404
         return send_file(
